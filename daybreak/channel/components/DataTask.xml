@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Fetches every Daybreak source directly on the TV and publishes derived data. -->
+<component name="DataTask" extends="Task">
+  <interface>
+    <field id="config" type="assocarray" />
+    <field id="data" type="assocarray" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/lib/time.brs" />
+  <script type="text/brightscript" uri="pkg:/source/lib/ics.brs" />
+  <script type="text/brightscript" uri="pkg:/source/lib/rules.brs" />
+  <script type="text/brightscript" uri="pkg:/components/DataTask.brs" />
+</component>

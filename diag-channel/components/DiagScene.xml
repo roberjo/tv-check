@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="DiagScene" extends="Scene">
+  <interface>
+    <field id="status" type="string" onChange="onStatus" />
+  </interface>
+  <script type="text/brightscript"><![CDATA[
+    sub init()
+      m.top.backgroundURI = ""
+      m.top.backgroundColor = "0x101418FF"
+      m.label = m.top.findNode("status")
+    end sub
+
+    sub onStatus()
+      m.label.text = m.top.status
+    end sub
+  ]]></script>
+  <children>
+    <Label text="TV diagnostics running" translation="[160,380]" width="1600" horizAlign="center" font="font:LargeBoldSystemFont" />
+    <Label id="status" text="Starting..." translation="[160,480]" width="1600" horizAlign="center" font="font:MediumSystemFont" />
+    <Label text="Started from Claude Code on your Mac. Press Home to exit at any time." translation="[160,600]" width="1600" horizAlign="center" font="font:SmallSystemFont" />
+  </children>
+</component>

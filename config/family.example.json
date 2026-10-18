@@ -1,0 +1,16 @@
+{
+  "household": "Parker family",
+  "home": {"city": "LaGrange, GA", "lat": 33.0393, "lon": -85.0313},
+  "members": [
+    {"name": "Alex",   "color": "#7FB7E8", "birthday": "03-14", "allegiance": "Auburn"},
+    {"name": "Jordan", "color": "#9EC79B", "birthday": "11-02", "allegiance": "Georgia"},
+    {"name": "Riley",  "color": "#D9A6E0", "birthday": "06-21", "allegiance": "Auburn",
+     "school": "Central High School", "grade": 11},
+    {"name": "Casey",  "color": "#F2C14E", "birthday": "08-30", "allegiance": "Georgia",
+     "school": "Central High School", "grade": 10, "activities": ["Marching band"]}
+  ],
+  "calendars": {
+    "family": {"id": "<your calendar id>@group.calendar.google.com", "ics_env": "FAMILY_CALENDAR_ICS"}
+  },
+  "curbside": {"weekday": "Monday"}
+}

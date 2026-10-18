@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="DaybreakScene" extends="Scene">
+  <interface>
+    <field id="mode" type="string" onChange="onStart" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/source/lib/time.brs" />
+  <script type="text/brightscript" uri="pkg:/source/lib/rules.brs" />
+  <script type="text/brightscript" uri="pkg:/source/config.brs" />
+  <script type="text/brightscript" uri="pkg:/components/ui.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens.brs" />
+  <script type="text/brightscript" uri="pkg:/components/DaybreakScene.brs" />
+  <children>
+    <Rectangle id="bg" width="1920" height="1080" color="0x0B1120FF" />
+    <Group id="stage" />
+    <Label id="status" translation="[112,980]" width="1696" horizAlign="center" color="0xA9B1C4FF" />
+    <Animation id="fade" duration="0.8" easeFunction="inOutQuad">
+      <FloatFieldInterpolator id="fadeIn" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" />
+      <FloatFieldInterpolator id="fadeOut" key="[0.0, 1.0]" keyValue="[1.0, 0.0]" />
+    </Animation>
+    <Timer id="rotateTimer" repeat="false" />
+    <Timer id="clockTimer" repeat="true" duration="10" />
+    <Timer id="frameTimer" repeat="true" duration="0.5" />
+    <DataTask id="dataTask" />
+  </children>
+</component>
