@@ -4,7 +4,7 @@
 
 ---
 
-Our house is split down the middle: two Auburn fans and two Georgia fans. In Georgia that isn't a sports preference; it's a family structure. So when I was building a dashboard for our living-room TV, I added what seemed like a harmless feature: a "House Divided" card that tracks the rivalry and shows the latest result.
+Our house is divided between Auburn fans and Georgia fans. In Georgia that isn't a sports preference; it's a family structure. So when I was building a dashboard for our living-room TV, I added what seemed like a harmless feature: a "House Divided" card that tracks the rivalry and shows the latest result.
 
 The first time the app rendered with real data was the night of the game. Auburn won, 27–24, in Athens.
 
@@ -26,12 +26,12 @@ About thirty seconds later it had found two Roku TVs on my network with an SSDP 
 
 Even locked down in "Limited" mode, my TV happily told anyone on the network:
 - its serial number, MAC addresses, and the name of my Wi-Fi network
-- the room it's in ("Living room")
-- **which app was open right then** (Spectrum TV, if you're wondering)
+- which room it's in
+- **which app was open right then**
 
 Once I flipped "Control by mobile apps" to Enabled and turned on developer mode, it gave up a lot more: every installed app, the media player's state, the volume, and a telnet debug console with a `plugins` command. That command listed all ~130 packages on the TV, each with a usage counter.
 
-That counter turned out to be **embarrassing**. Netflix: 175. Spectrum: 25. Then 28 apps we had never opened once, sitting on a TV with **36 MB of free storage**, where Roku was already evicting the apps we *do* use. Claude asked which groups to remove, warned me that removal also takes apps off the Roku account, and cleared them one at a time over the network. Free storage tripled to 107 MB.
+That counter turned out to be **embarrassing**. A handful of apps got nearly all the use, and dozens had never been opened once, all sitting on a TV that was nearly **out of storage**, where Roku was already evicting the apps we *do* use. Claude asked which groups to remove, warned me that removal also takes apps off the Roku account, and cleared them one at a time over the network. Free storage tripled.
 
 The TV also revealed something less funny: **ACR** ("automatic content recognition") packages, the feature that fingerprints what's on screen, including from HDMI devices, for ad targeting. We turned that off.
 
@@ -61,7 +61,7 @@ The specificity makes it feel personal:
 
 ![The week ahead](images/week.jpg)
 
-At one point I asked whether we could decompile the Spectrum app and build our own player. Claude said no and explained why: the streams are DRM-protected and tied to Spectrum's sign-in, and getting around that runs into anti-circumvention law. Then it suggested a legitimate alternative. I appreciated that.
+At one point I asked whether we could decompile our cable provider's streaming app and build our own player. Claude said no and explained why: the streams are DRM-protected and tied to the provider's sign-in, and getting around that runs into anti-circumvention law. Then it suggested a legitimate alternative. I appreciated that.
 
 ## What the build was actually like
 
@@ -73,7 +73,6 @@ A few moments stuck with me.
 
 **It tested on real data and found real problems.** On its first pass through live feeds it learned that:
 - Auburn and Georgia had played each other that day, which my mockups hadn't anticipated.
-- Someone in the family had just ended a weekly practice series in our shared calendar, and the reader handled the change correctly.
 - One news feed was surfacing a violent-crime story, so it added a "gentle news" filter for the living-room screen and told me it had done so.
 
 **Going standalone was the right call, and also humbling.** The first version had the Mac draw every screen and the TV just display images. When I asked, "why do we need the Mac?", Claude agreed it could all run on the TV and rewrote it natively in BrightScript. It ran the code off-device with a BrightScript interpreter, using a synthetic calendar and saved copies of the live feeds, which caught a wonderful collection of footguns:

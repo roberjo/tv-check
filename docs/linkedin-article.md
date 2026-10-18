@@ -1,6 +1,6 @@
 # I built a feature to keep the peace in my house. It picked a side on day one.
 
-My family is a house divided: two Auburn fans, two Georgia fans.
+My family is a house divided between Auburn fans and Georgia fans.
 
 So when I spent a Saturday evening building a custom dashboard for our living-room TV with an AI coding assistant, I added a harmless "House Divided" card to track the rivalry.
 
@@ -18,8 +18,8 @@ I opened an empty folder and asked Claude Code: *what can you learn about my TV 
 
 Within minutes it had:
 • found the TV on my network and read its built-in control API
-• shown me that even in "limited" mode the TV shares its serial number, MAC addresses, the room it's in, and **which app is open right now**
-• found 28 apps we'd never opened, clogging a TV with 36 MB of free storage. It removed them one at a time, after asking, and storage tripled
+• shown me that even in "limited" mode the TV shares its serial number, MAC addresses, where it sits, and **which app is open right now**
+• found dozens of apps we'd never opened clogging a TV that was nearly out of storage. It removed them one at a time, after asking, and free storage tripled
 • flagged automatic content recognition (ACR), which fingerprints what's on screen for ad targeting. We turned it off
 
 Then it wrote and installed a small diagnostic app to measure what the network API can't see: 4K and HDR capability, DRM level, codecs, and real network throughput.
