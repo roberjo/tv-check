@@ -36,7 +36,7 @@ To unlock more, set **Settings → System → Advanced system settings → Contr
 - Wi-Fi uses a Realtek driver and supports 5 GHz
 
 **Household context**
-- User-assigned name: `65" TCL Roku TV`, location: `Living room`
+- User-assigned name and the room the TV is in
 - Wi-Fi network SSID (the home network's name)
 - Time zone America/New_York, en_US locale, 12-hour clock
 - User profile type: `adult`
@@ -45,7 +45,7 @@ To unlock more, set **Settings → System → Advanced system settings → Contr
 **Live state**
 - `power-mode`: PowerOn
 - `uptime`: seconds since boot
-- **Currently active app** (at probe time: Spectrum TV, id 23048, v17.6.0)
+- **Currently active app**
 - Headphones (private listening) connected: yes/no
 
 **Feature flags**
@@ -79,7 +79,7 @@ The TV moved to **Ethernet at 192.168.1.176** (`network-type=ethernet`). `ecp-se
 
 | Endpoint | What it reveals |
 |---|---|
-| `/query/apps` | **73 user-visible apps/inputs**: Spectrum TV, Netflix, Disney+, Prime Video, YouTube/YouTube TV, Hulu, HBO Max, Peacock, Paramount+, Apple TV, Sling, Fubo, DIRECTV, AMC+, Plex, Tubi, Pluto, plus Nintendo Switch on HDMI and a "Stream Box" input |
+| `/query/apps` | **~70 user-visible apps and inputs**: streaming services, live-TV apps and HDMI inputs |
 | `/query/active-app` | Current foreground app (Home screen at probe time) |
 | `/query/media-player` | Player state (`close`/`play`/`pause`/`buffer`), and when playing: position, duration, stream format, bitrate |
 | `/query/tv-channels`, `/query/tv-active-channel` | Antenna channel list (only analog ch 3 has been scanned) and program title, rating, CC, signal |
@@ -93,7 +93,7 @@ The TV moved to **Ethernet at 192.168.1.176** (`network-type=ethernet`). `ecp-se
 
 - **`free`**: about 1.1 GB RAM, about 640 MB available, 360 MB swap unused.
 - **`chanperf`**: "not available" with no dev channel running.
-- **`plugins`**: the full list of ~130 installed packages, including hidden system ones. Each line has a `usg` counter. Netflix (175), Spectrum TV (25), Backdrops (10), YouTube (7), Paramount+ (6), HBO Max and Peacock (4) lead. This looks like a **per-app launch/usage count**, which gives a rough viewing-habit profile.
+- **`plugins`**: the full list of ~130 installed packages, including hidden system ones. Each line has a `usg` counter that looks like a per-app launch count, enough to build a rough viewing-habit profile.
 - The hidden system packages include **`ACR Lib Channel` and `AcrAddon`**. ACR (automatic content recognition) is the Roku/TCL feature that fingerprints what's on screen, including HDMI inputs, for ad targeting. You can turn it off in Settings → Privacy → Smart TV experience → "Use info from TV inputs".
 - Ad and analytics libraries are also present: BrightLine, Innovid, DFP Ad Service, Roku Ads/Analytics, and Interactive Ads.
 - TCL and Roku factory apps are present: TCL Manufacturing App, Roku Manufacturing Library, Roku Tuning App.
