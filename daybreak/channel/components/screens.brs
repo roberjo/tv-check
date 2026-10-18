@@ -390,9 +390,11 @@ sub buildTonight(g as object, d as object)
     end for
     ay = top + 564
     uiLabel(g, 112, ay, "Your evening apps", 22)
-    apps = ["Netflix", "Spectrum TV", "YouTube", "Paramount+", "HBO Max", "Peacock"]
+    apps = d.apps
+    if apps = invalid or apps.Count() = 0 then apps = ["Netflix", "YouTube", "Prime Video", "Disney+", "Hulu", "Max"]
     tw = (1696 - 5 * 24) / 6
     for i = 0 to 5
+        if i >= apps.Count() then exit for
         ax = 112 + i * (tw + 24)
         border = "#222842"
         if i = 0 then border = "#B3A6F2"

@@ -16,9 +16,7 @@ import sources as S
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 FAMILY = S.FAMILY
-SPECTRUM = "23048"
-APP_ROW = [("Netflix", "12"), ("Spectrum TV", "23048"), ("YouTube", "837"), ("Paramount+", "31440"),
-           ("HBO Max", "61322"), ("Peacock", "593099")]  # ordered by this TV's launch counts
+DEFAULT_APPS = ["Netflix", "YouTube", "Prime Video", "Disney+", "Hulu", "Max"]
 
 
 # --- helpers ---------------------------------------------------------------------
@@ -354,9 +352,7 @@ def render_tonight(data):
         sc.label(hx + 84, top + 54, "On now" if hero["state"] == "in" else "Starting soon", 24, D.TEXT)
         sc.text(hx + 56, top + 140, hero["name"], sc.fit(hero["name"], 112, hw - 112, 600, "Outfit"), 600, D.TEXT, "Outfit")
         sc.text(hx + 56, top + 290, f"{hero['detail']} · {clock(hero['start'])}" + (f" on {hero['network']}" if hero["network"] else ""), 34, 500, D.TEXT)
-        sc.bar(hx + 56, top + hh - 120, 260, 76, D.TEXT)
-        sc.text(hx + 56 + 130, top + hh - 82, "Press OK to watch", 26, 800, D.hexrgb(hero["color"]), anchor="mm")
-        action = {"type": "launch", "app": SPECTRUM}
+        action = None
     else:
         sc.card(hx, top, hw, hh, r=32)
         sc.label(hx + 56, top + 54, "Tonight", 24, D.VIOLET)
@@ -395,7 +391,7 @@ def render_tonight(data):
     ay = top + hh + 44
     sc.label(D.MARGIN_X, ay, "Your evening apps", 22, D.TEXT_2)
     tw = (1696 - 5 * 24) / 6
-    for i, (name, _) in enumerate(APP_ROW):
+    for i, name in enumerate((FAMILY.get("apps") or DEFAULT_APPS)[:6]):
         ax = D.MARGIN_X + i * (tw + 24)
         sc.card(ax, ay + 44, tw, 110, fill=(26, 31, 54), outline=D.VIOLET if i == 0 else (34, 40, 66), r=22, width=2)
         sc.text(ax + tw / 2, ay + 99, name, 30, 700, anchor="mm")
@@ -634,7 +630,7 @@ def render_gameday(data):
         sc.text(tx, 130 + size + 20, g["detail"], 34, 500, D.TEXT, anchor=anchor)
         sc.text(tx, 560, clock(g["start"]).replace(" ", "  "), 100, 300, D.TEXT, "Outfit", anchor=anchor)
         if g["network"]:
-            sc.text(tx, 690, f"on {g['network']} · press OK for Spectrum", 30, 600, D.TEXT, anchor=anchor)
+            sc.text(tx, 690, f"on {g['network']}", 30, 600, D.TEXT, anchor=anchor)
     if len(panels) == 1:
         delta = panels[0]["start"] - now
         if delta.total_seconds() > 0:
@@ -649,7 +645,7 @@ def render_gameday(data):
         sc.text(x + 66, by + 26, sc.wrap(g["name"], 24, cw - 100, 700, max_lines=1)[0], 24, 700)
         sc.text(x + 36, by + 76, f"{day_word(g['start'], now.date())} {clock(g['start'])}", 36, 400, D.TEXT, "Outfit")
         sc.text(x + 36, by + 134, sc.wrap(g["detail"], 22, cw - 72, 400, max_lines=1)[0], 22, 400, D.TEXT_2)
-    return sc, {"clock": None, "action": {"type": "launch", "app": SPECTRUM}}
+    return sc, {"clock": None}
 
 
 def render_school(data):

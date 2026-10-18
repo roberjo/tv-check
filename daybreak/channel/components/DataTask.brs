@@ -159,7 +159,7 @@ end function
 function derive(cfg as object) as object
     now = tNowWall()
     today = tDay(now)
-    d = {version: tNowUtc(), now: now, today: today, household: cfg.household, city: cfg.city, members: cfg.members}
+    d = {version: tNowUtc(), now: now, today: today, household: cfg.household, city: cfg.city, members: cfg.members, apps: cfg.apps}
     d.weather = deriveWeather(m.cache.weather)
     d.alerts = deriveAlerts(m.cache.alerts)
     d.lake = deriveLake(m.cache.lake)
