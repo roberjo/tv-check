@@ -50,6 +50,6 @@ By midnight the TV was running "Daybreak," a standalone app that knows our town 
 
 The first install crashed because the app didn't know what city it lived in. The second ran clean. The rivalry card has not been removed, despite multiple requests from the Georgia side of the house.
 
-Code, screenshots (with a fictional family) and the full write-up are on GitHub: **tv-check**.
+Code, screenshots (with a fictional family) and the full write-up are on GitHub: https://github.com/roberjo/tv-check
 
 #AI #SoftwareEngineering #ClaudeCode #Roku #SmartHome #BuildInPublic #DeveloperExperience

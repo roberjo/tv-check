@@ -95,6 +95,6 @@ The second install cycled through all eleven screens on the real TV without an e
 - **The details make it feel personal.** Nobody gets excited about a weather widget. Everybody notices when the TV knows it's yard-waste week.
 
 ## Try it
-The code is on GitHub: **tv-check**. It includes the exploration scripts, the diagnostic app, Daybreak's source, off-device tests, and design notes. Everything personal stays in gitignored config. The screenshots use the fictional Parker family, whose fake calendar is much calmer than ours.
+The code is on GitHub: **[github.com/roberjo/tv-check](https://github.com/roberjo/tv-check)**. It includes the exploration scripts, the diagnostic app, Daybreak's source, off-device tests, and design notes. Everything personal stays in gitignored config. The screenshots use the fictional Parker family, whose fake calendar is much calmer than ours.
 
 The House Divided card is still on the TV, and the rivalry is tied 1–1 in arguments about whether it should be.
