@@ -6,7 +6,7 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 
 | Entry | When |
 |---|---|
-| **Screensaver** (`RunScreenSaver`) | After the TV's idle timeout, once it's selected in Settings → Theme → Screensaver. Shows Ambient plus the three most relevant screens |
+| **Screensaver** (`RunScreenSaver`) | After the TV's idle timeout, once it's selected in Settings → Theme → Screensaver. Shows Ambient plus the three most relevant screens, and only the night clock from 11 PM to 5 AM |
 | **App** (`Main`) | On demand. Every screen, in priority order. Left/Right browse, Play pauses |
 
 ## Screens and when they appear
@@ -25,6 +25,8 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 | School | School mornings and evenings | School-related calendar items, a card per student |
 | Board | When there are notes | "TV: …" calendar events as notes, "Buy: …" as groceries |
 | Season | Midday | Monthly nature and garden notes for West Georgia, frost watch |
+| Night | Screensaver, 11 PM to 5 AM | A dim clock that drifts every 5 minutes, plus the coming day's forecast and first event. Radar joins it during a warning |
+| Loading | Before the first data arrives | The real date and clock with placeholder cards. If the TV is offline, a note says when the saved data is from |
 
 ## Rule-based insights (no AI at runtime)
 "Heads up" items, most important first:
@@ -47,8 +49,10 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 ## Visual system
 - **Colors:** ink navy `#0B1120`, cards `#131B2E` with a `#1F2A44` border, text `#F4F1EA` with `#A9B1C4` secondary. Accents: amber `#F4A259` (day) and violet `#B3A6F2` (night).
 - **Type:** Outfit (display) and Manrope (UI), both under the SIL Open Font License. The build creates static weights because Roku can't select weights from a variable font.
-- **Layout:** 1080p with 112 px side margins and 64 px vertical margins. The smallest text is 20 px.
-- **Readability over photos:** every photo background is dimmed until all text clears WCAG contrast against the brightest 2% of pixels behind it: 4.5:1 for small text, 3:1 for large. `scripts/contrast_check.py` measures it. Results: Ambient 0.55 dim, Briefing 0.78, Season 0.70.
+- **Layout:** 1080p with 112 px side margins and 64 px vertical margins, on a 12-column grid with 32 px gutters (`gx()` and `gw()` in `ui.brs`). Cards in a row share column edges.
+- **Type scale:** 24 (captions and labels), 26 (body), 30, 36, 44, 56, 76 (titles), plus display sizes for clocks and temperatures. **Nothing is smaller than 24 px**, the comfortable minimum at living-room distance. Tests and CI enforce it.
+- **Readability:** every label must clear WCAG contrast against the brightest 2% of what's drawn behind it: 4.5:1 for small text, 3:1 for large (24 px and up, or 19 px bold). Photo backgrounds are pre-dimmed (Ambient 0.55, Briefing 0.78, Season 0.70). `daybreak/preview/preview.sh --audit` checks every label on every screen, and CI runs it on each PR.
+- **Accents:** a thin amber rule marks Heads up. Member colors mark notes and students. An amber "as of" note marks data that's getting old.
 
 ## Imagery and licensing
 - Callaway Gardens photos: CC0 (Wikimedia Commons, D. Dugan).

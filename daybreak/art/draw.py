@@ -1,6 +1,7 @@
-"""Drawing toolkit for Daybreak screens: 1920x1080 canvases, Outfit/Manrope at
-any weight, wrapped text, rounded cards, weather icons and photo backgrounds.
-Mirrors the design canvas tokens."""
+"""Drawing toolkit used by build_channel.py to make Daybreak's bundled images:
+pre-dimmed photo backgrounds, moon phases, the splash and icons. Colors match
+the tokens in channel/components/ui.brs. (Screens themselves are drawn on the
+TV; daybreak/preview renders them off-device.)"""
 import functools
 import math
 import pathlib

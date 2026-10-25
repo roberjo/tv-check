@@ -10,8 +10,9 @@ The package's manifest gets build_version = the git commit count, so each
 install is distinguishable; the tracked manifest keeps major/minor only.
 
 Usage:
-  .venv/bin/python daybreak/build_channel.py           # full build + zip
-  .venv/bin/python daybreak/build_channel.py --check   # config + BrighterScript only (CI)
+  .venv/bin/python daybreak/build_channel.py            # full build + zip
+  .venv/bin/python daybreak/build_channel.py --check    # example config + BrighterScript only (CI)
+  .venv/bin/python daybreak/build_channel.py --assets   # example config + fonts + images, for previews (CI)
 """
 import json
 import math
@@ -24,7 +25,7 @@ from PIL import Image, ImageDraw
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
-sys.path.insert(0, str(HERE / "service"))
+sys.path.insert(0, str(HERE / "art"))
 sys.path.insert(0, str(ROOT / "scripts"))
 import draw as D  # noqa: E402
 
@@ -32,15 +33,16 @@ CH = HERE / "channel"
 IMG = CH / "images"
 FONTS = CH / "fonts"
 DIST = HERE / "dist"
-SRC_FONTS = HERE / "service" / "fonts"
-SRC_ART = HERE / "service" / "assets"
+SRC_FONTS = HERE / "art" / "fonts"
+SRC_ART = HERE / "art" / "assets"
 CHECK_ONLY = "--check" in sys.argv
+ASSETS_ONLY = "--assets" in sys.argv
 _env = ROOT / ".env"
 env = {}
-if _env.exists() and not CHECK_ONLY:
+if _env.exists() and not (CHECK_ONLY or ASSETS_ONLY):
     env = dict(l.split("=", 1) for l in _env.read_text().splitlines() if "=" in l and not l.startswith("#"))
 _family = ROOT / "config" / "family.json"
-if CHECK_ONLY or not _family.exists():
+if CHECK_ONLY or ASSETS_ONLY or not _family.exists():
     _family = ROOT / "config" / "family.example.json"
 family = json.loads(_family.read_text())
 
@@ -229,7 +231,11 @@ def make_images():
     if not base.exists():
         import radar_map
         base.parent.mkdir(parents=True, exist_ok=True)
-        radar_map.build_base(radar_map.bbox(), base.parent)
+        try:
+            radar_map.build_base(radar_map.bbox(), base.parent)
+        except OSError as e:  # offline: a plain map keeps the build (and previews) working
+            print(f"radar base map unavailable ({e}); using a plain background")
+            Image.new("RGB", (1920, 1080), D.INK).save(base)
     Image.open(base).convert("RGB").save(IMG / "radar_base.jpg", "JPEG", quality=85, optimize=True)
     arc(1520, 190, IMG / "arc_ambient.png")
     arc(504, 56, IMG / "arc_card.png", width=3, alpha=150)
@@ -268,6 +274,8 @@ if __name__ == "__main__":
         sys.exit(bsc_check())
     make_fonts()
     make_images()
+    if ASSETS_ONLY:
+        sys.exit(0)
     if bsc_check() != 0:
         sys.exit("BrighterScript reported errors; not packaging.")
     DIST.mkdir(exist_ok=True)

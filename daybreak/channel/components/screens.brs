@@ -1,20 +1,23 @@
 ' Daybreak screens, built natively from the DataTask's derived data. Layouts
-' mirror daybreak/service/screens.py (the reference renderer on the Mac).
+' sit on the 12-column grid in ui.brs (gx/gw) and use nothing below 24 px.
+' daybreak/preview renders these same builders off-device for design review.
 
 ' --- which screens, in what order ----------------------------------------------
 
 function availableScreens(d as object) as object
-    a = {ambient: true, briefing: true, tonight: true, week: true, sky: true, school: true, radar: true}
+    a = {ambient: true, briefing: true, tonight: true, week: true, sky: true, school: true, radar: true, night: true}
     if d.weather = invalid
         a.Delete("briefing")
         a.Delete("ambient")
         a.Delete("week")
+        a.Delete("tonight")
+        a.Delete("sky")
     end if
-    if d.lake <> invalid then a.lake = true
+    if d.lake <> invalid and d.weather <> invalid then a.lake = true
     if d.finals.Count() > 0 then a.recap = true
     if soonGames(d).Count() > 0 then a.gameday = true
     if d.notes.Count() > 0 or d.groceries.Count() > 0 then a.board = true
-    if seasonItems(tParts(d.now).m) <> invalid then a.season = true
+    if seasonItems(tParts(d.now).m) <> invalid and d.weather <> invalid then a.season = true
     return a
 end function
 
@@ -26,6 +29,11 @@ function chooseScreens(d as object, mode as string) as object
     for each al in d.alerts
         if al.level = "warning" then warning = true
     end for
+    ' late at night the screensaver is just a dim clock (plus radar in a warning)
+    if mode = "screensaver" and (h >= 23 or h < 5)
+        if warning then return ["radar", "night"]
+        return ["night"]
+    end if
     order = []
     if warning then order.Push("radar")
     order.Push("gameday")
@@ -59,19 +67,29 @@ function chooseScreens(d as object, mode as string) as object
         end if
     end for
     if mode = "screensaver"
-        ss = ["ambient"]
+        ss = []
+        if a.ambient = true then ss.Push("ambient")
         for each s in out
             if ss.Count() < 4 and s <> "ambient" and s <> "board" then ss.Push(s)
         end for
+        if ss.Count() = 0 then ss.Push("night")
         return ss
     end if
+    if out.Count() = 0 then out.Push("night")
     return out
 end function
 
 function screenSeconds(id as string) as integer
     if id = "briefing" or id = "week" or id = "tonight" then return 30
     if id = "radar" then return 16
+    if id = "night" then return 60
     return 20
+end function
+
+function screenTitles() as object
+    return {ambient: "Ambient", briefing: "Briefing", tonight: "Tonight", week: "Week ahead", lake: "Lake", sky: "Sky",
+            recap: "Game recap", gameday: "Game day", school: "School", board: "Family board", season: "Season",
+            radar: "Radar", night: "Night clock"}
 end function
 
 function buildScreen(id as string, d as object) as object
@@ -90,6 +108,7 @@ function buildScreen(id as string, d as object) as object
     if id = "board" then buildBoard(g, d)
     if id = "season" then buildSeason(g, d)
     if id = "radar" then buildRadar(g, d)
+    if id = "night" then buildNight(g, d)
     return g
 end function
 
@@ -114,9 +133,10 @@ sub header(g as object, eyebrow as string, title as string, accent = "#F4A259" a
     if withClock then addClock(g, 1808, 82, 104, 300, "right")
 end sub
 
-sub addClock(g as object, x as integer, y as integer, size as integer, weight as integer, align as string)
-    clock = uiText(g, x, y, "", size, weight, "Outfit")
+sub addClock(g as object, x as integer, y as integer, size as integer, weight as integer, align as string, color = "#F4F1EA" as string)
+    clock = uiText(g, x, y, "", size, weight, "Outfit", color)
     ampm = uiText(g, x, y, "", Int(size * 0.33), 300, "Outfit", "#C9CEDA")
+    if color <> "#F4F1EA" then ampm.color = hexc(color)
     m.clockNodes = {clock: clock, ampm: ampm, x: x, y: y, size: size, align: align}
 end sub
 
@@ -148,11 +168,6 @@ sub uiBackdrop(g as object, uri as string, fallback as string)
     if m.lowMemory = true then uiRect(g, 0, 0, 1920, 1080, fallback) else uiImage(g, uri, 0, 0, 1920, 1080)
 end sub
 
-' Small right-aligned amber "as of" note in a card header (nothing when fresh).
-sub asOfTag(g as object, xRight as integer, y as integer, text as string)
-    if text <> "" then uiText(g, xRight, y, text, 20, 600, "Manrope", "#F4A259", 240, "right")
-end sub
-
 ' "as of 9:40 AM" when a source's data is older than twice its refresh interval.
 function asOfText(d as object, source as string) as string
     if d.asOf = invalid or d.asOf[source] = invalid then return ""
@@ -173,6 +188,17 @@ function gameWhen(gm as object, today as integer) as string
     return tDayWord(gm.start, today) + " " + tClock(gm.start)
 end function
 
+' Like gameWhen with a 3-letter weekday past tomorrow ("Wed 7:30 PM"), for tight rows.
+function gameWhenShort(gm as object, today as integer) as string
+    if gm.state = "in" then return "Live now"
+    n = (tDay(gm.start) - today) \ 86400
+    day = tDayWord(gm.start, today)
+    if n >= 2 then day = Left(tWeekdayNames()[tWeekday(gm.start)], 3)
+    if n >= 7 then day = tShortDate(gm.start)
+    if gm.tbd then return day + " · TBA"
+    return day + " " + tClock(gm.start).Replace(":00", "")
+end function
+
 function curbText(c as object) as string
     return "Garbage + " + c.extra
 end function
@@ -187,6 +213,70 @@ sub sunArc(g as object, x as float, y as float, w as float, h as float, uri as s
         uiDot(g, px, py, dotR * 2.1, "#F4A259", 0.16)
         uiDot(g, px, py, dotR, "#F4A259")
     end if
+end sub
+
+' --- loading and night -----------------------------------------------------------
+
+' Shown before the first data arrives: the real date and clock, and placeholder
+' cards where the Briefing will be.
+function buildLoading(now as integer, message as string) as object
+    m.clockNodes = invalid
+    g = CreateObject("roSGNode", "Group")
+    uiRect(g, 0, 0, 1920, 1080, "#0B1120")
+    uiLabel(g, 112, 62, UCase(tLongDate(now)), 24, "#F4A259")
+    uiText(g, 112, 100, "Daybreak", 76, 500, "Outfit", "#F4F1EA", 1200)
+    addClock(g, 1808, 82, 104, 300, "right")
+    for c = 0 to 2
+        x = gx(1 + c * 4)
+        uiCard(g, x, 246, gw(4), 540)
+        uiCard(g, x + 40, 290, 160, 24, "#1F2A44", "", 10)
+        for r = 0 to 3
+            uiCard(g, x + 40, 360 + r * 100, gw(4) - 80 - r * 40, 28, "#18223A", "", 10)
+            uiCard(g, x + 40, 400 + r * 100, 180, 22, "#18223A", "", 10)
+        end for
+    end for
+    uiCard(g, gx(1), 818, gw(8), 200)
+    uiCard(g, gx(9), 818, gw(4), 200)
+    uiText(g, gx(1) + gw(8) / 2, 896, message, 30, 500, "Manrope", "#C9CEDA", gw(8) - 80, "center")
+    return g
+end function
+
+' Late-night screensaver: a dim clock that drifts every few minutes, with
+' tomorrow's weather and first event.
+sub buildNight(g as object, d as object)
+    uiRect(g, 0, 0, 1920, 1080, "#000000")
+    slot = ((tHour(d.now) * 60 + (d.now mod 3600) \ 60) \ 5)
+    x = 200 + (slot mod 8) * 120
+    y = 260 + ((slot \ 8) mod 5) * 80
+    addClock(g, x, y, 170, 200, "left", "#8A90A0")
+    uiText(g, x + 4, y + 220, tLongDate(d.now), 30, 500, "Manrope", "#8A90A0")
+    ' after midnight, "tomorrow" means the day that's about to start
+    tomorrow = d.today + 86400
+    word = "Tomorrow"
+    if tHour(d.now) < 5
+        tomorrow = d.today
+        word = "Today"
+    end if
+    lines = []
+    if d.weather <> invalid
+        for each t in d.weather.days
+            if t.day = tomorrow
+                s = word + " " + t.hi.ToStr() + "° / " + t.lo.ToStr() + "°, " + LCase(wxLabel(t.code))
+                if t.rain >= 30 then s = s + " · rain " + t.rain.ToStr() + "%"
+                lines.Push(s)
+            end if
+        end for
+    end if
+    for each e in d.calendar
+        if tDay(e.start) = tomorrow and lines.Count() < 2
+            when = "all day"
+            if not e.allDay then when = tClock(e.start).Replace(":00", "")
+            lines.Push("First up: " + e.title + ", " + when)
+        end if
+    end for
+    for i = 0 to lines.Count() - 1
+        uiText(g, x + 4, y + 276 + i * 42, lines[i], 26, 400, "Manrope", "#7A8090", 1100)
+    end for
 end sub
 
 ' --- screens ------------------------------------------------------------------------
@@ -208,8 +298,8 @@ sub buildAmbient(g as object, d as object)
     sunArc(g, 200, 690, 1520, 190, "pkg:/images/arc_ambient.png", d, 16)
     uiRect(g, 160, 880, 1600, 2, "#F4F1EA", 0.25)
     len = today.sunset - today.sunrise
-    uiText(g, 160, 920, "Sunrise " + tClock(today.sunrise) + "      " + (len \ 3600).ToStr() + " h " + ((len mod 3600) \ 60).ToStr() + " m of daylight      Sunset " + tClock(today.sunset), 26, 400, "Manrope", "#E1E4EC")
-    uiText(g, 160, 968, "Reflection pool, Callaway Gardens · Pine Mountain, GA", 20, 400, "Manrope", "#E1E4EC")
+    uiText(g, 160, 912, "Sunrise " + tClock(today.sunrise) + "      " + (len \ 3600).ToStr() + " h " + ((len mod 3600) \ 60).ToStr() + " m of daylight      Sunset " + tClock(today.sunset), 26, 400, "Manrope", "#E1E4EC")
+    uiText(g, 160, 960, "Reflection pool, Callaway Gardens · Pine Mountain, GA", 24, 400, "Manrope", "#E1E4EC", 1000)
     nxt = nextUp(d)
     if nxt <> ""
         tw = uiTextWidth(g, nxt, 26, 600)
@@ -239,92 +329,91 @@ sub weatherCard(g as object, x as integer, y as integer, w as integer, h as inte
     today = wx.days[0]
     uiCard(g, x, y, w, h)
     uiImage(g, "pkg:/images/wx_sun.png", x + 36, y + 34, 44, 44, "#A9B1C4")
-    uiLabel(g, x + 90, y + 44, "Weather")
-    asOfTag(g, x + w - 40, y + 44, asOfText(d, "weather"))
-    uiText(g, x + 40, y + 96, wx.temp.ToStr() + "°", 168, 300, "Outfit")
-    uiText(g, x + 330, y + 150, wxLabel(wx.code), 36, 600, "Manrope", "#F4F1EA", w - 360)
-    uiText(g, x + 330, y + 200, "High " + today.hi.ToStr() + "° · low " + today.lo.ToStr() + "°", 26, 400, "Manrope", "#A9B1C4", w - 360)
+    cardLabel(g, x + 92, y + 44, w - 132, "Weather", "#A9B1C4", asOfText(d, "weather"))
+    uiText(g, x + 36, y + 100, wx.temp.ToStr() + "°", 150, 300, "Outfit")
+    uiText(g, x + 290, y + 136, wxLabel(wx.code), 32, 600, "Manrope", "#F4F1EA", w - 326, "left", 2)
+    uiText(g, x + 290, y + 186, "H " + today.hi.ToStr() + "° · L " + today.lo.ToStr() + "°", 26, 400, "Manrope", "#A9B1C4", w - 326)
     hours = []
     for each hr in wx.hours
         if hr.t > d.now and hours.Count() < 5 and ((hr.t - d.now) \ 3600) mod 3 = 0 then hours.Push(hr)
     end for
-    cw = Int((w - 88 - 48) / 5)
+    cw = Int((w - 72 - 4 * 10) / 5)
     for i = 0 to hours.Count() - 1
-        cx = x + 44 + i * (cw + 12)
-        uiCard(g, cx, y + 300, cw, 96, "#1A2440", "", 18)
-        uiText(g, cx + cw / 2, y + 314, tClock(hours[i].t).Replace(":00", ""), 22, 400, "Manrope", "#A9B1C4", cw, "center")
+        cx = x + 36 + i * (cw + 10)
+        uiCard(g, cx, y + 300, cw, 100, "#1A2440", "", 18)
+        uiText(g, cx + cw / 2, y + 312, tClock(hours[i].t).Replace(":00", ""), 24, 400, "Manrope", "#A9B1C4", cw, "center")
         uiText(g, cx + cw / 2, y + 344, hours[i].temp.ToStr() + "°", 34, 400, "Outfit", "#F4F1EA", cw, "center")
     end for
     sunArc(g, x + 48, y + h - 128, w - 96, 56, "pkg:/images/arc_card.png", d, 9)
-    uiText(g, x + 44, y + h - 56, "Sunrise " + tClock(today.sunrise), 22, 400, "Manrope", "#A9B1C4")
-    uiText(g, x + w - 44, y + h - 56, "Sunset " + tClock(today.sunset), 22, 400, "Manrope", "#A9B1C4", 260, "right")
+    uiText(g, x + 36, y + h - 60, "Sunrise " + tClock(today.sunrise), 24, 400, "Manrope", "#A9B1C4")
+    uiText(g, x + w - 36, y + h - 60, "Sunset " + tClock(today.sunset), 24, 400, "Manrope", "#A9B1C4", 240, "right")
 end sub
 
 sub buildBriefing(g as object, d as object)
     uiBackdrop(g, "pkg:/images/bg_briefing.jpg", "#0B1120")
     header(g, UCase(tLongDate(d.now)) + " · LAGRANGE, GA", greeting(d))
     top = 246
-    weatherCard(g, 112, top, 600, 540, d)
+    weatherCard(g, gx(1), top, gw(4), 540, d)
     ' calendar
-    x = 744
-    w = 532
+    x = gx(5)
+    w = gw(4)
     uiCard(g, x, top, w, 540)
-    uiLabel(g, x + 40, top + 44, "Family calendar")
-    asOfTag(g, x + w - 40, top + 44, asOfText(d, "calendar"))
+    cardLabel(g, x + 40, top + 40, w - 80, "Family calendar", "#A9B1C4", asOfText(d, "calendar"))
     rows = briefingRows(d)
     shownRefs = {}
-    yy = top + 98
+    yy = top + 92
     for i = 0 to rows.Count() - 1
         if i < 4
             r = rows[i]
             shownRefs[r.ref] = true
-            uiText(g, x + 40, yy, r.when, 22, 700, "Manrope", "#F4A259", w - 80)
+            uiText(g, x + 40, yy, r.when, 24, 700, "Manrope", "#F4A259", w - 80)
             uiText(g, x + 40, yy + 30, r.title, 28, 600, "Manrope", "#F4F1EA", w - 80)
             uiDot(g, x + 47, yy + 82, 6, r.color)
-            uiText(g, x + 62, yy + 69, r.sub, 21, 400, "Manrope", "#A9B1C4", w - 102)
-            yy = yy + 106
+            uiText(g, x + 64, yy + 67, r.sub, 24, 400, "Manrope", "#A9B1C4", w - 104)
+            yy = yy + 108
         end if
     end for
-    if rows.Count() = 0 then uiText(g, x + 40, yy, "Nothing on the calendar this week.", 26, 400, "Manrope", "#A9B1C4", w - 80)
-    ' game watch: next game per team
-    x = 1308
+    if rows.Count() = 0 then uiText(g, x + 40, yy, "Nothing on the calendar this week.", 26, 400, "Manrope", "#A9B1C4", w - 80, "left", 2)
+    ' game watch
+    x = gx(9)
     uiCard(g, x, top, w, 540)
-    uiLabel(g, x + 40, top + 44, "Game watch")
-    asOfTag(g, x + w - 40, top + 44, asOfText(d, "sports"))
-    seen = {}
-    yy = top + 98
-    shown = 0
-    for each gm in d.games
-        if not seen.DoesExist(gm.name) and shown < 6
-            seen[gm.name] = true
-            teamChip(g, x + 36, yy, 50, gm.short, gm.color, gm.accent)
-            uiText(g, x + 104, yy - 4, gm.name, 25, 600, "Manrope", "#F4F1EA", w - 140)
-            tail = ""
-            if gm.network <> "" then tail = " · " + gm.network
-            uiText(g, x + 104, yy + 28, gameWhen(gm, d.today) + " · " + gm.detail + tail, 20, 400, "Manrope", "#A9B1C4", w - 140)
-            yy = yy + 70
-            shown = shown + 1
-        end if
+    cardLabel(g, x + 40, top + 40, w - 80, "Game watch", "#A9B1C4", asOfText(d, "sports"))
+    yy = top + 94
+    games = briefingGames(d)
+    for each gm in games
+        teamChip(g, x + 36, yy, 64, gm.short, gm.color, gm.accent)
+        uiText(g, x + 120, yy - 2, gm.name, 26, 600, "Manrope", "#F4F1EA", w - 156)
+        tail = ""
+        if gm.network <> "" then tail = " · " + gm.network
+        uiText(g, x + 120, yy + 34, gameWhenShort(gm, d.today) + " · " + gm.detail + tail, 24, 400, "Manrope", "#A9B1C4", w - 156)
+        yy = yy + 86
     end for
+    if games.Count() = 0 then uiText(g, x + 40, yy, "No games in the next two weeks.", 26, 400, "Manrope", "#A9B1C4", w - 80, "left", 2)
     ' headlines + heads up
     fy = 818
-    uiCard(g, 112, fy, 1110, 200)
-    uiLabel(g, 152, fy + 28, "LaGrange today", 20)
-    for i = 0 to 2
+    uiCard(g, gx(1), fy, gw(8), 200)
+    cardLabel(g, gx(1) + 40, fy + 28, gw(8) - 80, "LaGrange today", "#A9B1C4", asOfText(d, "news"))
+    colW = (gw(8) - 80 - 48) / 2
+    for i = 0 to 1
         if i < d.news.Count()
-            nx = 152 + i * 350
-            uiText(g, nx, fy + 66, UCase(Left(d.news[i].source, 26)), 16, 700, "Manrope", "#F4A259", 320)
-            uiText(g, nx, fy + 92, d.news[i].headline, 23, 500, "Manrope", "#F4F1EA", 320, "left", 3)
+            nx = gx(1) + 40 + i * (colW + 48)
+            uiText(g, nx, fy + 68, UCase(Left(d.news[i].source, 30)), 24, 700, "Manrope", "#F4A259", Int(colW))
+            uiText(g, nx, fy + 102, d.news[i].headline, 26, 500, "Manrope", "#F4F1EA", Int(colW), "left", 2)
         end if
     end for
-    hx = 1254
-    uiCard(g, hx, fy, 554, 200, "#1A2440", "#2A3656")
-    uiLabel(g, hx + 36, fy + 28, "Heads up", 20, "#F4A259")
-    yy = fy + 66
+    if d.news.Count() = 0 then uiText(g, gx(1) + 40, fy + 80, "No local headlines right now.", 26, 400, "Manrope", "#A9B1C4", gw(8) - 80)
+    hx = gx(9)
+    uiCard(g, hx, fy, gw(4), 200)
+    uiRect(g, hx + 28, fy + 1, gw(4) - 56, 4, "#F4A259")
+    uiLabel(g, hx + 40, fy + 28, "Heads up", 24, "#F4A259")
+    yy = fy + 68
     for each t in tipTexts(d.tips, shownRefs, 2)
-        l = uiText(g, hx + 36, yy, t, 23, 500, "Manrope", "#F4F1EA", 482, "left", 2)
-        yy = yy + uiHeight(l, 23) + 10
+        if yy < fy + 150
+            l = uiText(g, hx + 40, yy, t, 24, 500, "Manrope", "#F4F1EA", gw(4) - 80, "left", 2)
+            yy = yy + uiHeight(l, 24) + 8
+        end if
     end for
+    if d.tips.Count() = 0 then uiText(g, hx + 40, yy, "All clear today.", 26, 500, "Manrope", "#A9B1C4", gw(4) - 80)
 end sub
 
 ' Briefing calendar rows in time order: curbside counts as 7 AM on pickup day,
@@ -356,6 +445,29 @@ function briefingRows(d as object) as object
     return sortStable(rows, "sort")
 end function
 
+' Game watch: the next game of each tracked team (up to 4) and at most one
+' small-college game, in time order.
+function briefingGames(d as object) as object
+    seen = {}
+    picks = []
+    college = 0
+    for each gm in d.games
+        if not seen.DoesExist(gm.name)
+            if gm.short = "LC"
+                if college < 1
+                    college = college + 1
+                    seen[gm.name] = true
+                    picks.Push(gm)
+                end if
+            else if picks.Count() - college < 4
+                seen[gm.name] = true
+                picks.Push(gm)
+            end if
+        end if
+    end for
+    return sortStable(picks, "start")
+end function
+
 ' Insertion sort that keeps equal items in their original order (SortBy
 ' doesn't promise that). Fine for the short lists screens use.
 function sortStable(items as object, key as string) as object
@@ -383,18 +495,18 @@ sub buildTonight(g as object, d as object)
         if hero = invalid and not gm.tbd and (gm.state = "in" or tDay(gm.start) = d.today) then hero = gm
     end for
     if hero <> invalid
-        uiCard(g, 112, top, 1000, 520, hero.color, "", 32)
-        uiDot(g, 176, top + 66, 8, "#F4A259")
+        uiCard(g, gx(1), top, gw(7), 520, hero.color, "", 32)
+        uiDot(g, gx(1) + 64, top + 66, 8, "#F4A259")
         lbl = "Starting soon"
         if hero.state = "in" then lbl = "On now"
-        uiLabel(g, 196, top + 54, lbl, 24, "#F4F1EA")
-        uiText(g, 168, top + 120, hero.name, 112, 600, "Outfit", "#F4F1EA", 900)
+        uiLabel(g, gx(1) + 84, top + 54, lbl, 24, "#F4F1EA")
+        uiText(g, gx(1) + 56, top + 120, hero.name, 112, 600, "Outfit", "#F4F1EA", gw(7) - 112)
         t = hero.detail + " · " + tClock(hero.start)
         if hero.network <> "" then t = t + " on " + hero.network
-        uiText(g, 168, top + 290, t, 34, 500, "Manrope", "#F4F1EA", 880)
+        uiText(g, gx(1) + 56, top + 290, t, 34, 500, "Manrope", "#F4F1EA", gw(7) - 112)
     else
-        uiCard(g, 112, top, 1000, 520, "#131729", "#222842", 32)
-        uiLabel(g, 168, top + 54, "Tonight", 24, "#B3A6F2")
+        uiCard(g, gx(1), top, gw(7), 520, "#131729", "#222842", 32)
+        uiLabel(g, gx(1) + 56, top + 54, "Tonight", 24, "#B3A6F2")
         title = "A quiet night in"
         sub2 = "Nothing else on the family calendar tonight."
         for each e in d.calendar
@@ -403,37 +515,37 @@ sub buildTonight(g as object, d as object)
                 sub2 = tClock(e.start)
             end if
         end for
-        uiText(g, 168, top + 120, title, 80, 500, "Outfit", "#F4F1EA", 888, "left", 2)
-        uiText(g, 168, top + 330, sub2, 30, 400, "Manrope", "#A9B1C4", 888)
+        uiText(g, gx(1) + 56, top + 120, title, 80, 500, "Outfit", "#F4F1EA", gw(7) - 112, "left", 2)
+        uiText(g, gx(1) + 56, top + 330, sub2, 30, 400, "Manrope", "#A9B1C4", gw(7) - 112)
     end if
-    rx = 1144
-    rw = 664
+    rx = gx(8)
+    rw = gw(5)
     lo = d.weather.temp
     for each hr in d.weather.hours
         if hr.t > d.now and hr.t <= d.now + 10 * 3600 and hr.temp < lo then lo = hr.temp
     end for
     uiCard(g, rx, top, rw, 220)
-    uiLabel(g, rx + 40, top + 38, "Tonight")
+    cardLabel(g, rx + 40, top + 38, rw - 80, "Tonight", "#A9B1C4", asOfText(d, "weather"))
     uiImage(g, "pkg:/images/wx_moon.png", rx + 36, top + 88, 100, 100, "#B3A6F2")
     uiText(g, rx + 160, top + 80, d.weather.temp.ToStr() + "°", 88, 300, "Outfit")
-    uiText(g, rx + 340, top + 100, wxLabel(d.weather.code), 30, 600, "Manrope", "#F4F1EA", 300)
-    uiText(g, rx + 340, top + 144, "Low " + lo.ToStr() + "° · tomorrow " + d.weather.days[1].hi.ToStr() + "°", 24, 400, "Manrope", "#A9B1C4", 300)
+    uiText(g, rx + 340, top + 96, wxLabel(d.weather.code), 30, 600, "Manrope", "#F4F1EA", rw - 380)
+    uiText(g, rx + 340, top + 140, "Low " + lo.ToStr() + "° · tomorrow " + d.weather.days[1].hi.ToStr() + "°", 24, 400, "Manrope", "#A9B1C4", rw - 380, "left", 2)
     cy0 = top + 252
     uiCard(g, rx, cy0, rw, 268)
     uiLabel(g, rx + 40, cy0 + 32, "Coming up")
     yy = cy0 + 78
     if (d.curb.pickup - d.today) \ 86400 <= 1
-        uiCard(g, rx + 30, yy - 10, rw - 60, 92, "#2A2418", "#F4A259", 18)
+        uiCard(g, rx + 30, yy - 10, rw - 60, 96, "#2A2418", "#F4A259", 18)
         uiText(g, rx + 54, yy, tDayWord(d.curb.pickup, d.today) + ": " + LCase(curbText(d.curb)), 26, 700, "Manrope", "#F4F1EA", rw - 108)
         s = "Curb by 7 AM"
         if d.curb.yard then s = s + " · no grass clippings"
         if curbCaveat(d.curb) <> "" then s = s + " · " + curbCaveat(d.curb)
-        uiText(g, rx + 54, yy + 40, s, 21, 400, "Manrope", "#E1E4EC", rw - 108)
-        yy = yy + 108
+        uiText(g, rx + 54, yy + 40, s, 24, 400, "Manrope", "#E1E4EC", rw - 108)
+        yy = yy + 112
     end if
     n = 0
     for each e in d.calendar
-        if e.start > d.now and n < 2
+        if e.start > d.now and n < 2 and yy < cy0 + 220
             uiText(g, rx + 40, yy, e.title, 26, 600, "Manrope", "#F4F1EA", rw - 280)
             uiText(g, rx + rw - 40, yy, tDayWord(e.start, d.today), 24, 400, "Manrope", "#A9B1C4", 220, "right")
             yy = yy + 46
@@ -441,17 +553,17 @@ sub buildTonight(g as object, d as object)
         end if
     end for
     ay = top + 564
-    uiLabel(g, 112, ay, "Your evening apps", 22)
+    uiLabel(g, 112, ay, "Your evening apps")
     apps = d.apps
     if apps = invalid or apps.Count() = 0 then apps = ["Netflix", "YouTube", "Prime Video", "Disney+", "Hulu", "Max"]
-    tw = (1696 - 5 * 24) / 6
+    tw = gw(2)
     for i = 0 to 5
         if i >= apps.Count() then exit for
-        ax = 112 + i * (tw + 24)
+        ax = gx(1 + i * 2)
         border = "#222842"
         if i = 0 then border = "#B3A6F2"
         uiCard(g, ax, ay + 44, tw, 110, "#1A1F36", border, 22)
-        uiText(g, ax + tw / 2, ay + 82, apps[i], 30, 700, "Manrope", "#F4F1EA", Int(tw), "center")
+        uiText(g, ax + tw / 2, ay + 82, apps[i], 30, 700, "Manrope", "#F4F1EA", tw - 24, "center")
     end for
 end sub
 
@@ -483,10 +595,10 @@ sub buildWeek(g as object, d as object)
         uiText(g, x + cw - 20, top + 10, tParts(day).d.ToStr(), 44, 400, "Outfit", "#F4F1EA", 100, "right")
         for each wd in d.weather.days
             if wd.day = day
-                uiText(g, x + 20, top + 76, wd.hi.ToStr() + "° / " + wd.lo.ToStr() + "°", 22, 400, "Manrope", "#A9B1C4", cw - 40)
+                uiText(g, x + 20, top + 74, wd.hi.ToStr() + "° / " + wd.lo.ToStr() + "°", 24, 400, "Manrope", "#C9CEDA", cw - 40)
                 s = LCase(wxLabel(wd.code))
                 if wd.rain >= 30 then s = s + " · " + wd.rain.ToStr() + "%"
-                uiText(g, x + 20, top + 104, s, 20, 400, "Manrope", "#A9B1C4", cw - 40)
+                uiText(g, x + 20, top + 104, s, 24, 400, "Manrope", "#A9B1C4", cw - 40)
             end if
         end for
         items = []
@@ -515,33 +627,33 @@ sub buildWeek(g as object, d as object)
         end for
         if tWeekday(day) = 5
             for each mem in d.members
-                if mem.band = true then items.Push({box: true, head: mem.name, body: "Marching band at the Friday game", color: mem.color, bg: "#2A2614", sort: 19 * 3600 + 1800})
+                if mem.band = true then items.Push({box: true, head: mem.name, body: "Marching band at the game", color: mem.color, bg: "#2A2614", sort: 19 * 3600 + 1800})
             end for
         end if
-        items.SortBy("sort")
+        items = sortStable(items, "sort")
         yy = top + 150
         shown = 0
         for each it in items
-            if yy < top + h - 110
+            if yy < top + h - 120
                 if it.box
-                    bh = 96
+                    bh = 104
                     uiCard(g, x + 12, yy - 8, cw - 24, bh, it.bg, "", 14)
-                    uiText(g, x + 24, yy, it.head, 20, 700, "Manrope", it.color, cw - 48)
-                    uiText(g, x + 24, yy + 28, it.body, 20, 500, "Manrope", "#F4F1EA", cw - 48, "left", 2)
+                    uiText(g, x + 24, yy, it.head, 24, 700, "Manrope", it.color, cw - 48)
+                    uiText(g, x + 24, yy + 30, it.body, 24, 500, "Manrope", "#F4F1EA", cw - 48, "left", 2)
                     yy = yy + bh + 10
                 else
-                    uiText(g, x + 20, yy, it.head, 20, 400, "Manrope", "#A9B1C4", cw - 40)
-                    l = uiText(g, x + 20, yy + 28, it.body, 20, 600, "Manrope", "#F4F1EA", cw - 40, "left", 2)
-                    yy = yy + 40 + uiHeight(l, 20)
+                    uiText(g, x + 20, yy, it.head, 24, 400, "Manrope", "#A9B1C4", cw - 40)
+                    l = uiText(g, x + 20, yy + 30, it.body, 24, 600, "Manrope", "#F4F1EA", cw - 40, "left", 2)
+                    yy = yy + 42 + uiHeight(l, 24)
                 end if
                 shown = shown + 1
             end if
         end for
-        if shown < items.Count() then uiText(g, x + 20, top + h - 48, "+" + (items.Count() - shown).ToStr() + " more", 20, 600, "Manrope", "#A9B1C4")
+        if shown < items.Count() then uiText(g, x + 20, top + h - 52, "+" + (items.Count() - shown).ToStr() + " more", 24, 600, "Manrope", "#A9B1C4")
     end for
     fy = 830
     uiCard(g, 112, fy, 1696, 190)
-    uiLabel(g, 152, fy + 28, "Heads up", 20, "#F4A259")
+    uiLabel(g, 152, fy + 28, "Heads up", 24, "#F4A259")
     tw = (1696 - 80 - 72) / 3
     for i = 0 to 2
         if i < d.headsUp.Count() then uiText(g, 152 + i * (tw + 36), fy + 70, d.headsUp[i], 24, 500, "Manrope", "#F4F1EA", Int(tw), "left", 3)
@@ -554,28 +666,28 @@ sub buildLake(g as object, d as object)
     header(g, "OUTDOORS · WEST POINT LAKE", "Lake conditions", "#7FB7E8", false)
     uiText(g, 1808, 140, "USGS gauge 02339400 · " + tClock(lk.time), 24, 400, "Manrope", "#9FB3C8", 600, "right")
     top = 246
-    uiCard(g, 112, top, 560, 770, "#0E2033", "#1B3550", 32)
-    gx = 172
+    uiCard(g, gx(1), top, gw(4), 770, "#0E2033", "#1B3550", 32)
+    gx0 = gx(1) + 60
     gy0 = top + 60
     gh = 640
-    uiCard(g, gx, gy0, 64, gh, "#132A42", "", 32)
+    uiCard(g, gx0, gy0, 64, gh, "#132A42", "", 32)
     lvl = lk.level
     ly = gy0 + (640 - lvl) / 20 * gh
-    uiCard(g, gx, ly, 64, gy0 + gh - ly, "#7FB7E8", "", 32)
+    uiCard(g, gx0, ly, 64, gy0 + gh - ly, "#7FB7E8", "", 32)
     for each pool in [[635, "Summer full pool"], [628, "Winter pool"]]
         py = gy0 + (640 - pool[0]) / 20 * gh
-        uiRect(g, gx - 16, py - 1, 96, 3, "#F4F1EA")
-        uiText(g, gx + 120, py - 36, pool[0].ToStr() + " ft", 26, 700)
-        uiText(g, gx + 120, py - 4, pool[1], 21, 400, "Manrope", "#9FB3C8")
+        uiRect(g, gx0 - 16, py - 1, 96, 3, "#F4F1EA")
+        uiText(g, gx0 + 120, py - 38, pool[0].ToStr() + " ft", 26, 700)
+        uiText(g, gx0 + 120, py - 6, pool[1], 24, 400, "Manrope", "#9FB3C8")
     end for
-    uiText(g, gx + 120, ly - 24, fmt1(lvl), 84, 400, "Outfit")
-    uiText(g, gx + 120, ly + 76, "feet now", 24, 600, "Manrope", "#7FB7E8")
-    rx = 704
-    rw = 1104
+    uiText(g, gx0 + 120, ly - 24, fmt1(lvl), 84, 400, "Outfit")
+    uiText(g, gx0 + 120, ly + 76, "feet now", 24, 600, "Manrope", "#7FB7E8")
+    rx = gx(5)
+    rw = gw(8)
     if lvl < 628
         uiCard(g, rx, top, rw, 170, "#2A2418", "#5A4520")
         uiText(g, rx + 44, top + 30, fmt1(635 - lvl) + " ft below summer pool, " + fmt1(628 - lvl) + " ft below winter pool", 38, 500, "Outfit", "#F4F1EA", rw - 88)
-        uiText(g, rx + 44, top + 98, "Low water. Check Corps ramp and beach status before you launch.", 24, 400, "Manrope", "#E1D3BE", rw - 88)
+        uiText(g, rx + 44, top + 98, "Low water. Check Corps ramp and beach status before you launch.", 26, 400, "Manrope", "#E1D3BE", rw - 88)
     else
         uiCard(g, rx, top, rw, 170, "#0E2033", "#1B3550")
         uiText(g, rx + 44, top + 54, "Lake is at normal levels", 40, 500, "Outfit")
@@ -583,28 +695,30 @@ sub buildLake(g as object, d as object)
     best = d.weather.days[0]
     bestScore = -1
     for i = 0 to 5
-        dd = d.weather.days[i]
-        sc = 0
-        if dd.rain < 30 then sc = sc + 3
-        if dd.hi >= 65 and dd.hi <= 88 then sc = sc + 2
-        if dd.wind <= 10 then sc = sc + 2
-        if tWeekday(dd.day) = 0 or tWeekday(dd.day) = 6 then sc = sc + 1
-        if sc > bestScore
-            bestScore = sc
-            best = dd
+        if i < d.weather.days.Count()
+            dd = d.weather.days[i]
+            sc = 0
+            if dd.rain < 30 then sc = sc + 3
+            if dd.hi >= 65 and dd.hi <= 88 then sc = sc + 2
+            if dd.wind <= 10 then sc = sc + 2
+            if tWeekday(dd.day) = 0 or tWeekday(dd.day) = 6 then sc = sc + 1
+            if sc > bestScore
+                bestScore = sc
+                best = dd
+            end if
         end if
     end for
     sunset = d.weather.days[0].sunset
     cards = [["Best lake day", tDayWord(best.day, d.today), "High " + best.hi.ToStr() + "°, " + LCase(wxLabel(best.code)) + ", wind up to " + best.wind.ToStr() + " mph"],
              ["Sunset on the water", tClock(sunset), "Golden hour starts " + tClock(sunset - 2400)],
              ["Fishing moon", Int(d.moon.illum * 100 + 0.5).ToStr() + "% lit", d.moon.name + " · full " + tShortDate(tUtcToWallApprox(d.moon.nextFull))]]
-    cw = (rw - 56) / 3
+    cw = (rw - 64) / 3
     for i = 0 to 2
-        cx = rx + i * (cw + 28)
+        cx = rx + i * (cw + 32)
         uiCard(g, cx, top + 202, cw, 568, "#0E2033", "#1B3550")
-        uiLabel(g, cx + 36, top + 238, cards[i][0], 21, "#9FB3C8")
+        uiLabel(g, cx + 36, top + 238, cards[i][0], 24, "#9FB3C8")
         uiText(g, cx + 36, top + 290, cards[i][1], 60, 500, "Outfit", "#F4F1EA", Int(cw) - 72)
-        uiText(g, cx + 36, top + 400, cards[i][2], 26, 400, "Manrope", "#C9D6E3", Int(cw) - 72, "left", 3)
+        uiText(g, cx + 36, top + 400, cards[i][2], 26, 400, "Manrope", "#C9D6E3", Int(cw) - 72, "left", 4)
     end for
 end sub
 
@@ -632,19 +746,21 @@ sub buildSky(g as object, d as object)
     if idx > 29 then idx = 29
     uiImage(g, "pkg:/images/moon_" + tPad(idx, 2) + ".png", 112, 330, 300, 300)
     uiText(g, 452, 370, Int(mp.illum * 100 + 0.5).ToStr() + "%", 72, 300, "Outfit")
-    uiText(g, 452, 462, mp.name, 28, 600, "Manrope", "#F4F1EA", 240)
-    uiText(g, 452, 504, "Full moon " + tShortDate(tUtcToWallApprox(mp.nextFull)), 23, 400, "Manrope", "#B8BED0", 240)
-    uiCard(g, 700, 300, 1108, 380, "#131729", "#2A3050", 32)
+    uiText(g, 452, 462, mp.name, 28, 600, "Manrope", "#F4F1EA", 240, "left", 2)
+    uiText(g, 452, 540, "Full moon " + tShortDate(tUtcToWallApprox(mp.nextFull)), 24, 400, "Manrope", "#B8BED0", 240)
+    uiCard(g, gx(5) + 16, 300, 1808 - gx(5) - 16, 380, "#131729", "#2A3050", 32)
     s = d.shower
+    tx = gx(5) + 64
+    tw = 1808 - tx - 48
     if s <> invalid
         lbl = "Coming up"
         if (s.peak - d.today) \ 86400 <= 7 then lbl = "This week's show"
-        uiLabel(g, 748, 340, lbl, 22, "#B3A6F2")
-        uiText(g, 748, 384, s.name + " meteor shower peaks " + tDayWord(s.peak, d.today) + " night", 54, 500, "Outfit", "#F4F1EA", 1012, "left", 2)
-        uiText(g, 748, 540, "Best in the dark hours before dawn. Face away from town lights; the West Point Lake shoreline is darker than downtown.", 25, 400, "Manrope", "#C9CEDA", 1012, "left", 3)
+        uiLabel(g, tx, 340, lbl, 24, "#B3A6F2")
+        uiText(g, tx, 384, s.name + " meteor shower peaks " + tDayWord(s.peak, d.today) + " night", 54, 500, "Outfit", "#F4F1EA", tw, "left", 2)
+        uiText(g, tx, 540, "Best in the dark hours before dawn. Face away from town lights; the West Point Lake shoreline is darker than downtown.", 26, 400, "Manrope", "#C9CEDA", tw, "left", 3)
     else
-        uiLabel(g, 748, 340, "Tonight", 22, "#B3A6F2")
-        uiText(g, 748, 384, "The moon is " + LCase(mp.name), 54, 500, "Outfit", "#F4F1EA", 1012, "left", 2)
+        uiLabel(g, tx, 340, "Tonight", 24, "#B3A6F2")
+        uiText(g, tx, 384, "The moon is " + LCase(mp.name), 54, 500, "Outfit", "#F4F1EA", tw, "left", 2)
     end if
     lo = 99
     for each hr in d.weather.hours
@@ -659,13 +775,13 @@ sub buildSky(g as object, d as object)
     cards = [["Viewing tonight", viewing, Int(cloud).ToStr() + "% cloud cover · low " + lo.ToStr() + "°"],
              ["Moonset and dark sky", dark, "Darkest skies come after the moon sets"],
              ["Sunrise tomorrow", tClock(d.weather.days[1].sunrise), "Meteor watching ends at first light"]]
-    w3 = (1696 - 56) / 3
     for i = 0 to 2
-        x = 112 + i * (w3 + 28)
-        uiCard(g, x, 760, w3, 240, "#131729", "#2A3050")
-        uiLabel(g, x + 36, 794, cards[i][0], 20, "#A3A9C2")
-        uiText(g, x + 36, 834, cards[i][1], 40, 500, "Outfit", "#F4F1EA", Int(w3) - 72)
-        uiText(g, x + 36, 906, cards[i][2], 22, 400, "Manrope", "#C9CEDA", Int(w3) - 72, "left", 2)
+        x = gx(1 + i * 4)
+        w3 = gw(4)
+        uiCard(g, x, 760, w3, 256, "#131729", "#2A3050")
+        uiLabel(g, x + 36, 794, cards[i][0], 24, "#A3A9C2")
+        uiText(g, x + 36, 836, cards[i][1], 40, 500, "Outfit", "#F4F1EA", w3 - 72)
+        uiText(g, x + 36, 910, cards[i][2], 24, 400, "Manrope", "#C9CEDA", w3 - 72, "left", 2)
     end for
 end sub
 
@@ -690,29 +806,29 @@ sub buildRecap(g as object, d as object)
             color = "#0C2340"
             accent = "#E87722"
         end if
-        uiCard(g, 112, top, 900, 770, color, "", 32)
-        uiLabel(g, 168, top + 54, "House divided · final", 24, accent)
-        uiText(g, 168, top + 120, r.winner + " " + r.hi.ToStr(), 120, 600, "Outfit")
-        uiText(g, 168, top + 280, r.loser + " " + r.lo.ToStr(), 80, 400, "Outfit", "#C9CEDA")
-        uiText(g, 168, top + 460, fans[r.winner] + " have bragging rights. " + fans[r.loser] + ", there's always next year.", 34, 500, "Manrope", "#F4F1EA", 788, "left", 3)
-        uiText(g, 168, top + 690, r.host + " hosted · " + r.network, 26, 400, "Manrope", "#C9CEDA", 788)
+        uiCard(g, gx(1), top, gw(6) + 40, 770, color, "", 32)
+        uiLabel(g, gx(1) + 56, top + 54, "House divided · final", 24, accent)
+        uiText(g, gx(1) + 56, top + 120, r.winner + " " + r.hi.ToStr(), 120, 600, "Outfit")
+        uiText(g, gx(1) + 56, top + 280, r.loser + " " + r.lo.ToStr(), 80, 400, "Outfit", "#C9CEDA")
+        uiText(g, gx(1) + 56, top + 460, fans[r.winner] + " have bragging rights. " + fans[r.loser] + ", there's always next year.", 34, 500, "Manrope", "#F4F1EA", gw(6) - 72, "left", 3)
+        uiText(g, gx(1) + 56, top + 690, r.host + " hosted · " + r.network, 26, 400, "Manrope", "#C9CEDA", gw(6) - 72)
     else if hero <> invalid
-        uiCard(g, 112, top, 900, 770, hero.color, "", 32)
+        uiCard(g, gx(1), top, gw(6) + 40, 770, hero.color, "", 32)
         res = "Loss · "
         if hero.won then res = "Win · "
-        uiLabel(g, 168, top + 54, res + hero.team, 24, "#F4F1EA")
-        uiText(g, 168, top + 140, hero.score, 190, 600, "Outfit")
-        uiText(g, 168, top + 400, hero.detail, 36, 600, "Manrope", "#F4F1EA", 788)
+        uiLabel(g, gx(1) + 56, top + 54, res + hero.team, 24, "#F4F1EA")
+        uiText(g, gx(1) + 56, top + 140, hero.score, 190, 600, "Outfit")
+        uiText(g, gx(1) + 56, top + 400, hero.detail, 36, 600, "Manrope", "#F4F1EA", gw(6) - 72)
     end if
-    rx = 1044
-    rw = 764
+    rx = gx(7) + 40
+    rw = 1808 - rx
     uiCard(g, rx, top, rw, 520)
-    uiLabel(g, rx + 40, top + 38, "More results", 21)
+    uiLabel(g, rx + 40, top + 38, "More results")
     yy = top + 90
     n = 0
     for each f in d.finals
         skip = (f.rivalry and r <> invalid) or (hero <> invalid and f.start = hero.start and f.team = hero.team)
-        if not skip and n < 7
+        if not skip and n < 6
             bg = "#3A2024"
             fg = "#F2A7B0"
             wl = "L"
@@ -721,21 +837,22 @@ sub buildRecap(g as object, d as object)
                 fg = "#9EC79B"
                 wl = "W"
             end if
-            uiCard(g, rx + 40, yy, 56, 38, bg, "", 10)
-            uiText(g, rx + 68, yy + 4, wl, 22, 800, "Manrope", fg, 56, "center")
+            uiCard(g, rx + 40, yy, 60, 42, bg, "", 10)
+            uiText(g, rx + 70, yy + 5, wl, 24, 800, "Manrope", fg, 60, "center")
             label = f.team + " " + f.detail
             if not f.pro then label = "Panthers " + sportCase(f.detail)
-            uiText(g, rx + 116, yy + 2, label, 24, 600, "Manrope", "#F4F1EA", rw - 280)
-            uiText(g, rx + rw - 40, yy, f.score, 30, 400, "Outfit", "#F4F1EA", 140, "right")
-            yy = yy + 58
+            uiText(g, rx + 124, yy + 4, label, 26, 600, "Manrope", "#F4F1EA", rw - 300)
+            uiText(g, rx + rw - 40, yy, f.score, 32, 400, "Outfit", "#F4F1EA", 150, "right")
+            yy = yy + 64
             n = n + 1
         end if
     end for
+    if n = 0 then uiText(g, rx + 40, yy, "No other finals in the last day and a half.", 26, 400, "Manrope", "#A9B1C4", rw - 80)
     uiCard(g, rx, top + 552, rw, 218)
-    uiLabel(g, rx + 40, top + 588, "Season records", 21)
+    uiLabel(g, rx + 40, top + 588, "Season records")
     i = 0
     for each t in [["georgia", "Georgia"], ["auburn", "Auburn"]]
-        uiText(g, rx + 40, top + 636 + i * 56, t[1] + " (" + fansOf(d, t[1]) + ")", 26, 600)
+        uiText(g, rx + 40, top + 636 + i * 56, t[1] + " (" + fansOf(d, t[1]) + ")", 26, 600, "Manrope", "#F4F1EA", rw - 280)
         rec = d.records[t[0]]
         if rec = invalid then rec = "—"
         uiText(g, rx + rw - 40, top + 636 + i * 56, rec, 30, 400, "Outfit", "#F4F1EA", 200, "right")
@@ -802,15 +919,15 @@ sub buildGameday(g as object, d as object)
         end for
         if not isPanel and others.Count() < 4 then others.Push(gm)
     end for
-    cw = (1696 - 96) / 4
     for i = 0 to others.Count() - 1
         gm = others[i]
-        x = 112 + i * (cw + 32)
+        x = gx(1 + i * 3)
+        cw = gw(3)
         uiCard(g, x, 830, cw, 190)
-        uiCard(g, x + 36, 864, 18, 18, gm.color, "", 10)
-        uiText(g, x + 66, 856, gm.name, 24, 700, "Manrope", "#F4F1EA", Int(cw) - 100)
-        uiText(g, x + 36, 900, gameWhen(gm, d.today), 34, 400, "Outfit", "#F4F1EA", Int(cw) - 72)
-        uiText(g, x + 36, 960, gm.detail, 22, 400, "Manrope", "#A9B1C4", Int(cw) - 72)
+        uiCard(g, x + 36, 866, 18, 18, gm.color, "", 10)
+        uiText(g, x + 66, 856, gm.name, 26, 700, "Manrope", "#F4F1EA", cw - 100)
+        uiText(g, x + 36, 900, gameWhenShort(gm, d.today), 34, 400, "Outfit", "#F4F1EA", cw - 72)
+        uiText(g, x + 36, 958, gm.detail, 24, 400, "Manrope", "#A9B1C4", cw - 72)
     end for
 end sub
 
@@ -828,31 +945,31 @@ sub buildSchool(g as object, d as object)
     for each e in d.calendar
         if e.school and e.start >= d.today and items.Count() < 5 then items.Push(e)
     end for
-    uiCard(g, 112, top, 900, 770, "#132235", "", 32)
-    uiLabel(g, 164, top + 48, "Coming up · from the family calendar", 22, "#7FB7E8")
+    uiCard(g, gx(1), top, gw(6) + 40, 770, "#132235", "", 32)
+    uiLabel(g, gx(1) + 52, top + 48, "Coming up · from the family calendar", 24, "#7FB7E8")
     yy = top + 116
     for each e in items
-        uiText(g, 164, yy, tShortDate(e.start), 28, 700, "Manrope", "#7FB7E8")
+        uiText(g, gx(1) + 52, yy, tShortDate(e.start), 28, 700, "Manrope", "#7FB7E8")
         t = e.title
         if e.subtitle <> "" then t = t + " · " + e.subtitle
-        uiText(g, 164, yy + 38, t, 32, 600, "Manrope", "#F4F1EA", 796)
-        uiText(g, 164, yy + 82, tDayWord(e.start, d.today) + " · " + e.whoText, 22, 400, "Manrope", "#A9B1C4", 796)
+        uiText(g, gx(1) + 52, yy + 38, t, 32, 600, "Manrope", "#F4F1EA", gw(6) - 64)
+        uiText(g, gx(1) + 52, yy + 82, tDayWord(e.start, d.today) + " · " + e.whoText, 24, 400, "Manrope", "#A9B1C4", gw(6) - 64)
         yy = yy + 128
     end for
-    if items.Count() = 0 then uiText(g, 164, yy, "No school dates on the calendar this month.", 30, 400, "Manrope", "#A9B1C4", 796)
+    if items.Count() = 0 then uiText(g, gx(1) + 52, yy, "No school dates on the calendar this month.", 30, 400, "Manrope", "#A9B1C4", gw(6) - 64)
     kids = []
     for each mem in d.members
         if mem.school <> invalid then kids.Push(mem)
     end for
     if kids.Count() = 0 then return
-    rx = 1044
-    rw = 764
+    rx = gx(7) + 40
+    rw = 1808 - rx
     kh = (770 - 28 * (kids.Count() - 1)) / kids.Count()
     for i = 0 to kids.Count() - 1
         k = kids[i]
         ky = top + i * (kh + 28)
         uiCard(g, rx, ky, rw, kh)
-        uiCard(g, rx + 28, ky, rw - 56, 8, k.color, "", 10)
+        uiRect(g, rx + 28, ky + 1, rw - 56, 6, k.color)
         uiText(g, rx + 40, ky + 36, k.name, 48, 600, "Outfit")
         info = k.school + " · " + k.grade.ToStr() + "th grade"
         if k.band = true then info = info + " · marching band"
@@ -875,31 +992,31 @@ sub buildBoard(g as object, d as object)
     header(g, "FAMILY BOARD", "Notes for the " + d.household, "#F4A259", false)
     uiText(g, 1808, 140, "Add an event called ""TV: your note"" to the family calendar", 24, 400, "Manrope", "#A9B1C4", 900, "right")
     top = 246
-    cw = (1060 - 28) / 2
+    cw = gw(4)
     for i = 0 to d.notes.Count() - 1
         if i < 4
             n = d.notes[i]
-            x = 112 + (i mod 2) * (cw + 28)
+            x = gx(1 + (i mod 2) * 4)
             y = top + (i \ 2) * 397
             uiCard(g, x, y, cw, 373, "#1B2433", "")
-            uiCard(g, x + 28, y, cw - 56, 8, n.color, "", 10)
-            uiText(g, x + 40, y + 46, n.text, 44, 500, "Outfit", "#F4F1EA", Int(cw) - 80, "left", 4)
-            uiText(g, x + 40, y + 316, n.from, 22, 400, "Manrope", "#A9B1C4", Int(cw) - 80)
+            uiRect(g, x + 28, y + 1, cw - 56, 6, n.color)
+            uiText(g, x + 40, y + 46, n.text, 44, 500, "Outfit", "#F4F1EA", cw - 80, "left", 4)
+            uiText(g, x + 40, y + 316, n.from, 24, 400, "Manrope", "#A9B1C4", cw - 80)
         end if
     end for
-    gx = 1204
-    gw = 604
-    uiCard(g, gx, top, gw, 770)
-    uiLabel(g, gx + 40, top + 38, "Grocery list", 22)
+    gx0 = gx(9)
+    gw0 = gw(4)
+    uiCard(g, gx0, top, gw0, 770)
+    uiLabel(g, gx0 + 40, top + 38, "Grocery list")
     yy = top + 98
     for i = 0 to d.groceries.Count() - 1
         if i < 11
-            uiCard(g, gx + 40, yy + 4, 26, 26, "#131B2E", "#A9B1C4", 10)
-            uiText(g, gx + 86, yy, d.groceries[i], 28, 400, "Manrope", "#F4F1EA", gw - 126)
+            uiCard(g, gx0 + 40, yy + 4, 28, 28, "#131B2E", "#A9B1C4", 10)
+            uiText(g, gx0 + 88, yy, d.groceries[i], 28, 400, "Manrope", "#F4F1EA", gw0 - 128)
             yy = yy + 56
         end if
     end for
-    if d.groceries.Count() = 0 then uiText(g, gx + 40, yy, "Add ""Buy: milk, eggs"" to the family calendar", 24, 400, "Manrope", "#A9B1C4", gw - 80, "left", 3)
+    if d.groceries.Count() = 0 then uiText(g, gx0 + 40, yy, "Add ""Buy: milk, eggs"" to the family calendar", 24, 400, "Manrope", "#A9B1C4", gw0 - 80, "left", 3)
 end sub
 
 function seasonItems(month as integer) as dynamic
@@ -916,20 +1033,22 @@ sub buildSeason(g as object, d as object)
     cards.Append(seasonItems(tParts(d.now).m))
     frost = invalid
     for i = 1 to 3
-        if frost = invalid and d.weather.days[i].lo <= 34 then frost = d.weather.days[i]
+        if frost = invalid and i < d.weather.days.Count()
+            if d.weather.days[i].lo <= 34 then frost = d.weather.days[i]
+        end if
     end for
     if frost <> invalid
         cards.Push(["Frost watch", "Frost " + tDayWord(frost.day, d.today), "Low of " + frost.lo.ToStr() + "° forecast. Cover tender plants."])
     else
         cards.Push(["Frost watch", "None this week", "No frost in the 3-day forecast. Daybreak warns two days ahead."])
     end if
-    cw = (1696 - 84) / 4
     for i = 0 to 3
-        x = 112 + i * (cw + 28)
-        uiCard(g, x, 560, cw, 440, "#0B1120", "#2A3656", 28, 0.9)
-        uiLabel(g, x + 36, 596, cards[i][0], 21, "#F4A259")
-        uiText(g, x + 36, 640, cards[i][1], 40, 500, "Outfit", "#F4F1EA", Int(cw) - 72, "left", 2)
-        uiText(g, x + 36, 760, cards[i][2], 24, 400, "Manrope", "#E1E4EC", Int(cw) - 72, "left", 6)
+        x = gx(1 + i * 3)
+        cw = gw(3)
+        uiCard(g, x, 540, cw, 476, "#0B1120", "#2A3656", 28, 0.9)
+        uiLabel(g, x + 36, 576, cards[i][0], 24, "#F4A259")
+        uiText(g, x + 36, 620, cards[i][1], 40, 500, "Outfit", "#F4F1EA", cw - 72, "left", 2)
+        uiText(g, x + 36, 740, cards[i][2], 26, 400, "Manrope", "#E1E4EC", cw - 72, "left", 7)
     end for
 end sub
 
@@ -950,69 +1069,71 @@ sub buildRadar(g as object, d as object)
     uiDot(g, 960, 540, 40, "#F4A259", 0.18)
     uiDot(g, 960, 540, 13, "#0B1120")
     uiDot(g, 960, 540, 9, "#F4A259")
-    places = [["West Point", 869, 655], ["Hogansville", 1029, 445], ["Pine Mountain", 1066, 664], ["Newnan", 1098, 296], ["Carrollton", 933, 154], ["Columbus", 986, 951], ["Auburn", 692, 845]]
+    places = [["West Point", 869, 655], ["Hogansville", 1029, 445], ["Pine Mountain", 1066, 664], ["Newnan", 1098, 296], ["Carrollton", 933, 154], ["Auburn", 692, 845]]
     for each p in places
-        uiDot(g, p[1], p[2], 5, "#C9CEDA")
-        uiText(g, p[1] + 14, p[2] - 14, p[0], 22, 400, "Manrope", "#C9CEDA")
+        uiDot(g, p[1], p[2], 5, "#E1E4EC")
+        uiText(g, p[1] + 14, p[2] - 15, p[0], 24, 600, "Manrope", "#E1E4EC")
     end for
-    uiDot(g, 1344, 32, 6, "#C9CEDA")
-    uiText(g, 1328, 18, "Atlanta", 24, 600, "Manrope", "#C9CEDA", 160, "right")
+    uiDot(g, 1344, 32, 6, "#E1E4EC")
+    uiText(g, 1328, 17, "Atlanta", 24, 600, "Manrope", "#E1E4EC", 160, "right")
     uiText(g, 984, 516, "LaGrange", 34, 600, "Outfit")
-    uiText(g, 840, 532, "West Point Lake", 22, 400, "Manrope", "#7FA7D6", 240, "right")
-    uiText(g, 960, 248, "25 mi", 18, 600, "Manrope", "#A9B1C4", 120, "center")
+    uiText(g, 840, 532, "West Point Lake", 24, 600, "Manrope", "#A9C8EE", 260, "right")
+    uiText(g, 960, 244, "25 mi", 24, 600, "Manrope", "#C9CEDA", 120, "center")
     status = "No rain nearby"
     sub2 = "Forecast for LaGrange shows no rain in the next 2 hours"
     if d.rainSoon
         status = "Rain likely soon"
         sub2 = "Forecast shows rain near LaGrange within 2 hours"
     end if
-    uiCard(g, 112, 64, 520, 250, "#0B1120", "#1F2A44", 28, 0.92)
+    uiCard(g, gx(1), 64, gw(4), 250, "#0B1120", "#1F2A44", 28, 0.92)
     dotColor = "#9EC79B"
     if d.rainSoon then dotColor = "#F4A259"
-    uiDot(g, 150, 108, 7, dotColor)
-    uiLabel(g, 170, 96, "Live radar · West Georgia", 21)
-    uiText(g, 152, 134, status, 46, 500, "Outfit", "#F4F1EA", 440)
-    uiText(g, 152, 206, sub2, 24, 400, "Manrope", "#C9CEDA", 440, "left", 2)
+    uiDot(g, gx(1) + 38, 108, 7, dotColor)
+    uiLabel(g, gx(1) + 58, 96, "Live radar · West Georgia")
+    uiText(g, gx(1) + 40, 134, status, 46, 500, "Outfit", "#F4F1EA", gw(4) - 80)
+    uiText(g, gx(1) + 40, 206, sub2, 24, 400, "Manrope", "#C9CEDA", gw(4) - 80, "left", 2)
     warn = d.alerts.Count() > 0
     fill = "#0B1120"
     if warn then fill = "#5C0A18"
-    uiCard(g, 1348, 64, 460, 250, fill, "#1F2A44", 28, 0.92)
-    uiLabel(g, 1388, 96, "Alerts · Troup County", 21)
+    ax = gx(9)
+    uiCard(g, ax, 64, gw(4), 250, fill, "#1F2A44", 28, 0.92)
+    uiLabel(g, ax + 40, 96, "Alerts · Troup County")
     if warn
         yy = 136
         for each a in d.alerts
             if yy < 280
-                l = uiText(g, 1388, yy, a.event, 32, 600, "Manrope", "#F4F1EA", 380, "left", 2)
+                l = uiText(g, ax + 40, yy, a.event, 32, 600, "Manrope", "#F4F1EA", gw(4) - 80, "left", 2)
                 yy = yy + uiHeight(l, 32) + 8
             end if
         end for
     else if d.alertsKnown = false
-        uiText(g, 1388, 140, "Unavailable", 40, 500, "Outfit")
-        uiText(g, 1388, 214, "Couldn't reach the National Weather Service. Check local news in severe weather.", 21, 400, "Manrope", "#F4A259", 400, "left", 2)
+        uiText(g, ax + 40, 136, "Unavailable", 40, 500, "Outfit")
+        uiText(g, ax + 40, 200, "Couldn't reach the National Weather Service. Check local news in severe weather.", 24, 400, "Manrope", "#F4A259", gw(4) - 80, "left", 3)
     else
-        uiText(g, 1388, 140, "None in effect", 40, 500, "Outfit")
-        uiText(g, 1388, 214, "National Weather Service, Peachtree City", 21, 400, "Manrope", "#A9B1C4", 400)
+        uiText(g, ax + 40, 136, "None in effect", 40, 500, "Outfit")
+        uiText(g, ax + 40, 206, "National Weather Service, Peachtree City", 24, 400, "Manrope", "#A9B1C4", gw(4) - 80, "left", 2)
     end if
-    uiCard(g, 112, 876, 760, 140, "#0B1120", "#1F2A44", 28, 0.92)
-    uiText(g, 152, 900, "Past 2 hours", 24, 600)
-    m.radarTimeLabel = uiText(g, 832, 900, "", 24, 700, "Manrope", "#F4A259", 300, "right")
+    uiCard(g, gx(1), 876, gw(6), 140, "#0B1120", "#1F2A44", 28, 0.92)
+    uiText(g, gx(1) + 40, 898, "Past 2 hours", 24, 600)
+    m.radarTimeLabel = uiText(g, gx(1) + gw(6) - 40, 898, "", 24, 700, "Manrope", "#F4A259", 300, "right")
     m.radarSegs = []
     n = frames.Count()
     if n > 0
-        segw = (680 - (n - 1) * 6) / n
+        segw = (gw(6) - 80 - (n - 1) * 6) / n
         for j = 0 to n - 1
-            m.radarSegs.Push(uiCard(g, 152 + j * (segw + 6), 960, segw, 10, "#2A3656", "", 10))
+            m.radarSegs.Push(uiCard(g, gx(1) + 40 + j * (segw + 6), 960, segw, 12, "#2A3656", "", 10))
         end for
     end if
-    uiCard(g, 1248, 876, 560, 140, "#0B1120", "#1F2A44", 28, 0.92)
-    uiLabel(g, 1284, 898, "Precipitation", 19)
+    lx0 = gx(7)
+    uiCard(g, lx0, 876, gw(6), 140, "#0B1120", "#1F2A44", 28, 0.92)
+    uiLabel(g, lx0 + 40, 898, "Precipitation")
     legend = [["Light", "#02FD02", "#01C501"], ["Moderate", "#FDF802", "#FD9500"], ["Heavy", "#FD0000", "#BC0000"], ["Severe, hail", "#F800FD", "#9854C6"]]
-    lw = (488 - 30) / 4
+    lw = (gw(6) - 80 - 3 * 16) / 4
     for j = 0 to 3
-        lx = 1284 + j * (lw + 10)
+        lx = lx0 + 40 + j * (lw + 16)
         uiRect(g, lx, 944, lw / 2, 14, legend[j][1])
         uiRect(g, lx + lw / 2, 944, lw / 2, 14, legend[j][2])
-        uiText(g, lx, 968, legend[j][0], 19, 400, "Manrope", "#C9CEDA")
+        uiText(g, lx, 966, legend[j][0], 24, 400, "Manrope", "#C9CEDA", Int(lw))
     end for
     showRadarFrame(m.radarFrame)
 end sub

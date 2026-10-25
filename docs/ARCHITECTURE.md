@@ -40,6 +40,11 @@ Daybreak is one sideloaded Roku package with two entry points: `Main` (the app) 
 - **Crossfade:** the new screen fades in over the old one, then everything but the current screen is removed.
 - **Radar:** `radarLayer()` builds one group of frame posters per set of frame times and moves it into each new radar screen, so nothing is downloaded or decoded twice. Frames load at 960×540 and are scaled to fill the screen.
 
+## Startup and offline
+- **Before data:** the scene shows `buildLoading()`, with the real date and clock and placeholder cards. With no saved data and no connection, it says "Waiting for the internet connection...".
+- **Offline:** when every source has failed twice in a row, the scene's status line says "Offline · showing saved data from 9:40 AM". It clears on the first success.
+- **Night:** from 11 PM to 5 AM the screensaver plays only `buildNight()`, a dim clock that moves every 5 minutes. Radar is added in a warning.
+
 ## Memory budget
 | Item | Before 1.2 | 1.2 |
 |---|---|---|

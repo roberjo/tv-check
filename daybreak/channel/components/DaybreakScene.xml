@@ -12,7 +12,9 @@
   <children>
     <Rectangle id="bg" width="1920" height="1080" color="0x0B1120FF" />
     <Group id="stage" />
-    <Label id="status" translation="[112,980]" width="1696" horizAlign="center" color="0xA9B1C4FF" />
+    <Label id="status" translation="[112,1030]" width="1696" horizAlign="center" color="0xF4A259FF">
+      <Font role="font" uri="pkg:/fonts/Manrope-600.ttf" size="24" />
+    </Label>
     <Animation id="fade" duration="0.8" easeFunction="inOutQuad">
       <FloatFieldInterpolator id="fadeIn" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" />
       <FloatFieldInterpolator id="fadeOut" key="[0.0, 1.0]" keyValue="[1.0, 0.0]" />
