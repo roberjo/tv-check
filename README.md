@@ -12,18 +12,19 @@ Built in one evening, pair-programming with [Claude Code](https://claude.com/cla
 | ![Week ahead](docs/images/week.jpg) | ![Live radar](docs/images/radar.jpg) |
 | ![Ambient screensaver](docs/images/ambient.jpg) | ![Tonight's sky](docs/images/sky.jpg) |
 
-*Screenshots use a fictional family (`config/family.example.json`) and a synthetic calendar, with real public data: weather, radar, scores and West Point Lake's level.*
+*Screenshots are rendered from the TV's own screen code (`daybreak/preview/`) with a fictional family (`config/family.example.json`), a synthetic calendar and synthetic feeds.*
 
 ## What's here
 
 | Path | What |
 |---|---|
-| `scripts/` | The exploration toolkit (Python stdlib): SSDP discovery, Roku ECP probe, port scan, AirPlay info, debug-console helper, health sampler, contrast checker, radar map renderer, City of LaGrange curbside rules, iCal reader |
+| `scripts/` | The exploration toolkit (Python stdlib): SSDP discovery, Roku ECP probe, port scan, AirPlay info, debug-console helper, health sampler, radar map renderer, City of LaGrange curbside rules, iCal reader, safe deploy |
 | `FINDINGS.md`, `DIAGNOSTICS.md` | What a Roku TV exposes on the LAN, and a full health check (RAM, storage, network, codecs, DRM) with recommendations. Identifiers redacted |
 | `diag-channel/` | A tiny sideloaded diagnostic app that reports display, codec, network, memory and DRM capabilities and runs a speed test |
 | `daybreak/channel/` | **Daybreak**, the standalone Roku app (BrightScript and SceneGraph). The TV fetches everything itself |
 | `daybreak/tests/` | Off-device tests run with [`@rokucommunity/brs`](https://github.com/rokucommunity/brs) against synthetic feeds and a synthetic calendar, with the clock pinned |
-| `daybreak/service/` | Python reference renderer that draws the same screens as images on a Mac, for design previews |
+| `daybreak/preview/` | Renders every screen from the TV's own code, off-device, and audits text size and contrast |
+| `daybreak/art/` | Photos, fonts and drawing code the build turns into the package's images |
 | `concierge/` | A shelved experiment: Siri → Claude → Roku voice control |
 | `DAYBREAK.md` | Daybreak design notes: screens, triggers, rules, visual system, licensing, privacy |
 | `CLAUDE.md` | The working rules the AI followed: what's read-only, what needs permission first |
@@ -68,7 +69,7 @@ Daybreak is tuned for LaGrange, Georgia: the curbside schedule, West Point Lake,
 
 ## Licensing
 - **Code:** MIT (see `LICENSE`).
-- **Fonts:** Outfit and Manrope, SIL Open Font License 1.1 (`daybreak/service/fonts/OFL-*.txt`).
+- **Fonts:** Outfit and Manrope, SIL Open Font License 1.1 (`daybreak/art/fonts/OFL-*.txt`).
 - **Photos:** Callaway Gardens, CC0 (Wikimedia Commons).
 - **Map and radar data:** USGS and NOAA, public domain.
 

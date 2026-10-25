@@ -17,6 +17,7 @@ The tests need Node 20 or newer. They fetch `@rokucommunity/brs` and `brightersc
 | `daybreak/tests/run_data.sh` | `derive()` and every screen against the synthetic feeds in `tests/fixtures/feeds/`, with the clock pinned to Sunday 2026-10-18 10:00 AM | No |
 | `daybreak/tests/run_live.sh` | Smoke run against today's real feeds. Fetch them first with `fetch_fixtures.sh` | Yes |
 | `.venv/bin/python daybreak/build_channel.py --check` | BrighterScript type and scope check | No |
+| `daybreak/preview/preview.sh <dir> --audit` | Renders every screen from the TV code, and flags text under 24 px or below WCAG contrast. Run `build_channel.py --assets` (or a full build) first | No (the radar base map is fetched once) |
 
 Each runner exits non-zero on a failed check, a BrightScript runtime error, or a run that stops before its summary.
 
@@ -25,6 +26,11 @@ Each runner exits non-zero on a failed check, a BrightScript runtime error, or a
 **Pinning the clock:** tests set `m.testNowUtc` and `m.testNowWall` (see `tests/harness.brs`). `tNowUtc()` and `tNowWall()` return them when set. Nothing on the TV sets them.
 
 **Off-device limits:** `@rokucommunity/brs` doesn't measure text (`boundingRect()` is 0), so `uiWidth` and `uiHeight` fall back to estimates there. It also has no registry, memory monitor or `roUrlTransfer`, so code that uses them must check for `invalid`.
+
+## Design changes
+1. Change the builders in `channel/components/screens.brs`, using the grid (`gx`, `gw`) and the type scale in `ui.brs`.
+2. Run `daybreak/preview/preview.sh daybreak/out/preview --audit` and look at the PNGs. The audit must report 0 issues.
+3. If a screen in the README changed, refresh the screenshots with `--docs docs/images`.
 
 ## Build
 ```sh
@@ -41,7 +47,7 @@ python3 scripts/deploy.py           # asks, re-checks, uploads, logs
 The script refuses while the media player is active or another app is open. It reads the dev installer credentials from `.env`.
 
 ## CI
-`.github/workflows/ci.yml` runs on pushes to `main` and on every PR. It checks that the fixtures match the generator, runs the three no-network suites, the BrighterScript check and pyflakes. It uses only committed, synthetic data.
+`.github/workflows/ci.yml` runs on pushes to `main` and on every PR. It checks that the fixtures match the generator, then runs the three no-network suites, the BrighterScript check, pyflakes and the design audit. It uses only committed, synthetic data, and attaches the rendered screens as the `screen-previews` artifact.
 
 ## Releases
 1. Work happens on a branch per release (`release/<x.y>-<topic>`), with commits that reference issues.

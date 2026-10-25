@@ -1,4 +1,0 @@
-- `callaway_pool.jpg`: "19-30-032-callaway.jpg" by Dsdugan, Wikimedia Commons, CC0 1.0 (public domain dedication).
-- `callaway_pavilion.jpg`: "18-26-141-callaway.jpg" by Dsdugan, Wikimedia Commons, CC0 1.0 (public domain dedication).
-- Fonts: Outfit and Manrope, SIL Open Font License 1.1 (see `../fonts/OFL-*.txt`).
-- Map layers: USGS National Map (public domain). Radar: NOAA/NCEP MRMS (public domain).

@@ -56,5 +56,14 @@ The install replaces any other dev app. Then choose **Settings → Theme → Scr
 - **Back:** exit.
 - **OK:** nothing. Launching other apps was removed on purpose.
 
-## Reference renderer
-`daybreak/service/` (Python and PIL) renders the same screens as images on the Mac. It's useful for design previews and isn't needed to run the TV app.
+## Previews and the design audit
+`daybreak/preview/` renders every screen **from the TV's own code**. The BrightScript builders run off-device against the synthetic feeds and dump the SceneGraph tree. `render.py` then draws it with the package's fonts and 9-patch images.
+```
+.venv/bin/python daybreak/build_channel.py              # once, to generate fonts and images
+daybreak/preview/preview.sh daybreak/out/preview         # PNG per screen
+daybreak/preview/preview.sh daybreak/out/preview --audit # also: text under 24 px, WCAG contrast per label
+daybreak/preview/preview.sh daybreak/out/preview --docs docs/images   # README screenshots
+```
+CI runs the audit and attaches the PNGs to every run as `screen-previews`. The off-device runner can't measure text, so the preview estimates widths: the gap before "AM" and the chip padding can look a little different on the TV.
+
+`daybreak/art/` holds the sources the build turns into bundled images: the photos, the variable fonts and `draw.py`.

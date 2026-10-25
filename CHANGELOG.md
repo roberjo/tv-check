@@ -2,6 +2,29 @@
 
 All notable changes to Daybreak. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Work is tracked on the [Daybreak roadmap](https://github.com/users/roberjo/projects/2) project.
 
+## [1.3.0] - 2026-10-25
+
+Design system, screen refresh and previews from the TV code.
+
+### Added
+- **Previews from the TV's own code** (`daybreak/preview/`): the screen builders run off-device and dump their SceneGraph tree, and `render.py` draws it with the package's fonts and 9-patch images. `--audit` flags any label under 24 px or below WCAG contrast against what's behind it. CI runs the audit and uploads the renders (#15).
+- **Design tokens** in `ui.brs`: a 12-column grid (`gx`, `gw`), a type scale with a 24 px minimum, and named colors (#16).
+- **Loading skeleton:** the real date and clock with placeholder cards until data arrives. An offline note says when the saved data is from (#18).
+- **Night mode:** from 11 PM to 5 AM the screensaver is a dim, drifting clock with the coming day's forecast and first event (#19).
+
+### Changed
+- **Every screen** now sits on the grid, with nothing below 24 px (it used to go down to 15 px) (#16).
+- **Briefing** (#17):
+  - Game Watch shows the next game of each tracked team plus at most one small-college game, with compact times ("Wed 7:30 PM").
+  - Two wider headlines instead of three narrow ones.
+  - The bottom row aligns with the cards above it.
+  - Heads up is marked by an amber rule.
+- **Radar:** the legend, timeline and map labels are 24 px, and a map label that sat under the legend card was removed.
+- `docs/images` are rendered from the TV code with synthetic data (#20).
+
+### Removed
+- `daybreak/service/` (the Python re-implementation of every screen), `scripts/render_demo.py` and `scripts/contrast_check.py`. The asset sources moved to `daybreak/art/` (#15).
+
 ## [1.2.0] - 2026-10-25
 
 Performance, memory and reliability.
@@ -44,6 +67,7 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
+[1.3.0]: https://github.com/roberjo/tv-check/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/roberjo/tv-check/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/roberjo/tv-check/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/roberjo/tv-check/releases/tag/v1.0.0
