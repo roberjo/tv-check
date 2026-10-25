@@ -32,4 +32,16 @@ jobs:
       - name: BrighterScript
         run: python3 daybreak/build_channel.py --check
       - name: pyflakes
-        run: pyflakes scripts daybreak/build_channel.py daybreak/tests daybreak/service
+        run: pyflakes scripts daybreak/build_channel.py daybreak/tests daybreak/art daybreak/preview
+      - name: Design audit (every screen from the TV code; 24 px minimum, WCAG contrast)
+        run: |
+          python3 daybreak/build_channel.py --assets
+          mkdir -p .venv/bin && ln -sf "$(command -v python3)" .venv/bin/python
+          sh daybreak/preview/preview.sh "$RUNNER_TEMP/preview" --audit
+      - name: Upload previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-previews
+          path: ${{ runner.temp }}/preview/*.png
+          retention-days: 14
