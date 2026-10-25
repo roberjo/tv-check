@@ -64,11 +64,7 @@ sub Main()
             check("EXDATE skips Tue 2025-06-10", keys.Join(","), "2025-06-12,2025-06-17,2025-06-19")
         end if
     end for
-    lcText = ReadAsciiFile("pkg:/live/lc.ics")
-    if lcText <> ""
-        check("LaGrange College feed parses", (icsParse(lcText).Count() > 100).ToStr(), "true")
-    else
-        print "  skip LaGrange College feed (run tests/fetch_fixtures.sh)"
-    end if
+    lc = icsParse(ReadAsciiFile("pkg:/feeds/lc.ics"))
+    check("college feed parses", lc.Count().ToStr() + " " + lc[0].summary, "4 [W] LaGrange College Men's Soccer vs Covenant College")
     testSummary("lib")
 end sub
