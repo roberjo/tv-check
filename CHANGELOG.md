@@ -2,6 +2,13 @@
 
 All notable changes to Daybreak. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Work is tracked on the [Daybreak roadmap](https://github.com/users/roberjo/projects/2) project.
 
+## [1.5.1] - 2026-10-25
+
+### Changed
+- **Radar says whether it's working** (#37). With no rain in the forecast, the card reads "No rain nearby · Radar is live · latest scan 1:08 PM". If no frames loaded, it says "Radar unavailable" instead of looking clear. (Checked against NOAA: the frames do contain echoes when there's rain, and LaGrange had none.)
+- **The radar legend explains very light echoes** (#37). The blue to purple colors for drizzle and very light rain are the most common ones on the map, and the legend skipped them.
+- **Previews measure text with the real fonts** (#38). `preview.sh` writes the bundled fonts' character widths, and off-device layout uses them. On the TV nothing changes.
+
 ## [1.5.0] - 2026-10-25
 
 Configurable town and household, and new data features.
@@ -105,6 +112,7 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
+[1.5.1]: https://github.com/roberjo/tv-check/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/roberjo/tv-check/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/roberjo/tv-check/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/roberjo/tv-check/compare/v1.2.0...v1.3.0

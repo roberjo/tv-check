@@ -86,6 +86,6 @@ daybreak/preview/preview.sh daybreak/out/preview         # PNG per screen
 daybreak/preview/preview.sh daybreak/out/preview --audit # also: text under 24 px, WCAG contrast per label
 daybreak/preview/preview.sh daybreak/out/preview --docs docs/images   # README screenshots
 ```
-CI runs the audit and attaches the PNGs to every run as `screen-previews`. The off-device runner can't measure text, so the preview estimates widths: the gap before "AM" and the chip padding can look a little different on the TV.
+CI runs the audit and attaches the PNGs to every run as `screen-previews`. The off-device runner can't measure text, so `preview.sh` first writes the bundled fonts' real character widths (`font_metrics.py`) and layout uses those. Kerning isn't applied, so spacing can still differ by a few pixels from the TV.
 
 `daybreak/art/` holds the sources the build turns into bundled images: the photos, the variable fonts and `draw.py`.
