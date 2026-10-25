@@ -4,11 +4,12 @@ How to build, test, install and release Daybreak. For what the app shows and why
 
 ## Setup
 ```sh
-python3 -m venv .venv && .venv/bin/pip install pillow fonttools pyflakes
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt   # Pillow, fontTools, pyflakes, pip-audit (pinned)
+npm ci --ignore-scripts                            # @rokucommunity/brs + brighterscript (package-lock.json)
 cp .env.example .env                               # TV IP, dev password, calendar iCal URL
 cp config/family.example.json config/family.json   # your household (gitignored)
 ```
-The tests need Node 20 or newer. They fetch `@rokucommunity/brs` and `brighterscript` with `npx` on first run.
+Node 20 or newer is required. The test runners and the build use `node_modules/.bin`, and fall back to the same versions through `npx` if it's missing.
 
 ## Test
 | Command | What it covers | Network |
@@ -46,15 +47,28 @@ python3 scripts/deploy.py           # asks, re-checks, uploads, logs
 ```
 The script refuses while the media player is active or another app is open. It reads the dev installer credentials from `.env`.
 
-## CI
-`.github/workflows/ci.yml` runs on pushes to `main` and on every PR. It checks that the fixtures match the generator, then runs the three no-network suites, the BrighterScript check, pyflakes and the design audit. It uses only committed, synthetic data, and attaches the rendered screens as the `screen-previews` artifact.
+## CI and security scanning
+| Workflow | When | What |
+|---|---|---|
+| `ci.yml` → `test` | Every push to `main`, every PR, and called by releases | Version check, fixtures in sync, the three test suites, BrighterScript, pyflakes, the design audit (renders uploaded as `screen-previews`) |
+| `ci.yml` → `dependency audit` | Same | `npm audit --audit-level=moderate` and `pip-audit -r requirements-dev.txt` |
+| `ci.yml` → `secret scan` | Same | gitleaks over the full git history |
+| `codeql.yml` | PRs, `main`, Mondays | CodeQL `security-and-quality` for Python and GitHub Actions |
+| `release.yml` | A `v*.*.*` tag | All of CI, then the release (below) |
+| Dependabot | Weekly, plus security alerts | Grouped updates for Actions, npm and pip; automatic security PRs |
+
+GitHub secret scanning with push protection, Dependabot alerts and private vulnerability reporting are on for the repository. Actions are pinned to commit SHAs, and Dependabot moves the pins. `main` requires `test`, `dependency audit` and `secret scan` to pass before merging. See [`SECURITY.md`](../SECURITY.md).
 
 ## Releases
-1. Work happens on a branch per release (`release/<x.y>-<topic>`), with commits that reference issues.
-2. Open a PR against `main` that closes the release's issues. CI must pass before merging.
-3. Bump `minor_version` (or `major_version`) in `daybreak/channel/manifest`, and add a section to `CHANGELOG.md`.
-4. After merging, tag `v<x.y.z>` on `main` and publish a GitHub release using the changelog section as notes. No binary is attached, because a real package embeds private household settings.
-5. Move the issues to **Done** on the [project board](https://github.com/users/roberjo/projects/2).
+Versions live in `daybreak/channel/manifest` (major and minor) and `CHANGELOG.md`. On the TV, `build_version` is the git commit count.
+1. Work on a branch (`release/<x.y>-<topic>`), add entries under `## [Unreleased]`, and reference issues.
+2. Run `python3 scripts/bump_version.py X.Y.Z`. Unreleased becomes `[X.Y.Z] - today`, and the manifest gets `X.Y`.
+3. Open a PR that closes the milestone's issues, and merge it once the checks are green.
+4. Run `git tag -a vX.Y.Z -m "Daybreak X.Y.Z" && git push origin vX.Y.Z`. `release.yml`:
+   - runs all of CI again and runs `bump_version.py --check vX.Y.Z`
+   - builds `daybreak-demo-X.Y.Z.zip` (`build_channel.py --demo`: the fictional family, never reads `.env`) with `SHA256SUMS.txt` and a build-provenance attestation (`gh attestation verify <zip> -R roberjo/tv-check`)
+   - publishes the release, with the CHANGELOG section as notes
+5. Close the milestone, and move its issues to **Done** on the [project board](https://github.com/users/roberjo/projects/2).
 
 ## Privacy checklist before pushing
 The repo is public. Never commit `.env`, `config/family.json`, `ACTIVITY_LOG.md`, `captures/`, `source/config.brs` or live fixtures; `.gitignore` covers all of them. Use the fictional family in `config/family.example.json` and the synthetic calendar for anything committed, including screenshots.

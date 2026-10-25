@@ -31,7 +31,7 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 
 ## Rule-based insights (no AI at runtime)
 "Heads up" items, most important first:
-1. NWS warnings and watches.
+1. NWS warnings and watches, and school closings, early releases or delayed openings (from the calendar) today or tomorrow.
 2. Curbside pickup tomorrow or today.
 3. Calendar deadlines within 7 days.
 4. Overlapping evening events.

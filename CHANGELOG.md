@@ -2,6 +2,32 @@
 
 All notable changes to Daybreak. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Work is tracked on the [Daybreak roadmap](https://github.com/users/roberjo/projects/2) project.
 
+## [Unreleased]
+
+## [1.7.0] - 2026-10-25
+
+Engineering: vulnerability scanning, reproducible tooling, a release pipeline and versioning.
+
+### Added
+- **Vulnerability scanning** (#47):
+  - CodeQL (Python and GitHub Actions) on PRs, `main` and weekly
+  - a gitleaks secret scan of the full history on every push and PR
+  - `npm audit` and `pip-audit` of the dev tools in CI
+  - Dependabot alerts, security updates and weekly grouped updates for Actions, npm and pip
+  - private vulnerability reporting, with `SECURITY.md`
+- **Reproducible tooling** (#48): `requirements-dev.txt`, plus `package.json` and `package-lock.json` for the BrightScript emulator and BrighterScript. CI installs from them with caching, and the test runners and the build use the locked local tools.
+- **Release pipeline** (#49): pushing a `v*` tag runs all of CI, checks the tag against the manifest and changelog, builds the public demo package (`--demo`: fictional family, never reads `.env`) with SHA-256 checksums and a build-provenance attestation, and publishes the release with the changelog section as notes.
+- **Versioning** (#50): `scripts/bump_version.py X.Y.Z` turns Unreleased into a release and updates the manifest. `--check` (run in CI) makes sure they agree.
+- **School closings by calendar** (#43): an event like "No school", "Early release" or "Delayed opening" becomes the top heads-up tip on the day and the day before. Troup County Schools publishes closings by SchoolStatus messages, media and Facebook, with no feed the TV could read.
+- `CONTRIBUTING.md`.
+
+### Changed
+- Every GitHub Action is pinned to a commit SHA. Workflows default to read-only permissions and have timeouts and concurrency limits.
+- `main` is protected: CI checks must pass, and force pushes and deletion are blocked (#51).
+
+### Security
+- A transitive dev dependency (`decode-uri-component` via `brighterscript`, GHSA-vcc3-ghjq-m6fr) is overridden to 0.5.1. It's a build tool only and isn't part of the TV package.
+
 ## [1.6.0] - 2026-10-25
 
 ### Added
@@ -125,6 +151,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/roberjo/tv-check/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/roberjo/tv-check/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/roberjo/tv-check/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/roberjo/tv-check/compare/v1.4.0...v1.5.0

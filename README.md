@@ -1,6 +1,6 @@
 # tv-check → Daybreak
 
-[![CI](https://github.com/roberjo/tv-check/actions/workflows/ci.yml/badge.svg)](https://github.com/roberjo/tv-check/actions/workflows/ci.yml) · [Releases](https://github.com/roberjo/tv-check/releases) · [Roadmap](https://github.com/users/roberjo/projects/2) · [Changelog](CHANGELOG.md)
+[![CI](https://github.com/roberjo/tv-check/actions/workflows/ci.yml/badge.svg)](https://github.com/roberjo/tv-check/actions/workflows/ci.yml) [![CodeQL](https://github.com/roberjo/tv-check/actions/workflows/codeql.yml/badge.svg)](https://github.com/roberjo/tv-check/actions/workflows/codeql.yml) · [Releases](https://github.com/roberjo/tv-check/releases) · [Roadmap](https://github.com/users/roberjo/projects/2) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 **What started as "what can an AI learn about my TV over Wi-Fi?" ended up as Daybreak, a standalone family dashboard and screensaver running natively on a TCL Roku TV.**
 
@@ -54,8 +54,11 @@ Built in one evening, pair-programming with [Claude Code](https://claude.com/cla
 ## Run it yourself
 You need a Roku TV with **developer mode** on (Home ×3, Up ×2, Right, Left, Right, Left, Right) and "Control by mobile apps" set to **Enabled**. Both open interfaces to anyone on your LAN, so only do this on a network you trust.
 
+Each [release](https://github.com/roberjo/tv-check/releases) has a demo package (the fictional family, no calendar) you can sideload to try it. For your own household, build it:
+
 ```sh
-python3 -m venv .venv && .venv/bin/pip install pillow fonttools
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+npm ci --ignore-scripts                               # emulator + BrighterScript (Node 20+)
 cp .env.example .env                                  # TV IP, dev password, calendar iCal URL
 cp config/family.example.json config/family.json      # your household
 .venv/bin/python daybreak/build_channel.py            # generates assets + config, validates, zips
