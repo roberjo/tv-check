@@ -158,7 +158,7 @@ end function
 
 ' info = {now, version, health: {sources, savedAt, warm, cacheBytes}, limits,
 ' memory: {availableKb, limitPercent, level, lowMode, nodes}, device: {model,
-' os, display, ui, uptimeMin, appUptimeMin}, network: {type, ip, link},
+' os, display, ui, uptimeMin, appUptimeMin, readyMs}, network: {type, ip, link},
 ' speed: {state, mbps, latencyMs, error}}. Missing parts show as "—".
 function buildDiagnostics(info as object) as object
     g = CreateObject("roSGNode", "Group")
@@ -190,10 +190,12 @@ function buildDiagnostics(info as object) as object
         if s <> invalid
             dot = sourceColor(s, info.limits, name, info.nowUtc)
             if s.lastOk <> invalid then updated = agoText(info.nowUtc - s.lastOk)
-            ms = s.ms.ToStr() + " ms"
+            if s.ms <> invalid then ms = s.ms.ToStr() + " ms"
             size = kbText(s.bytes)
             status = "OK"
-            if not s.ok
+            if isTrue(s.saved)
+                status = "saved data"
+            else if not s.ok
                 status = s.error
                 if status = "" then status = "HTTP " + s.code.ToStr()
                 if s.fails > 1 then status = status + " (" + s.fails.ToStr() + "x)"
@@ -228,7 +230,7 @@ function buildDiagnostics(info as object) as object
     net = info.network
     if net = invalid then net = {}
     lines = [["Model", strOr(dev.model)], ["Roku OS", strOr(dev.os)], ["Display", strOr(dev.display)],
-             ["Network", strOr(net.type)], ["IP address", strOr(net.ip)], ["Daybreak up", minutesText(dev.appUptimeMin)]]
+             ["Network", strOr(net.type)], ["IP address", strOr(net.ip)], ["Up · ready in", upText(dev.appUptimeMin, dev.readyMs)]]
     diagCard(g, rx, top + 312, rw, 340, "Device", lines)
     sp = info.speed
     uiCard(g, rx, top + 676, rw, 94)
@@ -292,6 +294,14 @@ function minutesText(v as dynamic) as string
     if v = invalid then return "—"
     if v < 60 then return v.ToStr() + " min"
     return (v \ 60).ToStr() + " h " + (v mod 60).ToStr() + " min"
+end function
+
+' "2 h 15 min · 2.4 s": time since launch, and launch to the first real screen
+function upText(minutes as dynamic, readyMs as dynamic) as string
+    t = minutesText(minutes)
+    if Type(readyMs) = "Invalid" or t = "—" then return t
+    if readyMs <= 0 then return t
+    return t + " · " + fmt1(readyMs / 1000) + " s"
 end function
 
 function onOffDash(v as dynamic) as string

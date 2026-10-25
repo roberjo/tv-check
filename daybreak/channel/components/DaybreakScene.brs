@@ -31,6 +31,7 @@ sub init()
     m.serial = 0
     m.paused = false
     m.lowMemory = false
+    m.readyMs = 0 ' ms from launch to the first real screen; 0 until then
     m.overlayKind = ""
     m.memMonitor = CreateObject("roAppMemoryMonitor")
     m.deviceInfo = CreateObject("roDeviceInfo")
@@ -66,6 +67,12 @@ sub onData()
         return
     end if
     replan(false)
+    if m.readyMs = 0
+        ' first real screen: Roku OS logs the launch duration from this beacon
+        m.readyMs = m.startedAt.TotalMilliseconds()
+        if m.top.mode = "app" then m.top.signalBeacon("AppLaunchComplete")
+        print "Daybreak: first screen after "; m.readyMs; " ms"
+    end if
 end sub
 
 ' Re-picks the playlist (new data, a setting changed) and keeps the current
@@ -382,7 +389,7 @@ function gatherDiagnostics() as object
         if os <> invalid then osText = os.major + "." + os.minor + " build " + os.build
         ui = di.GetUIResolution()
         info.device = {model: di.GetModelDisplayName() + " (" + di.GetModel() + ")", os: osText,
-                       display: di.GetDisplayMode() + " · UI " + ui.name, appUptimeMin: m.startedAt.TotalSeconds() \ 60}
+                       display: displayText(di.GetVideoMode(), ui), appUptimeMin: m.startedAt.TotalSeconds() \ 60, readyMs: m.readyMs}
         ips = di.GetIPAddrs()
         ip = ""
         for each k in ips
@@ -394,6 +401,12 @@ function gatherDiagnostics() as object
         info.network = {type: kind, ip: ip, link: di.GetLinkStatus()}
     end if
     return info
+end function
+
+' "2160p60 · app 1080p": the TV's output mode, then the size Daybreak draws at.
+' Roku TVs draw apps at 1080p (GetDisplayMode) and scale them up to a 4K panel.
+function displayText(video as string, ui as object) as string
+    return video + " · app " + ui.height.ToStr() + "p"
 end function
 
 ' Same numbers as DataTask's sourceLimits(), for coloring the diagnostics rows.

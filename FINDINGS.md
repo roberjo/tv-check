@@ -103,5 +103,14 @@ The TV moved to **Ethernet at 192.168.1.176** (`network-type=ethernet`). `ecp-se
 
 1. **Viewing logger.** Poll `active-app` + `media-player` + `audio-device` to log what's watched, when, for how long, and at what volume. Read-only.
 2. **Sideload a probe channel.** A small BrightScript app pushed via port 80 could read data ECP doesn't expose, such as `roDeviceInfo` (connection info, display mode, model details) and `roAppManager`, and would activate `chanperf`/`sgnodes`. **This needs your OK.**
-3. **Screenshots.** The dev installer can capture the screen, but only while the sideloaded dev channel is in the foreground, not other apps.
+3. **Screenshots.** The dev installer can capture the screen, but only while the sideloaded dev channel is in the foreground, not other apps. `scripts/screenshot.py` does this (`POST /plugin_inspect` with `mysubmit=Screenshot`, then `GET /pkgs/dev.jpg`, both with digest auth).
 4. **Remote control** via ECP `keypress`/`launch` or console `press`/`type`. **Ask before each use.**
+
+## Roku OS 16 notes (2026-10-25, Daybreak 1.7.2 on the TV)
+- **The Home screen is an app now.** `/query/active-app` on the Home screen returns `<app id="562859" type="home" ui-location="home">Roku Dynamic Menu</app>`, not the old `<app>Roku</app>`. Tools that look for "Roku" or id `home` must also accept `type="home"`.
+- **The dev installer closes the connection on an unauthorized upload.** It answers a 2 MB `POST /plugin_install` without credentials with 401 and drops the socket mid-body, so urllib's digest handler (which only authenticates after a 401) fails with "Broken pipe". Fetch the digest challenge with a bodiless `GET` first and send the `Authorization` header with the upload (`scripts/deploy.py`). A full upload and install takes about 3 s.
+- **Display modes:** `roDeviceInfo.GetDisplayMode()` returns `1080p` and the UI resolution is FHD (1920×1080), while `GetVideoMode()` returns `2160p60`. Roku OS draws apps at 1080p and scales them up to the 4K panel; only video plays at 2160p.
+- **Launch beacons** on the dev console (8085): `AppCompileComplete` ≈ 140–260 ms, and `AppLaunchComplete` once the app signals it (Daybreak: 2.7 s cold, 0.64–0.70 s warm).
+- **`loaded_textures`** answers "only works when a Scene Graph screen is displayed" even with a SceneGraph app in front; `r2d2_bitmaps` lists every decoded bitmap on the device, the Home screen's included.
+- **`free`** with Daybreak running: about 255 MB available of 1.1 GB, down from 299 MB on the Home screen.
+

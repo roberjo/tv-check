@@ -689,11 +689,11 @@ sub buildWeek(g as object, d as object)
         for each it in items
             if yy < top + h - 120
                 if it.hitBox
-                    bh = 104
-                    uiCard(g, x + 12, yy - 8, cw - 24, bh, it.bg, "", 14)
+                    chip = uiCard(g, x + 12, yy - 8, cw - 24, 72, it.bg, "", 14)
                     uiText(g, x + 24, yy, it.head, 24, 700, "Manrope", it.color, cw - 48)
-                    uiText(g, x + 24, yy + 30, it.body, 24, 500, "Manrope", "#F4F1EA", cw - 48, "left", 2)
-                    yy = yy + bh + 10
+                    l = uiText(g, x + 24, yy + 34, it.body, 24, 500, "Manrope", "#F4F1EA", cw - 48, "left", 2)
+                    chip.height = 34 + uiHeight(l, 24) + 22 ' grows to the body's real height (one or two lines)
+                    yy = yy + chip.height + 10
                 else
                     uiText(g, x + 20, yy, it.head, 24, 400, "Manrope", "#A9B1C4", cw - 40)
                     l = uiText(g, x + 20, yy + 30, it.body, 24, 600, "Manrope", "#F4F1EA", cw - 40, "left", 2)

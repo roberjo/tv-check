@@ -134,6 +134,8 @@ sub Main()
     check("diagnostics: source rows", texts.DoesExist("Family calendar") and texts.DoesExist("timed out (3x)"), true)
     check("diagnostics: memory", texts.DoesExist("142 MB") and texts.DoesExist("38%"), true)
     check("diagnostics: speed", texts.DoesExist("87.4 Mbps down · 23 ms"), true)
+    check("diagnostics: start-up time", texts.DoesExist("2 h 15 min · 2.4 s"), true)
+    check("up text before the first screen", upText(3, 0) + " / " + upText(invalid, 900), "3 min / —")
     check("diagnostics: no text under 24 px", smallest(g, 999) >= 24, true)
     check("source colors", sourceColor(info.health.sources.weather, info.limits, "weather", info.nowUtc) + " " + sourceColor(info.health.sources.lake, info.limits, "lake", info.nowUtc) + " " + sourceColor(info.health.sources.news, info.limits, "news", info.nowUtc), "#9EC79B #E5484D #F4A259")
     check("diagnostics with nothing known", buildDiagnostics({nowUtc: 0}).getChildCount() > 10, true)
@@ -183,17 +185,3 @@ function smallest(node as object, least as integer) as integer
     end for
     return least
 end function
-
-' Every label's text in a built screen, as a set.
-function labelTexts(node as object) as object
-    out = {}
-    collectTexts(node, out)
-    return out
-end function
-
-sub collectTexts(node as object, out as object)
-    if node.subtype() = "Label" then out[node.text] = true
-    for i = 0 to node.getChildCount() - 1
-        collectTexts(node.getChild(i), out)
-    end for
-end sub

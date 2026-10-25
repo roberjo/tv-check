@@ -19,6 +19,7 @@ sub runLoop()
     m.lastSig = ""
     m.lastSave = 0
     m.warm = loadCache()
+    if m.warm then seedHealth()
     publish(cfg) ' warm start: show the saved data right away
     port = CreateObject("roMessagePort")
     while true
@@ -297,6 +298,16 @@ sub noteHealth(name as string, ok as boolean, h as object)
                       bytes: h.bytes, error: h.error, parts: h.parts, okParts: h.okParts}
 end sub
 
+' After a warm start, diagnostics show each saved source as fetched when it
+' was saved, until the next fetch replaces the row.
+sub seedHealth()
+    for each name in m.fetched
+        t = m.fetched[name]
+        m.health[name] = {ok: true, lastTry: t, lastOk: t, fails: 0, code: 200, ms: invalid, bytes: invalid,
+                          error: "", parts: 1, okParts: 1, saved: true}
+    end for
+end sub
+
 ' Cached data younger than the source's maxAge, else invalid.
 function fresh(name as string) as dynamic
     v = m.cache[name]
@@ -323,6 +334,8 @@ sub saveCache()
 end sub
 
 function loadCache() as boolean
+    ' no cache yet on a first launch; reading a missing file logs an error on the TV
+    if m.offDevice <> true and not CreateObject("roFileSystem").Exists(cachePath()) then return false
     j = parseJsonSafe(ReadAsciiFile(cachePath()))
     if j = invalid or j.v <> 2 or j.cache = invalid or j.fetched = invalid then return false
     m.cache = j.cache

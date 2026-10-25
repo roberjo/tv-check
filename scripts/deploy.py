@@ -12,10 +12,12 @@ Usage:
 """
 import argparse
 import datetime as dt
+import hashlib
 import pathlib
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 import xml.etree.ElementTree as ET
@@ -48,13 +50,15 @@ def watching_check(ip):
     a = app.find("app")
     app_id = a.get("id", "home") if a is not None else "home"
     app_name = (a.text or "").strip() if a is not None else "Home"
+    # Roku OS 16 reports the Home screen as an app ("Roku Dynamic Menu", type="home")
+    is_home = app_id == "home" or app_name == "Roku" or (a is not None and a.get("type") == "home")
     saver = app.find("screensaver")
     summary = f"media-player state={state}, active app={app_name or app_id} ({app_id})"
     if saver is not None:
         summary += f", screensaver={(saver.text or '').strip()}"
     if state not in IDLE_STATES:
         return False, summary + ": something is playing, not installing."
-    if app_id not in ("home", "dev") and app_name != "Roku":
+    if not is_home and app_id != "dev":
         return False, summary + ": another app is open, not installing."
     return True, summary
 
@@ -77,14 +81,45 @@ def multipart(fields, file_field, file_path):
     return b"".join(parts), f"multipart/form-data; boundary={boundary}"
 
 
+def digest_header(url, method, user, password):
+    """Fetch the digest challenge with a bodiless GET, then answer it. urllib's
+    digest handler only answers after a 401, and the dev installer closes the
+    connection mid-upload, so the 2 MB POST must carry the answer up front."""
+    try:
+        urllib.request.urlopen(url, timeout=10).close()
+        return None
+    except urllib.error.HTTPError as e:
+        if e.code != 401:
+            raise
+        challenge = e.headers.get("WWW-Authenticate", "")
+    if not challenge.lower().startswith("digest "):
+        sys.exit("The dev installer didn't ask for digest auth; is developer mode on?")
+    c = dict(re.findall(r'(\w+)="?([^",]*)"?', challenge[7:]))
+    # MD5 is what HTTP Digest (RFC 2617) and the Roku dev installer require; the
+    # password is only used in the challenge-response, never stored.
+    md5 = lambda t: hashlib.md5(t.encode(), usedforsecurity=False).hexdigest()
+    path = urllib.parse.urlsplit(url).path
+    ha1, ha2 = md5(f"{user}:{c['realm']}:{password}"), md5(f"{method}:{path}")
+    cnonce, nc = uuid.uuid4().hex[:16], "00000001"
+    if "auth" in c.get("qop", "").split(","):
+        resp = md5(f"{ha1}:{c['nonce']}:{nc}:{cnonce}:auth:{ha2}")
+        extra = f', qop=auth, nc={nc}, cnonce="{cnonce}"'
+    else:
+        resp, extra = md5(f"{ha1}:{c['nonce']}:{ha2}"), ""
+    opaque = f', opaque="{c["opaque"]}"' if "opaque" in c else ""
+    return (f'Digest username="{user}", realm="{c["realm"]}", nonce="{c["nonce"]}", uri="{path}", '
+            f'response="{resp}"{opaque}{extra}')
+
+
 def install(ip, user, password, zip_path):
     url = f"http://{ip}/plugin_install"
-    mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-    mgr.add_password(None, url, user, password)
-    opener = urllib.request.build_opener(urllib.request.HTTPDigestAuthHandler(mgr))
     body, ctype = multipart({"mysubmit": "Install"}, "archive", zip_path)
-    req = urllib.request.Request(url, data=body, headers={"Content-Type": ctype}, method="POST")
-    with opener.open(req, timeout=120) as r:
+    headers = {"Content-Type": ctype}
+    auth = digest_header(url, "POST", user, password)
+    if auth:
+        headers["Authorization"] = auth
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=120) as r:
         html = r.read().decode(errors="replace")
     for pattern in (r"Install Success", r"Identical to previous version", r"Application Received"):
         if re.search(pattern, html):

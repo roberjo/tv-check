@@ -47,6 +47,8 @@ During a game (an event `in` progress, or one that should have started in the la
 - **Radar:** `radarLayer()` builds one group of frame posters per set of frame times and moves it into each new radar screen, so nothing is downloaded or decoded twice. Frames load at 960×540 and are scaled to fill the screen.
 
 ## Startup and offline
+- **Launch time:** the scene sends Roku's `AppLaunchComplete` beacon when the first real screen shows, and logs `Daybreak: first screen after N ms` on the dev console (port 8085). Diagnostics shows it under "Up · ready in". Measured on the TV: **cold start (no saved data) 2.3 s** to the first screen, 2.7 s by Roku's beacon; **warm start 0.17–0.21 s**, 0.64–0.70 s by the beacon. Compiling takes about 180 ms of that.
+- **Warm start:** the saved data (`cachefs:`) is shown at once. Diagnostics lists each saved source as "saved data" with its age until the next fetch replaces the row.
 - **Before data:** the scene shows `buildLoading()`, with the real date and clock and placeholder cards. With no saved data and no connection, it says "Waiting for the internet connection...".
 - **Offline:** when every source has failed twice in a row, the scene's status line says "Offline · showing saved data from 9:40 AM". It clears on the first success.
 - **Night:** from 11 PM to 5 AM the screensaver plays only `buildNight()`, a dim clock that moves every 5 minutes. Radar is added in a warning.
@@ -76,7 +78,19 @@ During a game (an event `in` progress, or one that should have started in the la
 
 **Low-memory mode:** the scene checks `roDeviceInfo.GetGeneralMemoryLevel()` and `roAppMemoryMonitor.GetMemoryLimitPercent()` every 10 seconds. When the level is `low` or `critical`, or the app is past 80% of its limit, radar keeps only the latest 4 frames and photo screens use a plain fill.
 
-The decoded sizes are calculated (width × height × 4 bytes), not measured on the TV. To measure, run the read-only debug-console commands `loaded_textures` and `r2d2_bitmaps` while Daybreak is showing, and only when nobody is watching.
+**Measured on the TV** (TCL 65R625, Roku OS 16.0, Daybreak 1.7.2, 2026-10-25, #44):
+
+| Measure | Value | Source |
+|---|---|---|
+| Daybreak's decoded bitmaps | **25.0 MB**: radar base map 8.4 MB (1920×1080), 8 radar frames 16.7 MB (2.1 MB each), ring art 1.2 MB | `r2d2_bitmaps` |
+| Channel memory | 23–29 MiB, 0–4% CPU | `chanperf` |
+| Memory free to the app | 247–256 MB, 1–2% of its limit, level "normal" | diagnostics overlay |
+| SceneGraph nodes | 245 in the whole scene, 78 on screen | `sgnodes all`, diagnostics |
+| System memory available | 299 MB on the Home screen, 255 MB with Daybreak running | `free` |
+
+The radar frames stay decoded while other screens show, so radar can come back without a reload. That's 17 MB the app could release, but with 250 MB free it isn't worth the reload.
+
+To measure again, run the read-only debug-console commands `chanperf`, `r2d2_bitmaps` and `sgnodes all` while Daybreak is showing, and only when nobody is watching. `loaded_textures` reports nothing on Roku OS 16 ("only works when a Scene Graph screen is displayed", even with Daybreak in front).
 
 ## Off-device testing
 `@rokucommunity/brs` runs the library, `DataTask.brs` and the screen builders with the clock pinned and synthetic feeds. Tests ingest fixtures through the same `ingest()` the TV uses. See [`DEVELOPMENT.md`](DEVELOPMENT.md).

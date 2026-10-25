@@ -45,7 +45,14 @@ This generates fonts, images and `source/config.brs` (gitignored, because it hol
 python3 scripts/deploy.py --check   # read-only: is the TV idle?
 python3 scripts/deploy.py           # asks, re-checks, uploads, logs
 ```
-The script refuses while the media player is active or another app is open. It reads the dev installer credentials from `.env`.
+The script refuses while the media player is active or another app is open (the Home screen, which Roku OS 16 reports as "Roku Dynamic Menu" with `type="home"`, counts as idle). It reads the dev installer credentials from `.env`.
+
+**Check it on the TV:**
+```sh
+python3 scripts/screenshot.py week     # captures/screens/week.jpg (gitignored: screens show family details)
+python3 scripts/console.py $ROKU_IP chanperf r2d2_bitmaps "sgnodes all"   # read-only memory readings
+```
+The screenshot comes from the dev installer and changes nothing on screen, but it only works while Daybreak is in front. Launch timing is on the dev console (port 8085, one connection at a time): look for `Daybreak: first screen after` and `AppLaunchComplete`.
 
 ## CI and security scanning
 | Workflow | When | What |
