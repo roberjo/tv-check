@@ -29,13 +29,14 @@ sub init()
     m.frameTimer.observeField("fire", "onFrame")
     m.pausedTimer.observeField("fire", "onPausedRefresh")
     m.fade.observeField("state", "onFadeState")
-    m.status.text = "Loading Daybreak..."
     m.top.setFocus(true)
 end sub
 
 sub onStart()
+    showLoading("Getting today's weather, calendar and games...")
     m.dataTask.config = DaybreakConfig()
     m.dataTask.observeField("data", "onData")
+    m.dataTask.observeField("health", "onHealth")
     m.dataTask.control = "RUN"
     m.clockTimer.control = "start"
 end sub
@@ -44,10 +45,9 @@ sub onData()
     m.data = m.dataTask.data
     if m.data = invalid then return
     if m.data.weather = invalid and m.data.calendar.Count() = 0
-        m.status.text = "Waiting for the internet connection..."
+        showLoading("Waiting for the internet connection...")
         return
     end if
-    m.status.text = ""
     currentId = invalid
     if m.items.Count() > 0 then currentId = m.items[m.index]
     m.items = chooseScreens(m.data, m.top.mode)
@@ -113,6 +113,42 @@ sub onFadeState()
             if child.isSameNode(m.current) then exit while
             m.stage.removeChild(child)
         end while
+    end if
+end sub
+
+' The skeleton screen (date, clock, placeholder cards) until real data arrives.
+sub showLoading(message as string)
+    if m.loading <> invalid and m.current <> invalid and m.current.isSameNode(m.loading) then m.stage.removeChild(m.loading)
+    m.loading = buildLoading(tNowWall(), message)
+    m.serial = m.serial + 1
+    m.loading.id = "screen" + m.serial.ToStr()
+    m.stage.appendChild(m.loading)
+    if m.current <> invalid and not m.current.isSameNode(m.loading) then m.stage.removeChild(m.current)
+    m.current = m.loading
+    updateClock()
+end sub
+
+' Every source failing for two tries in a row means the TV is offline: say so,
+' and when the saved data is from.
+sub onHealth()
+    h = m.dataTask.health
+    if h = invalid or h.sources = invalid then return
+    tried = 0
+    failing = 0
+    lastOk = 0
+    for each name in h.sources
+        s = h.sources[name]
+        tried = tried + 1
+        if not s.ok and s.fails >= 2 then failing = failing + 1
+        if s.lastOk <> invalid and s.lastOk > lastOk then lastOk = s.lastOk
+    end for
+    offline = tried > 0 and failing = tried
+    if offline and lastOk > 0
+        m.status.text = "Offline · showing saved data from " + tClock(lastOk + (tNowWall() - tNowUtc()))
+    else if offline
+        m.status.text = "Offline · waiting for the internet connection"
+    else if not m.paused
+        m.status.text = ""
     end if
 end sub
 
