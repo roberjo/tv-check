@@ -13,10 +13,10 @@ function availableScreens(d as object) as object
         a.Delete("tonight")
         a.Delete("sky")
     end if
-    if d.lake <> invalid and d.weather <> invalid then a.lake = true
+    if d.lake <> invalid and d.weather <> invalid and d.place.lake <> invalid then a.lake = true
     if d.finals.Count() > 0 then a.recap = true
     if soonGames(d).Count() > 0 then a.gameday = true
-    if d.notes.Count() > 0 or d.groceries.Count() > 0 then a.board = true
+    if d.notes.Count() > 0 or d.groceries.Count() > 0 or d.countdowns.Count() > 0 then a.board = true
     if seasonItems(tParts(d.now).m) <> invalid and d.weather <> invalid then a.season = true
     return a
 end function
@@ -189,15 +189,22 @@ function soonGames(d as object) as object
     return out
 end function
 
+' "Live · 21–17 · Q3 4:12" for a game in progress.
+function liveText(gm as object) as string
+    t = "Live · " + gm.my + "–" + gm.their
+    if gm.status <> invalid and gm.status <> "" then t = t + " · " + gm.status
+    return t
+end function
+
 function gameWhen(gm as object, today as integer) as string
-    if gm.state = "in" then return "Live now"
+    if gm.state = "in" then return liveText(gm)
     if gm.tbd then return tDayWord(gm.start, today) + " · time TBA"
     return tDayWord(gm.start, today) + " " + tClock(gm.start)
 end function
 
 ' Like gameWhen with a 3-letter weekday past tomorrow ("Wed 7:30 PM"), for tight rows.
 function gameWhenShort(gm as object, today as integer) as string
-    if gm.state = "in" then return "Live now"
+    if gm.state = "in" then return liveText(gm)
     n = (tDay(gm.start) - today) \ 86400
     day = tDayWord(gm.start, today)
     if n >= 2 then day = Left(tWeekdayNames()[tWeekday(gm.start)], 3)
@@ -319,12 +326,14 @@ end sub
 function nextUp(d as object) as string
     for each gm in d.games
         if gm.short <> "LC" and not gm.tbd
-            if gm.state = "in" then return gm.name + " " + gm.detail + " is on now"
+            if gm.state = "in" then return gm.name + " " + gm.my + "–" + gm.their + " " + gm.detail
             delta = gm.start - d.now
             if delta > 0 and delta < 12 * 3600 then return gm.name + " in " + (delta \ 3600).ToStr() + " h " + ((delta mod 3600) \ 60).ToStr() + " m"
         end if
     end for
-    if (d.curb.pickup - d.today) \ 86400 <= 1 then return tDayWord(d.curb.pickup, d.today) + ": " + LCase(curbText(d.curb))
+    if d.curb <> invalid
+        if (d.curb.pickup - d.today) \ 86400 <= 1 then return tDayWord(d.curb.pickup, d.today) + ": " + LCase(curbText(d.curb))
+    end if
     for each e in d.calendar
         if e.start >= d.now - 3600 then return tDayWord(e.start, d.today) + ": " + e.title
     end for
@@ -340,6 +349,13 @@ sub weatherCard(g as object, x as integer, y as integer, w as integer, h as inte
     uiText(g, x + 36, y + 100, wx.temp.ToStr() + "°", 150, 300, "Outfit")
     uiText(g, x + 290, y + 136, wxLabel(wx.code), 32, 600, "Manrope", "#F4F1EA", w - 326, "left", 2)
     uiText(g, x + 290, y + 186, "H " + today.hi.ToStr() + "° · L " + today.lo.ToStr() + "°", 26, 400, "Manrope", "#A9B1C4", w - 326)
+    if d.air <> invalid
+        airColor = "#9EC79B"
+        if d.air.aqi > 50 then airColor = "#F2C14E"
+        if d.air.aqi > 100 then airColor = "#F4A259"
+        uiDot(g, x + 298, y + 238, 6, airColor)
+        uiText(g, x + 312, y + 224, "Air " + LCase(d.air.label) + " · " + d.air.aqi.ToStr(), 24, 400, "Manrope", "#A9B1C4", w - 348)
+    end if
     hours = []
     for each hr in wx.hours
         if hr.t > d.now and hours.Count() < 5 and ((hr.t - d.now) \ 3600) mod 3 = 0 then hours.Push(hr)
@@ -358,7 +374,7 @@ end sub
 
 sub buildBriefing(g as object, d as object)
     uiBackdrop(g, "pkg:/images/bg_briefing.jpg", "#0B1120")
-    header(g, UCase(tLongDate(d.now)) + " · LAGRANGE, GA", greeting(d))
+    header(g, UCase(tLongDate(d.now) + " · " + d.place.town + ", " + d.place.region), greeting(d))
     top = 246
     weatherCard(g, gx(1), top, gw(4), 540, d)
     ' calendar
@@ -399,7 +415,7 @@ sub buildBriefing(g as object, d as object)
     ' headlines + heads up
     fy = 818
     uiCard(g, gx(1), fy, gw(8), 200)
-    cardLabel(g, gx(1) + 40, fy + 28, gw(8) - 80, "LaGrange today", "#A9B1C4", asOfText(d, "news"))
+    cardLabel(g, gx(1) + 40, fy + 28, gw(8) - 80, d.place.town + " today", "#A9B1C4", asOfText(d, "news"))
     colW = (gw(8) - 80 - 48) / 2
     for i = 0 to 1
         if i < d.news.Count()
@@ -428,7 +444,7 @@ end sub
 ' heads-up tip about the same thing.
 function briefingRows(d as object) as object
     rows = []
-    if (d.curb.pickup - d.today) \ 86400 <= 3
+    if d.curb <> invalid and (d.curb.pickup - d.today) \ 86400 <= 3
         sub2 = "Curb by 7 AM"
         if d.curb.holiday <> invalid then sub2 = sub2 + " · moved for " + d.curb.holiday
         caveat = curbCaveat(d.curb)
@@ -509,6 +525,7 @@ sub buildTonight(g as object, d as object)
         uiLabel(g, gx(1) + 84, top + 54, lbl, 24, "#F4F1EA")
         uiText(g, gx(1) + 56, top + 120, hero.name, 112, 600, "Outfit", "#F4F1EA", gw(7) - 112)
         t = hero.detail + " · " + tClock(hero.start)
+        if hero.state = "in" then t = hero.detail + " · " + liveText(hero)
         if hero.network <> "" then t = t + " on " + hero.network
         uiText(g, gx(1) + 56, top + 290, t, 34, 500, "Manrope", "#F4F1EA", gw(7) - 112)
     else
@@ -541,7 +558,7 @@ sub buildTonight(g as object, d as object)
     uiCard(g, rx, cy0, rw, 268)
     uiLabel(g, rx + 40, cy0 + 32, "Coming up")
     yy = cy0 + 78
-    if (d.curb.pickup - d.today) \ 86400 <= 1
+    if d.curb <> invalid and (d.curb.pickup - d.today) \ 86400 <= 1
         uiCard(g, rx + 30, yy - 10, rw - 60, 96, "#2A2418", "#F4A259", 18)
         uiText(g, rx + 54, yy, tDayWord(d.curb.pickup, d.today) + ": " + LCase(curbText(d.curb)), 26, 700, "Manrope", "#F4F1EA", rw - 108)
         s = "Curb by 7 AM"
@@ -590,7 +607,8 @@ sub buildWeek(g as object, d as object)
     for i = 0 to 6
         day = start + i * 86400
         x = 112 + i * (cw + 16)
-        isPickup = (tDay(d.curb.pickup) = day)
+        isPickup = d.curb <> invalid
+        if isPickup then isPickup = (tDay(d.curb.pickup) = day)
         border = "#1F2A44"
         dayColor = "#A9B1C4"
         if isPickup
@@ -670,8 +688,9 @@ end sub
 sub buildLake(g as object, d as object)
     lk = d.lake
     uiRect(g, 0, 0, 1920, 1080, "#081420")
-    header(g, "OUTDOORS · WEST POINT LAKE", "Lake conditions", "#7FB7E8", false)
-    uiText(g, 1808, 140, "USGS gauge 02339400 · " + tClock(lk.time), 24, 400, "Manrope", "#9FB3C8", 600, "right")
+    pl = d.place.lake
+    header(g, "OUTDOORS · " + UCase(pl.name), "Lake conditions", "#7FB7E8", false)
+    uiText(g, 1808, 140, "USGS gauge " + pl.site + " · " + tClock(lk.time), 24, 400, "Manrope", "#9FB3C8", 600, "right")
     top = 246
     uiCard(g, gx(1), top, gw(4), 770, "#0E2033", "#1B3550", 32)
     gx0 = gx(1) + 60
@@ -679,10 +698,14 @@ sub buildLake(g as object, d as object)
     gh = 640
     uiCard(g, gx0, gy0, 64, gh, "#132A42", "", 32)
     lvl = lk.level
-    ly = gy0 + (640 - lvl) / 20 * gh
+    ' the gauge shows 20 ft, from 5 ft above summer pool down
+    gTop = pl.summerPool + 5
+    ly = gy0 + (gTop - lvl) / 20 * gh
+    if ly < gy0 then ly = gy0
+    if ly > gy0 + gh - 40 then ly = gy0 + gh - 40
     uiCard(g, gx0, ly, 64, gy0 + gh - ly, "#7FB7E8", "", 32)
-    for each pool in [[635, "Summer full pool"], [628, "Winter pool"]]
-        py = gy0 + (640 - pool[0]) / 20 * gh
+    for each pool in [[pl.summerPool, "Summer full pool"], [pl.winterPool, "Winter pool"]]
+        py = gy0 + (gTop - pool[0]) / 20 * gh
         uiRect(g, gx0 - 16, py - 1, 96, 3, "#F4F1EA")
         uiText(g, gx0 + 120, py - 38, pool[0].ToStr() + " ft", 26, 700)
         uiText(g, gx0 + 120, py - 6, pool[1], 24, 400, "Manrope", "#9FB3C8")
@@ -691,9 +714,9 @@ sub buildLake(g as object, d as object)
     uiText(g, gx0 + 120, ly + 76, "feet now", 24, 600, "Manrope", "#7FB7E8")
     rx = gx(5)
     rw = gw(8)
-    if lvl < 628
+    if lvl < pl.winterPool
         uiCard(g, rx, top, rw, 170, "#2A2418", "#5A4520")
-        uiText(g, rx + 44, top + 30, fmt1(635 - lvl) + " ft below summer pool, " + fmt1(628 - lvl) + " ft below winter pool", 38, 500, "Outfit", "#F4F1EA", rw - 88)
+        uiText(g, rx + 44, top + 30, fmt1(pl.summerPool - lvl) + " ft below summer pool, " + fmt1(pl.winterPool - lvl) + " ft below winter pool", 38, 500, "Outfit", "#F4F1EA", rw - 88)
         uiText(g, rx + 44, top + 98, "Low water. Check Corps ramp and beach status before you launch.", 26, 400, "Manrope", "#E1D3BE", rw - 88)
     else
         uiCard(g, rx, top, rw, 170, "#0E2033", "#1B3550")
@@ -747,7 +770,7 @@ sub buildSky(g as object, d as object)
     title = "Cloudy tonight."
     if cloud < 70 then title = "Some clouds tonight."
     if cloud < 30 then title = "Clear skies. Look up."
-    header(g, "TONIGHT'S SKY OVER LAGRANGE", title, "#B3A6F2", false)
+    header(g, "TONIGHT'S SKY OVER " + UCase(d.place.town), title, "#B3A6F2", false)
     mp = d.moon
     idx = Int(mp.age / 29.530588853 * 30)
     if idx > 29 then idx = 29
@@ -764,7 +787,9 @@ sub buildSky(g as object, d as object)
         if (s.peak - d.today) \ 86400 <= 7 then lbl = "This week's show"
         uiLabel(g, tx, 340, lbl, 24, "#B3A6F2")
         uiText(g, tx, 384, s.name + " meteor shower peaks " + tDayWord(s.peak, d.today) + " night", 54, 500, "Outfit", "#F4F1EA", tw, "left", 2)
-        uiText(g, tx, 540, "Best in the dark hours before dawn. Face away from town lights; the West Point Lake shoreline is darker than downtown.", 26, 400, "Manrope", "#C9CEDA", tw, "left", 3)
+        tip = "Best in the dark hours before dawn. Face away from town lights."
+        if d.place.lake <> invalid then tip = tip + " The " + d.place.lake.name + " shoreline is darker than downtown."
+        uiText(g, tx, 540, tip, 26, 400, "Manrope", "#C9CEDA", tw, "left", 3)
     else
         uiLabel(g, tx, 340, "Tonight", 24, "#B3A6F2")
         uiText(g, tx, 384, "The moon is " + LCase(mp.name), 54, 500, "Outfit", "#F4F1EA", tw, "left", 2)
@@ -805,19 +830,24 @@ sub buildRecap(g as object, d as object)
         if hero = invalid and d.finals.Count() > 0 then hero = d.finals[0]
     end if
     if r <> invalid
-        auWon = (r.winner = "Auburn")
-        fans = {Auburn: fansOf(d, "Auburn"), Georgia: fansOf(d, "Georgia")}
+        fans = {}
+        fans[r.winner] = fansOf(d, r.winner)
+        fans[r.loser] = fansOf(d, r.loser)
+        win = teamNamed(d, r.winner)
         color = "#5C0A18"
-        accent = "#F2C4CC"
-        if auWon
-            color = "#0C2340"
-            accent = "#E87722"
+        accent = "#F4F1EA"
+        if win <> invalid
+            color = win.color
+            if win.accent <> invalid then accent = win.accent
         end if
         uiCard(g, gx(1), top, gw(6) + 40, 770, color, "", 32)
         uiLabel(g, gx(1) + 56, top + 54, "House divided · final", 24, accent)
         uiText(g, gx(1) + 56, top + 120, r.winner + " " + r.hi.ToStr(), 120, 600, "Outfit")
         uiText(g, gx(1) + 56, top + 280, r.loser + " " + r.lo.ToStr(), 80, 400, "Outfit", "#C9CEDA")
-        uiText(g, gx(1) + 56, top + 460, fans[r.winner] + " have bragging rights. " + fans[r.loser] + ", there's always next year.", 34, 500, "Manrope", "#F4F1EA", gw(6) - 72, "left", 3)
+        brag = r.winner + " fans have bragging rights."
+        if fans[r.winner] <> "" then brag = fans[r.winner] + " have bragging rights."
+        if fans[r.loser] <> "" then brag = brag + " " + fans[r.loser] + ", there's always next year."
+        uiText(g, gx(1) + 56, top + 460, brag, 34, 500, "Manrope", "#F4F1EA", gw(6) - 72, "left", 3)
         uiText(g, gx(1) + 56, top + 690, r.host + " hosted · " + r.network, 26, 400, "Manrope", "#C9CEDA", gw(6) - 72)
     else if hero <> invalid
         uiCard(g, gx(1), top, gw(6) + 40, 770, hero.color, "", 32)
@@ -847,7 +877,7 @@ sub buildRecap(g as object, d as object)
             uiCard(g, rx + 40, yy, 60, 42, bg, "", 10)
             uiText(g, rx + 70, yy + 5, wl, 24, 800, "Manrope", fg, 60, "center")
             label = f.team + " " + f.detail
-            if not f.pro then label = "Panthers " + sportCase(f.detail)
+            if not f.pro then label = f.team + " " + sportCase(f.detail)
             uiText(g, rx + 124, yy + 4, label, 26, 600, "Manrope", "#F4F1EA", rw - 300)
             uiText(g, rx + rw - 40, yy, f.score, 32, 400, "Outfit", "#F4F1EA", 150, "right")
             yy = yy + 64
@@ -858,9 +888,11 @@ sub buildRecap(g as object, d as object)
     uiCard(g, rx, top + 552, rw, 218)
     uiLabel(g, rx + 40, top + 588, "Season records")
     i = 0
-    for each t in [["georgia", "Georgia"], ["auburn", "Auburn"]]
-        uiText(g, rx + 40, top + 636 + i * 56, t[1] + " (" + fansOf(d, t[1]) + ")", 26, 600, "Manrope", "#F4F1EA", rw - 280)
-        rec = d.records[t[0]]
+    for each t in recordTeams(d)
+        label = t.name
+        if fansOf(d, t.name) <> "" then label = label + " (" + fansOf(d, t.name) + ")"
+        uiText(g, rx + 40, top + 636 + i * 56, label, 26, 600, "Manrope", "#F4F1EA", rw - 280)
+        rec = d.records[t.key]
         if rec = invalid then rec = "—"
         uiText(g, rx + rw - 40, top + 636 + i * 56, rec, 30, 400, "Outfit", "#F4F1EA", 200, "right")
         i = i + 1
@@ -874,6 +906,30 @@ function sportCase(detail as string) as string
         if k > 0 then return LCase(Left(detail, k - 1)) + Mid(detail, k)
     end for
     return LCase(detail)
+end function
+
+function teamNamed(d as object, name as string) as dynamic
+    for each t in d.place.teams
+        if t.name = name then return t
+    end for
+    return invalid
+end function
+
+' Season records to show: the rivalry pair, or else the first two teams.
+function recordTeams(d as object) as object
+    out = []
+    if d.place.rivalry <> invalid
+        for each n in d.place.rivalry
+            t = teamNamed(d, n)
+            if t <> invalid then out.Push(t)
+        end for
+    end if
+    if out.Count() = 0
+        for i = 0 to d.place.teams.Count() - 1
+            if i < 2 then out.Push(d.place.teams[i])
+        end for
+    end if
+    return out
 end function
 
 function fansOf(d as object, team as string) as string
@@ -892,7 +948,11 @@ sub buildGameday(g as object, d as object)
         if panels.Count() < 2 then panels.Push(gm)
     end for
     pw = 1920 / panels.Count()
-    divided = panels.Count() = 2 and ((panels[0].name = "Georgia" and panels[1].name = "Auburn") or (panels[0].name = "Auburn" and panels[1].name = "Georgia"))
+    divided = false
+    pair = d.place.rivalry
+    if panels.Count() = 2 and pair <> invalid and pair.Count() = 2
+        divided = (panels[0].name = pair[0] and panels[1].name = pair[1]) or (panels[0].name = pair[1] and panels[1].name = pair[0])
+    end if
     for i = 0 to panels.Count() - 1
         gm = panels[i]
         x = i * pw
@@ -911,7 +971,12 @@ sub buildGameday(g as object, d as object)
         if panels.Count() = 2 then size = 132
         uiText(g, tx, 110, gm.name, size, 600, "Outfit", "#F4F1EA", Int(pw) - 224, align)
         uiText(g, tx, 130 + size + 20, gm.detail, 34, 500, "Manrope", "#F4F1EA", Int(pw) - 224, align)
-        uiText(g, tx, 540, tClock(gm.start), 100, 300, "Outfit", "#F4F1EA", Int(pw) - 224, align)
+        if gm.state = "in"
+            uiText(g, tx, 520, gm.my + "–" + gm.their, 120, 500, "Outfit", "#F4F1EA", Int(pw) - 224, align)
+            if gm.status <> invalid and gm.status <> "" then uiText(g, tx, 400, gm.status, 34, 600, "Manrope", "#F4F1EA", Int(pw) - 224, align)
+        else
+            uiText(g, tx, 540, tClock(gm.start), 100, 300, "Outfit", "#F4F1EA", Int(pw) - 224, align)
+        end if
         if gm.network <> "" then uiText(g, tx, 680, "on " + gm.network, 30, 600, "Manrope", "#F4F1EA", Int(pw) - 224, align)
     end for
     if panels.Count() = 1
@@ -1013,11 +1078,35 @@ sub buildBoard(g as object, d as object)
     end for
     gx0 = gx(9)
     gw0 = gw(4)
-    uiCard(g, gx0, top, gw0, 770)
-    uiLabel(g, gx0 + 40, top + 38, "Grocery list")
-    yy = top + 98
+    gtop = top
+    if d.countdowns.Count() > 0
+        n = d.countdowns.Count()
+        if n > 3 then n = 3
+        ch = 84 + n * 70
+        uiCard(g, gx0, top, gw0, ch, "#1B2433", "")
+        uiRect(g, gx0 + 28, top + 1, gw0 - 56, 6, "#B3A6F2")
+        uiLabel(g, gx0 + 40, top + 34, "Counting down", 24, "#B3A6F2")
+        for i = 0 to n - 1
+            c = d.countdowns[i]
+            cy = top + 80 + i * 70
+            days = c.days.ToStr()
+            unit = "days"
+            if c.days = 1 then unit = "day"
+            if c.days = 0
+                days = "Today"
+                unit = ""
+            end if
+            uiText(g, gx0 + 40, cy, days, 44, 500, "Outfit", "#F4F1EA", 130)
+            uiText(g, gx0 + 176, cy + 4, c.title, 26, 600, "Manrope", "#F4F1EA", gw0 - 216)
+            uiText(g, gx0 + 176, cy + 36, unit + " · " + tShortDate(c.day), 24, 400, "Manrope", "#A9B1C4", gw0 - 216)
+        end for
+        gtop = top + ch + 24
+    end if
+    uiCard(g, gx0, gtop, gw0, top + 770 - gtop)
+    uiLabel(g, gx0 + 40, gtop + 38, "Grocery list")
+    yy = gtop + 98
     for i = 0 to d.groceries.Count() - 1
-        if i < 11
+        if yy < top + 770 - 60
             uiCard(g, gx0 + 40, yy + 4, 28, 28, "#131B2E", "#A9B1C4", 10)
             uiText(g, gx0 + 88, yy, d.groceries[i], 28, 400, "Manrope", "#F4F1EA", gw0 - 128)
             yy = yy + 56
@@ -1035,7 +1124,7 @@ end function
 
 sub buildSeason(g as object, d as object)
     uiBackdrop(g, "pkg:/images/bg_season.jpg", "#0B1120")
-    header(g, "WHAT'S IN SEASON · " + UCase(tMonthNames()[tParts(d.now).m - 1]), "The season in West Georgia", "#F4A259", false)
+    header(g, "WHAT'S IN SEASON · " + UCase(tMonthNames()[tParts(d.now).m - 1]), "The season in " + d.place.seasonRegion, "#F4A259", false)
     cards = []
     cards.Append(seasonItems(tParts(d.now).m))
     frost = invalid
@@ -1087,10 +1176,14 @@ sub buildRadar(g as object, d as object)
     uiText(g, 840, 532, "West Point Lake", 24, 600, "Manrope", "#A9C8EE", 260, "right")
     uiText(g, 960, 244, "25 mi", 24, 600, "Manrope", "#C9CEDA", 120, "center")
     status = "No rain nearby"
-    sub2 = "Forecast for LaGrange shows no rain in the next 2 hours"
+    sub2 = "Forecast for " + d.place.town + " shows no rain in the next 2 hours"
     if d.rainSoon
         status = "Rain likely soon"
-        sub2 = "Forecast shows rain near LaGrange within 2 hours"
+        sub2 = "Forecast shows rain near " + d.place.town + " within 2 hours"
+    end if
+    if d.storms.Count() > 0
+        st = d.storms[0]
+        sub2 = "Tropics: " + st.kind + " " + st.name + ", " + st.miles.ToStr() + " mi away"
     end if
     uiCard(g, gx(1), 64, gw(4), 250, "#0B1120", "#1F2A44", 28, 0.92)
     dotColor = "#9EC79B"
@@ -1104,7 +1197,7 @@ sub buildRadar(g as object, d as object)
     if warn then fill = "#5C0A18"
     ax = gx(9)
     uiCard(g, ax, 64, gw(4), 250, fill, "#1F2A44", 28, 0.92)
-    uiLabel(g, ax + 40, 96, "Alerts · Troup County")
+    uiLabel(g, ax + 40, 96, "Alerts · " + d.place.area)
     if warn
         yy = 136
         for each a in d.alerts

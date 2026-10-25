@@ -1,9 +1,11 @@
-# TV concierge (voice control)
+# TV concierge (voice control) · unmaintained
+
+> **Shelved.** This experiment uses the Claude API, which Daybreak deliberately doesn't. It's kept for reference and isn't tested or maintained. See [`../README.md`](../README.md).
 
 Say **"Hey Siri, TV Pilot"**, then speak a request like "put on something funny on Netflix", "turn it down", "pause" or "when's the Braves game?". Siri sends the words to this server on the Mac. Claude decides what to do and drives the TCL Roku TV, then Siri speaks a one-sentence reply.
 
 ```
-iPhone / Watch / HomePod ──Siri Shortcut "TV Pilot"──▶ concierge/server.py (Mac :8765) ──Claude API──▶ tools ──ECP──▶ TV :8060
+iPhone / Watch / HomePod ──Siri Shortcut "TV Pilot"──▶ attic/concierge/server.py (Mac :8765) ──Claude API──▶ tools ──ECP──▶ TV :8060
 ```
 
 ## Files
@@ -21,10 +23,10 @@ iPhone / Watch / HomePod ──Siri Shortcut "TV Pilot"──▶ concierge/serve
 2. **Start the server.**
    ```
    cd ~/Documents/GitHub/tv-check
-   .venv/bin/python concierge/server.py
+   .venv/bin/python attic/concierge/server.py
    ```
    It listens on port 8765. To keep it running across logins, install the LaunchAgent (see below).
-3. **Install the shortcut.** Run `open "concierge/shortcut/TV Pilot.shortcut"` on the Mac and click **Add Shortcut**. It syncs to your iPhone, Watch and HomePod through iCloud. You can also AirDrop the file to the phone.
+3. **Install the shortcut.** Run `open "attic/concierge/shortcut/TV Pilot.shortcut"` on the Mac and click **Add Shortcut**. It syncs to your iPhone, Watch and HomePod through iCloud. You can also AirDrop the file to the phone.
 4. **First run on the iPhone.** Run it once by tapping it. iOS asks for permission to use dictation and to connect to `<your-mac>.local`; allow both. From then on, "Hey Siri, TV Pilot" works hands-free.
 
 **If the shortcut import fails,** build it by hand in the Shortcuts app (2 minutes) with three actions:
@@ -59,10 +61,10 @@ Save as `~/Library/LaunchAgents/com.tvcheck.concierge.plist`, then run `launchct
   <key>Label</key><string>com.tvcheck.concierge</string>
   <key>ProgramArguments</key><array>
     <string>/Users/johnroberts/Documents/GitHub/tv-check/.venv/bin/python</string>
-    <string>/Users/johnroberts/Documents/GitHub/tv-check/concierge/server.py</string>
+    <string>/Users/johnroberts/Documents/GitHub/tv-check/attic/concierge/server.py</string>
   </array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
-  <key>StandardErrorPath</key><string>/Users/johnroberts/Documents/GitHub/tv-check/concierge/logs/server.log</string>
+  <key>StandardErrorPath</key><string>/Users/johnroberts/Documents/GitHub/tv-check/attic/concierge/logs/server.log</string>
 </dict></plist>
 ```

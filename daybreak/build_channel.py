@@ -57,6 +57,32 @@ def brs_val(v):
     return brs_str(v) if isinstance(v, str) else str(v)
 
 
+WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+
+def place_json():
+    """family.json "place" for the TV: nulls become "none" (BrightScript's ParseJson
+    drops nulls), news queries are URL-encoded, and only known keys pass."""
+    import urllib.parse
+    place = dict(family.get("place") or {})
+    known = {"town", "region", "area", "seasonRegion", "timezone", "teams", "rivalry", "lake", "college", "news", "curbside"}
+    unknown = set(place) - known
+    if unknown:
+        sys.exit(f"family.json place: unknown keys {sorted(unknown)} (known: {sorted(known)})")
+    if "news" in place and place["news"] is not None:
+        news = dict(place["news"])
+        news["queries"] = [urllib.parse.quote_plus(q) for q in news.get("queries", [])]
+        place["news"] = news
+    return json.dumps({k: ("none" if v is None else v) for k, v in place.items()}, ensure_ascii=False)
+
+
+def curb_weekday():
+    name = (family.get("curbside") or {}).get("weekday", "Monday")
+    if name not in WEEKDAYS:
+        sys.exit(f"family.json curbside.weekday must be one of {WEEKDAYS}")
+    return WEEKDAYS.index(name)
+
+
 def write_config():
     members = ", ".join(
         "{" + ", ".join(f"{k}: {brs_val(v)}" for k, v in
@@ -71,7 +97,8 @@ function DaybreakConfig() as object
         household: {brs_str(family["household"])},
         city: {brs_str(family["home"]["city"])},
         lat: {family["home"]["lat"]}, lon: {family["home"]["lon"]},
-        curbWeekday: 1,
+        curbWeekday: {curb_weekday()},
+        place: ParseJson({brs_str(place_json())}),
         gentleNews: {"false" if env.get("GENTLE_NEWS", "1").strip() == "0" else "true"},
         apps: [{", ".join(brs_str(a) for a in family.get("apps", [])[:6])}],
         calendarUrl: {brs_str(env.get("FAMILY_CALENDAR_ICS", ""))},

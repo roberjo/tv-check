@@ -41,7 +41,7 @@ sub Main()
     check("moon illum ~43%", Int(mp.illum * 100 + 0.5).ToStr(), "43")
     ' --- iCal: synthetic calendar (tests/fixtures/sample.ics) for Oct 17 + 21 days
     events = icsParse(ReadAsciiFile("pkg:/sample.ics"))
-    check("sample events parsed", events.Count().ToStr(), "10")
+    check("sample events parsed", events.Count().ToStr(), "11")
     lo = tYmd(2026, 10, 17)
     hi = lo + 21 * 86400
     found = []
@@ -53,7 +53,7 @@ sub Main()
         end if
     end for
     found.Sort()
-    check("occurrences (series ended, COUNT=2, all-day, UTC, TZID)", found.Join(" | "), "2026-10-17 Buy: milk, eggs, coffee | 2026-10-17 TV: Dinner at 6:30 tonight | 2026-10-18 Family photo with Grandma | 2026-10-20 Casey band rehearsal | 2026-10-23 Science fair registration deadline — Nov 7 fair | 2026-10-27 Casey band rehearsal | 2026-11-06 Dentist checkup for Riley | 2026-11-07 Science fair — both kids")
+    check("occurrences (series ended, COUNT=2, all-day, UTC, TZID)", found.Join(" | "), "2026-10-17 Buy: milk, eggs, coffee | 2026-10-17 TV: Dinner at 6:30 tonight | 2026-10-18 Family photo with Grandma | 2026-10-20 Casey band rehearsal | 2026-10-23 Science fair registration deadline — Nov 7 fair | 2026-10-27 Casey band rehearsal | 2026-10-30 Countdown: Beach trip | 2026-11-06 Dentist checkup for Riley | 2026-11-07 Science fair — both kids")
     for each ev in events
         if ev.summary = "Family photo with Grandma" then check("UTC -> local 6 PM", tClock(ev.start), "6:00 PM")
         if ev.summary = "Jordan Piano Lesson"

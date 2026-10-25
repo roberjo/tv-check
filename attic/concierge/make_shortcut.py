@@ -1,7 +1,7 @@
 """Build and sign the "TV Pilot" Siri Shortcut: Dictate Text -> POST to the
-concierge -> Speak the reply. Writes concierge/shortcut/TV Pilot.shortcut.
+concierge -> Speak the reply. Writes attic/concierge/shortcut/TV Pilot.shortcut.
 
-Usage: python3 concierge/make_shortcut.py [server_base_url]
+Usage: python3 attic/concierge/make_shortcut.py [server_base_url]
 """
 import os
 import pathlib
@@ -12,7 +12,7 @@ import sys
 import tempfile
 import uuid
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+ROOT = pathlib.Path(__file__).resolve().parents[2]  # repo root (this lives in attic/concierge)
 env = dict(l.split("=", 1) for l in (ROOT / ".env").read_text().split() if "=" in l)
 host = subprocess.run(["scutil", "--get", "LocalHostName"], capture_output=True, text=True).stdout.strip()
 base = sys.argv[1] if len(sys.argv) > 1 else f"http://{host}.local:{env.get('CONCIERGE_PORT', '8765')}"
@@ -62,7 +62,7 @@ workflow = {
     ],
 }
 
-out_dir = ROOT / "concierge" / "shortcut"
+out_dir = ROOT / "attic" / "concierge" / "shortcut"
 out_dir.mkdir(exist_ok=True)
 signed = out_dir / "TV Pilot.shortcut"
 # `shortcuts sign` reports "file doesn't exist" for paths under ~/Documents, so sign in a temp dir.

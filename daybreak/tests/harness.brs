@@ -7,6 +7,7 @@ function fixtureConfig() as object
     m.testNowUtc = now.utc
     m.testNowWall = now.wall
     m.offDevice = true
+    m.place = invalid
     cfg = ParseJson(ReadAsciiFile("pkg:/family.example.json"))
     cfg.lat = cfg.home.lat
     cfg.lon = cfg.home.lon
@@ -24,6 +25,8 @@ function fixtureConfig() as object
     feed("lake", ["lake.json"])
     feed("lc", ["lc.ics"])
     feed("radar", ["radar_caps.xml"])
+    feed("air", ["air.json"])
+    feed("tropics", ["nhc.json"])
     sports = []
     for each team in espnTeams()
         sports.Push("espn_" + team.key + ".json")

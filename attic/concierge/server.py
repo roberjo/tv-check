@@ -23,7 +23,7 @@ import anthropic
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from roku import ALLOWED_KEYS, Roku  # noqa: E402
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+ROOT = pathlib.Path(__file__).resolve().parents[2]  # repo root (this lives in attic/concierge)
 for line in (ROOT / ".env").read_text().splitlines():
     if "=" in line and not line.lstrip().startswith("#"):
         k, v = line.split("=", 1)
@@ -35,7 +35,7 @@ TOKEN = os.environ["CONCIERGE_TOKEN"]
 CONVERSATION_IDLE_RESET_S = 600
 MAX_HISTORY_MESSAGES = 40
 MAX_TOOL_ROUNDS = 8
-LOG_PATH = ROOT / "concierge" / "logs" / "commands.jsonl"
+LOG_PATH = ROOT / "attic" / "concierge" / "logs" / "commands.jsonl"
 
 tv = Roku(os.environ["ROKU_IP"],
           max_volume=int(os.environ.get("CONCIERGE_MAX_VOLUME", "40")),

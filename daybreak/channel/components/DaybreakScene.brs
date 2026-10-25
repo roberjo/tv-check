@@ -401,7 +401,8 @@ function sourceLimitsForDiag() as object
     return {
         weather: {ttl: 600, maxAge: 3 * 3600}, alerts: {ttl: 120, maxAge: 1800}, lake: {ttl: 1800, maxAge: 12 * 3600},
         sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
-        calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800}
+        calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
+        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600}
     }
 end function
 
