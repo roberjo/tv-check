@@ -13,6 +13,7 @@ Usage:
   .venv/bin/python daybreak/build_channel.py            # full build + zip
   .venv/bin/python daybreak/build_channel.py --check    # example config + BrighterScript only (CI)
   .venv/bin/python daybreak/build_channel.py --assets   # example config + fonts + images, for previews (CI)
+  .venv/bin/python daybreak/build_channel.py --demo     # public demo package: example family, no .env (release CI)
 """
 import json
 import math
@@ -37,12 +38,13 @@ SRC_FONTS = HERE / "art" / "fonts"
 SRC_ART = HERE / "art" / "assets"
 CHECK_ONLY = "--check" in sys.argv
 ASSETS_ONLY = "--assets" in sys.argv
+DEMO = "--demo" in sys.argv  # never reads .env or family.json: safe to publish
 _env = ROOT / ".env"
 env = {}
-if _env.exists() and not (CHECK_ONLY or ASSETS_ONLY):
+if _env.exists() and not (CHECK_ONLY or ASSETS_ONLY or DEMO):
     env = dict(l.split("=", 1) for l in _env.read_text().splitlines() if "=" in l and not l.startswith("#"))
 _family = ROOT / "config" / "family.json"
-if CHECK_ONLY or ASSETS_ONLY or not _family.exists():
+if CHECK_ONLY or ASSETS_ONLY or DEMO or not _family.exists():
     _family = ROOT / "config" / "family.example.json"
 family = json.loads(_family.read_text())
 
@@ -309,7 +311,9 @@ def manifest_text():
 
 
 def bsc_check():
-    check = subprocess.run(["npx", "-y", "brighterscript@0.65.27", "--rootDir", str(CH), "--createPackage", "false"],
+    local = ROOT / "node_modules" / ".bin" / "bsc"  # locked in package-lock.json (npm ci)
+    cmd = [str(local)] if local.exists() else ["npx", "-y", "brighterscript@0.65.27"]
+    check = subprocess.run(cmd + ["--rootDir", str(CH), "--createPackage", "false"],
                            capture_output=True, text=True, cwd=HERE)
     diag = [l for l in (check.stdout + check.stderr).splitlines() if " - error " in l or " - warning " in l or "Found " in l]
     print("\n".join(diag) or "bsc: no diagnostics")
@@ -328,7 +332,7 @@ if __name__ == "__main__":
     if bsc_check() != 0:
         sys.exit("BrighterScript reported errors; not packaging.")
     DIST.mkdir(exist_ok=True)
-    out = DIST / "daybreak.zip"
+    out = DIST / ("daybreak-demo.zip" if DEMO else "daybreak.zip")
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest", manifest_text())
         for p in sorted(CH.rglob("*")):

@@ -84,6 +84,18 @@ sub Main()
     end for
     check("no curb or lake tips", tipKinds.Join(","), "deadline,rain,frost,countdown,shower,tropics")
     m.place = invalid
+    ' school closings from the calendar become a top tip for today or tomorrow
+    extra = icsParse("BEGIN:VCALENDAR" + Chr(10) + "BEGIN:VEVENT" + Chr(10) + "DTSTART;VALUE=DATE:20261019" + Chr(10) + "DTEND;VALUE=DATE:20261020" + Chr(10) + "SUMMARY:No school — Troup County teacher workday" + Chr(10) + "END:VEVENT" + Chr(10) + "BEGIN:VEVENT" + Chr(10) + "DTSTART;VALUE=DATE:20261023" + Chr(10) + "SUMMARY:Early release 12:30" + Chr(10) + "END:VEVENT" + Chr(10) + "END:VCALENDAR")
+    saved = m.cache.calendar
+    both = []
+    both.Append(saved)
+    both.Append(extra)
+    store("calendar", both)
+    dc = derive(cfg)
+    check("closing tip first", dc.tips[0].kind + ": " + dc.tips[0].t, "school: Tomorrow: No school (Troup County teacher workday).")
+    check("early release later this week isn't a tip yet", dc.tips[1].kind, "curb")
+    check("closings show on the School screen", dc.calendar[1].school.ToStr() + " " + dc.calendar[1].whoText, "true Riley & Casey")
+    store("calendar", saved)
     ' chores: Sunday Oct 18 2026 is day 290 and week 41 since the anchors
     turns = []
     for each c in d.chores

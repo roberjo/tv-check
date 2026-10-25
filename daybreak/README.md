@@ -35,6 +35,7 @@ All due sources are fetched in parallel. Screens show "as of" when a source is o
 **Family board through the calendar:**
 - **Notes:** add an event called **"TV: Dinner at 6:30"**. It shows from 12 hours before the event until it ends.
 - **Groceries:** add **"Buy: milk, eggs"**.
+- **School closings:** when the district announces one, add an event like **"No school"**, **"Early release 12:30"** or **"Delayed opening"**. It becomes the top heads-up on the day and the day before, and shows on the School screen. Troup County Schools publishes no feed the TV could read; announcements come by SchoolStatus, media and Facebook.
 - **Countdowns:** add an event called **"Countdown: Beach trip"** on the day. The Board counts down to it (up to a year out), and Heads up mentions it in the last two weeks.
 - **Privacy:** health appointments show as "Appointment".
 

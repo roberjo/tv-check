@@ -1,0 +1,16 @@
+{
+  "name": "tv-check-daybreak-tools",
+  "private": true,
+  "description": "Dev tools for Daybreak: the BrightScript emulator for off-device tests and BrighterScript for type checks.",
+  "license": "MIT",
+  "scripts": {
+    "test": "sh daybreak/tests/run.sh && sh daybreak/tests/run_data.sh"
+  },
+  "devDependencies": {
+    "@rokucommunity/brs": "0.47.6",
+    "brighterscript": "0.65.27"
+  },
+  "overrides": {
+    "decode-uri-component": "0.5.1"
+  }
+}
