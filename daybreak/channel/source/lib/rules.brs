@@ -96,6 +96,20 @@ function nextShower(today as integer, withinDays as integer) as object
     return invalid
 end function
 
+' Boolean checks that treat a missing (invalid) value as neither true nor
+' false; comparing invalid to a boolean is a type mismatch in BrightScript.
+function isTrue(v as dynamic) as boolean
+    t = type(v)
+    if t = "Boolean" or t = "roBoolean" then return v
+    return false
+end function
+
+function isFalse(v as dynamic) as boolean
+    t = type(v)
+    if t = "Boolean" or t = "roBoolean" then return not v
+    return false
+end function
+
 ' Up to max tip texts, skipping tips whose ref is in shown (refs already on screen).
 function tipTexts(tips as object, shown as object, max as integer) as object
     out = []

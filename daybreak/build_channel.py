@@ -72,6 +72,7 @@ function DaybreakConfig() as object
         city: {brs_str(family["home"]["city"])},
         lat: {family["home"]["lat"]}, lon: {family["home"]["lon"]},
         curbWeekday: 1,
+        gentleNews: {"false" if env.get("GENTLE_NEWS", "1").strip() == "0" else "true"},
         apps: [{", ".join(brs_str(a) for a in family.get("apps", [])[:6])}],
         calendarUrl: {brs_str(env.get("FAMILY_CALENDAR_ICS", ""))},
         members: [{members}]
