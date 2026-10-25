@@ -149,8 +149,12 @@ def espn_live():
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     files = {"weather.json": weather(), "alerts.json": {"features": []},
-             "alerts_warning.json": {"features": [{"properties": {"event": "Tornado Warning"}},
-                                                  {"properties": {"event": "Flood Watch"}}]},
+             "alerts_warning.json": {"features": [
+                 {"properties": {"event": "Tornado Warning", "expires": "2026-10-18T10:45:00-04:00",
+                                 "headline": "Tornado Warning issued October 18 at 9:52AM EDT until October 18 at 10:45AM EDT by NWS Peachtree City GA",
+                                 "instruction": "TAKE COVER NOW! Move to a basement or an interior room on the lowest floor of a sturdy building.\nAvoid windows."}},
+                 {"properties": {"event": "Flood Watch", "expires": "2026-10-19T08:00:00-04:00"}},
+                 {"properties": {"event": "Wind Advisory", "expires": "2026-10-18T09:00:00-04:00"}}]},
              "lake.json": lake(), "air.json": air(), "nhc.json": storms(), "espn_live.json": espn_live()}
     for key, doc in espn().items():
         files[f"espn_{key}.json"] = doc

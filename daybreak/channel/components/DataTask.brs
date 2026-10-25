@@ -439,10 +439,18 @@ function derive(cfg as object) as object
     today = tDay(now)
     d = {version: tNowUtc(), now: now, today: today, household: cfg.household, city: cfg.city, members: cfg.members, apps: cfg.apps}
     d.place = currentPlace()
+    d.home = {lat: cfg.lat, lon: cfg.lon}
     d.weather = fresh("weather")
     d.alerts = fresh("alerts")
     d.alertsKnown = d.alerts <> invalid
     if d.alerts = invalid then d.alerts = []
+    ' expired alerts drop out (alerts refresh every 2 minutes, but the cache can lag)
+    live = []
+    for each a in d.alerts
+        if a.expires = invalid or a.expires = 0 or a.expires > now then live.Push(a)
+    end for
+    d.alerts = live
+    d.takeover = takeoverAlert(d.alerts, now)
     d.lake = fresh("lake")
     sports = deriveSports(fresh("sports"), now)
     lc = deriveLc(fresh("lc"), now)
@@ -474,6 +482,7 @@ function derive(cfg as object) as object
     d.air = deriveAir(fresh("air"), now)
     d.storms = deriveStorms(fresh("tropics"), cfg)
     d.countdowns = cal.countdowns
+    d.chores = choreTurns(cfg.chores, cfg.members, today)
     d.asOf = asOfTimes()
     d.tips = headsUp(d)
     d.headsUp = tipTexts(d.tips, {}, 3)
@@ -538,9 +547,27 @@ function normAlerts(j as dynamic) as dynamic
         else if Instr(1, ev, "Watch") > 0
             level = "watch"
         end if
-        out.Push({event: ev, level: level})
+        p = f.properties
+        expires = 0
+        if p.expires <> invalid then expires = tLocalIsoToWall(p.expires) ' NWS gives local time with its offset
+        if p.ends <> invalid then expires = tLocalIsoToWall(p.ends)
+        out.Push({event: ev, level: level, headline: strOrEmpty(p.headline), instruction: Left(strOrEmpty(p.instruction).Replace(Chr(10), " "), 420), expires: expires})
     end for
     return out
+end function
+
+' Warnings that take over the screen (app and screensaver) until they expire.
+function takeoverEvents() as object
+    return {"Tornado Warning": true, "Severe Thunderstorm Warning": true, "Flash Flood Warning": true,
+            "Extreme Wind Warning": true, "Hurricane Warning": true, "Tornado Emergency": true, "Flash Flood Emergency": true}
+end function
+
+function takeoverAlert(alerts as object, now as integer) as dynamic
+    events = takeoverEvents()
+    for each a in alerts
+        if events.DoesExist(a.event) and (a.expires = invalid or a.expires = 0 or a.expires > now) then return a
+    end for
+    return invalid
 end function
 
 function normLake(j as dynamic) as dynamic
