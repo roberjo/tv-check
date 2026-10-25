@@ -118,3 +118,51 @@ function tipTexts(tips as object, shown as object, max as integer) as object
     end for
     return out
 end function
+
+' --- place --------------------------------------------------------------------------
+' Everything town- and household-specific beyond family members. These are
+' the LaGrange, Georgia defaults; config/family.json "place" overrides any
+' top-level key (see config/family.example.json). Set lake, college or
+' curbside to null to turn that part off.
+function placeDefaults() as object
+    return {
+        town: "LaGrange", region: "GA", area: "Troup County", seasonRegion: "West Georgia",
+        timezone: "America/New_York",
+        teams: [
+            {key: "georgia", name: "Georgia", short: "UGA", color: "#BA0C2F", id: "61", path: "football/college-football/teams/61"},
+            {key: "auburn", name: "Auburn", short: "AU", color: "#0C2340", accent: "#E87722", id: "2", path: "football/college-football/teams/2"},
+            {key: "falcons", name: "Falcons", short: "ATL", color: "#A71930", id: "1", path: "football/nfl/teams/1"},
+            {key: "hawks", name: "Hawks", short: "HWK", color: "#C8102E", id: "1", path: "basketball/nba/teams/1"},
+            {key: "braves", name: "Braves", short: "ATL", color: "#13274F", accent: "#CE1141", id: "15", path: "baseball/mlb/teams/15"}
+        ],
+        rivalry: ["Georgia", "Auburn"],
+        lake: {name: "West Point Lake", site: "02339400", summerPool: 635, winterPool: 628, lowAlert: 626},
+        college: {name: "LaGrange College", short: "LC", team: "Panthers", color: "#8E1B24",
+                  ics: "https://lagrangepanthers.com/calendar.ashx/calendar.ics"},
+        news: {queries: ["%22LaGrange%22+GA+when%3A2d", "%22Troup+County%22+when%3A3d", "%22LaGrange+Daily+News%22+when%3A2d"],
+               local: "lagrange|troup|west point|hogansville|callaway|pine mountain", ownSource: "LaGrange"},
+        curbside: "lagrange"
+    }
+end function
+
+' cfg.place over the defaults, key by key. An explicit null (invalid) in
+' family.json arrives as the string "none" from the build.
+function placeOf(cfg as dynamic) as object
+    p = placeDefaults()
+    if cfg = invalid or cfg.place = invalid then return p
+    for each k in cfg.place
+        v = cfg.place[k]
+        if type(v) = "roString" or type(v) = "String"
+            if v = "none" then p[k] = invalid else p[k] = v
+        else
+            p[k] = v
+        end if
+    end for
+    return p
+end function
+
+' The place for this thread: set by the data task and the harness, defaults otherwise.
+function currentPlace() as object
+    if m.place = invalid then m.place = placeDefaults()
+    return m.place
+end function

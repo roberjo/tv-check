@@ -12,6 +12,7 @@ end sub
 
 sub runLoop()
     cfg = m.top.config
+    m.place = placeOf(cfg)
     m.cache = {}
     m.fetched = {}
     m.health = {}
@@ -64,7 +65,8 @@ function sourceLimits() as object
     return {
         weather: {ttl: 600, maxAge: 3 * 3600}, alerts: {ttl: 120, maxAge: 1800}, lake: {ttl: 1800, maxAge: 12 * 3600},
         sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
-        calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800}
+        calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
+        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600}
     }
 end function
 
@@ -72,7 +74,7 @@ function sourceUrls(cfg as object) as object
     lat = cfg.lat.ToStr()
     lon = cfg.lon.ToStr()
     wx = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
-    wx = wx + "&timezone=America%2FNew_York&forecast_days=8&temperature_unit=fahrenheit&wind_speed_unit=mph"
+    wx = wx + "&timezone=" + currentPlace().timezone.Replace("/", "%2F") + "&forecast_days=8&temperature_unit=fahrenheit&wind_speed_unit=mph"
     wx = wx + "&current=temperature_2m,weather_code,wind_speed_10m"
     wx = wx + "&hourly=temperature_2m,weather_code,precipitation_probability,cloud_cover"
     wx = wx + "&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,wind_speed_10m_max"
@@ -80,25 +82,37 @@ function sourceUrls(cfg as object) as object
     for each team in espnTeams()
         sports.Push("https://site.api.espn.com/apis/site/v2/sports/" + team.path + "/schedule")
     end for
+    place = currentPlace()
     news = []
     for each q in newsQueries()
         news.Push("https://news.google.com/rss/search?q=" + q + "&hl=en-US&gl=US&ceid=US:en")
     end for
     calendar = []
     if cfg.calendarUrl <> invalid and cfg.calendarUrl <> "" then calendar.Push(cfg.calendarUrl)
+    lake = []
+    if place.lake <> invalid then lake.Push("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + place.lake.site + "&parameterCd=00062")
+    college = []
+    if place.college <> invalid then college.Push(place.college.ics)
+    ' Atlantic hurricane season, June through November
+    tropics = []
+    month = tParts(tNowWall()).m
+    if month >= 6 and month <= 11 then tropics.Push("https://www.nhc.noaa.gov/CurrentStorms.json")
     return {
         weather: [wx],
         alerts: ["https://api.weather.gov/alerts/active?point=" + lat + "," + lon],
-        lake: ["https://waterservices.usgs.gov/nwis/iv/?format=json&sites=02339400&parameterCd=00062"],
+        lake: lake,
         sports: sports,
-        lc: ["https://lagrangepanthers.com/calendar.ashx/calendar.ics"],
+        lc: college,
         news: news,
         calendar: calendar,
-        radar: ["https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&request=GetCapabilities"]
+        radar: ["https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&request=GetCapabilities"],
+        air: ["https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + lat + "&longitude=" + lon + "&current=us_aqi,pm2_5&hourly=us_aqi&forecast_days=2&timezone=" + currentPlace().timezone.Replace("/", "%2F")],
+        tropics: tropics
     }
 end function
 
 function due(name as string, ttl as integer) as boolean
+    if name = "sports" and liveGame() then ttl = 120 ' scores every 2 minutes during a game
     last = m.fetched[name]
     return last = invalid or tNowUtc() - last >= ttl
 end function
@@ -168,7 +182,7 @@ sub fetchAll(reqs as object, timeoutMs as integer)
             ut.SetCertificatesFile("common:/certs/ca-bundle.crt")
             ut.InitClientCertificates()
         end if
-        ut.AddHeader("User-Agent", "Daybreak home TV dashboard (personal, LaGrange GA)")
+        ut.AddHeader("User-Agent", "Daybreak home TV dashboard (personal, " + currentPlace().town + " " + currentPlace().region + ")")
         ut.EnableEncodings(true)
         r.clock = CreateObject("roTimespan")
         if ut.AsyncGetToString()
@@ -230,6 +244,8 @@ function ingest(name as string, bodies as object) as dynamic
     end if
     if name = "news" then return parseNews(bodies)
     if name = "radar" then return radarTimes(bodies[0], 8)
+    if name = "air" then return normAir(parseJsonSafe(bodies[0]))
+    if name = "tropics" then return normStorms(parseJsonSafe(bodies[0]))
     return invalid
 end function
 
@@ -239,6 +255,21 @@ function parseJsonSafe(text as string) as dynamic
     t = text.Trim()
     if t = "" or (Left(t, 1) <> "{" and Left(t, 1) <> "[") then return invalid
     return ParseJson(t)
+end function
+
+' True while a tracked game is in progress (or should have started in the
+' last 4 hours and hasn't finished).
+function liveGame() as boolean
+    all = m.cache.sports
+    if all = invalid then return false
+    now = tNowWall()
+    for each entry in all
+        for each ev in entry.events
+            if ev.state = "in" then return true
+            if ev.state = "pre" and not ev.tbd and ev.start <= now and ev.start >= now - 4 * 3600 then return true
+        end for
+    end for
+    return false
 end function
 
 sub store(name as string, value as dynamic)
@@ -302,13 +333,7 @@ end function
 ' --- per-source parsing -----------------------------------------------------------
 
 function espnTeams() as object
-    return [
-        {key: "georgia", name: "Georgia", short: "UGA", color: "#BA0C2F", id: "61", path: "football/college-football/teams/61"},
-        {key: "auburn", name: "Auburn", short: "AU", color: "#0C2340", accent: "#E87722", id: "2", path: "football/college-football/teams/2"},
-        {key: "falcons", name: "Falcons", short: "ATL", color: "#A71930", id: "1", path: "football/nfl/teams/1"},
-        {key: "hawks", name: "Hawks", short: "HWK", color: "#C8102E", id: "1", path: "basketball/nba/teams/1"},
-        {key: "braves", name: "Braves", short: "ATL", color: "#13274F", accent: "#CE1141", id: "15", path: "baseball/mlb/teams/15"}
-    ]
+    return currentPlace().teams
 end function
 
 ' ESPN schedule -> [{start, state, home, opp, network, tbd, won, my, their}]
@@ -342,15 +367,18 @@ function normEspn(j as dynamic, team as object) as dynamic
             if comp.timeValid <> invalid
                 if comp.timeValid = false then tbd = true
             end if
+            status = ""
+            if comp.status.type.shortDetail <> invalid then status = comp.status.type.shortDetail
             out.Push({start: tUtcIsoToWall(ev.date), state: comp.status.type.state, home: (mine.homeAway = "home"),
-                      opp: opp, network: network, tbd: tbd, won: won, my: scoreOf(mine), their: scoreOf(other)})
+                      opp: opp, network: network, tbd: tbd, won: won, my: scoreOf(mine), their: scoreOf(other), status: status})
         end if
     end for
     return out
 end function
 
+' Google News queries, already URL-encoded (the build encodes family.json's).
 function newsQueries() as object
-    return ["%22LaGrange%22+GA+when%3A2d", "%22Troup+County%22+when%3A3d", "%22LaGrange+Daily+News%22+when%3A2d"]
+    return currentPlace().news.queries
 end function
 
 function parseNews(bodies as object) as dynamic
@@ -358,7 +386,8 @@ function parseNews(bodies as object) as dynamic
     social = CreateObject("roRegex", "instagram|facebook|tiktok|youtube|twitter|nfhs|reddit", "i")
     noise = CreateObject("roRegex", "\bvarsity\b.*@|@.*\bvarsity\b|live (&|and) on demand", "i")
     gentle = CreateObject("roRegex", "shoot|shot\b|killed|murder|homicide|stabb|deadly|fatal|arrest|incident report|charged with|assault", "i")
-    localRe = CreateObject("roRegex", "lagrange|troup|west point|hogansville|callaway|pine mountain", "i")
+    localRe = CreateObject("roRegex", currentPlace().news.local, "i")
+    ownSource = currentPlace().news.ownSource
     tail = CreateObject("roRegex", "\s+-\s+[^-]+$", "")
     seen = {}
     out = []
@@ -374,7 +403,8 @@ function parseNews(bodies as object) as dynamic
                 key = LCase(Left(headline, 60))
                 ok = not seen.DoesExist(key) and not skip.IsMatch(title + " " + source) and not social.IsMatch(source)
                 ok = ok and not noise.IsMatch(title) and localRe.IsMatch(title + " " + source)
-                if ok and Instr(1, source, "LaGrange") > 0 and headline.Split(" ").Count() <= 4 then ok = false
+                ' very short headlines from the town's own paper are section labels, not news
+                if ok and ownSource <> invalid and Instr(1, source, ownSource) > 0 and headline.Split(" ").Count() <= 4 then ok = false
                 if ok
                     seen[key] = true
                     out.Push({headline: headline, source: source, violent: gentle.IsMatch(title)})
@@ -408,6 +438,7 @@ function derive(cfg as object) as object
     now = tNowWall()
     today = tDay(now)
     d = {version: tNowUtc(), now: now, today: today, household: cfg.household, city: cfg.city, members: cfg.members, apps: cfg.apps}
+    d.place = currentPlace()
     d.weather = fresh("weather")
     d.alerts = fresh("alerts")
     d.alertsKnown = d.alerts <> invalid
@@ -431,7 +462,8 @@ function derive(cfg as object) as object
             if not (gentleNews and isTrue(n.violent)) then d.news.Push(n)
         end for
     end if
-    d.curb = curbNext(today, cfg.curbWeekday)
+    d.curb = invalid
+    if d.place.curbside = "lagrange" then d.curb = curbNext(today, cfg.curbWeekday)
     d.birthdays = birthdays(cfg.members, today, 30)
     utc = tNowUtc()
     d.moon = moonPhase(utc - utc mod 3600) ' hourly, so the data doesn't change every minute
@@ -439,6 +471,9 @@ function derive(cfg as object) as object
     d.radarTimes = fresh("radar")
     if d.radarTimes = invalid then d.radarTimes = []
     d.rainSoon = rainSoon(d.weather, now)
+    d.air = deriveAir(fresh("air"), now)
+    d.storms = deriveStorms(fresh("tropics"), cfg)
+    d.countdowns = cal.countdowns
     d.asOf = asOfTimes()
     d.tips = headsUp(d)
     d.headsUp = tipTexts(d.tips, {}, 3)
@@ -517,9 +552,18 @@ function normLake(j as dynamic) as dynamic
     return {level: Val(v.value), time: tLocalIsoToWall(v.dateTime)}
 end function
 
+' rivalry: the place's pair of tracked team names ([a, b]); a final between
+' them becomes the "house divided" result.
 function deriveSports(all as dynamic, now as integer) as object
     out = {games: [], finals: [], rivalry: invalid, records: {}}
     if all = invalid then return out
+    pair = currentPlace().rivalry
+    rivA = ""
+    rivB = ""
+    if pair <> invalid and pair.Count() = 2
+        rivA = pair[0]
+        rivB = pair[1]
+    end if
     for each entry in all
         team = entry.team
         w = 0
@@ -530,17 +574,17 @@ function deriveSports(all as dynamic, now as integer) as object
             if ev.state = "post"
                 if ev.won then w = w + 1 else l = l + 1
                 if ev.start >= now - 36 * 3600
-                    rivalry = (ev.opp = "Auburn" or ev.opp = "Georgia") and (team.key = "georgia" or team.key = "auburn")
+                    rivalry = rivA <> "" and (ev.opp = rivA or ev.opp = rivB) and (team.name = rivA or team.name = rivB)
                     out.finals.Push({team: team.name, color: team.color, won: ev.won, score: ev.my + "–" + ev.their, detail: detail,
                                      start: ev.start, pro: true, rivalry: rivalry})
-                    if rivalry and team.key = "auburn"
+                    if rivalry and team.name = rivB
                         hi = Val(ev.my)
                         lo = Val(ev.their)
-                        winner = "Georgia"
-                        loser = "Auburn"
+                        winner = rivA
+                        loser = rivB
                         if ev.won
-                            winner = "Auburn"
-                            loser = "Georgia"
+                            winner = rivB
+                            loser = rivA
                         end if
                         if lo > hi
                             t = hi
@@ -548,14 +592,14 @@ function deriveSports(all as dynamic, now as integer) as object
                             lo = t
                         end if
                         host = ev.opp
-                        if ev.home then host = "Auburn"
+                        if ev.home then host = rivB
                         out.rivalry = {winner: winner, loser: loser, hi: hi, lo: lo, network: ev.network, host: host}
                     end if
                 end if
             else if ev.start >= now - 4 * 3600 and ev.start <= now + 14 * 86400
                 out.games.Push({name: team.name, short: team.short, color: team.color, accent: team.accent,
                                 start: ev.start, state: ev.state, detail: detail, network: ev.network, tbd: ev.tbd,
-                                my: ev.my, their: ev.their})
+                                my: ev.my, their: ev.their, status: ev.status})
             end if
         end for
         out.records[team.key] = w.ToStr() + "–" + l.ToStr()
@@ -576,9 +620,11 @@ function normLc(events as dynamic) as dynamic
     if events = invalid then return invalid
     res = CreateObject("roRegex", "^\[(W|L|T)\]\s*", "")
     score = CreateObject("roRegex", "\\n([WLT]) (\d+)-(\d+)", "")
+    collegeName = ""
+    if currentPlace().college <> invalid then collegeName = currentPlace().college.name
     out = []
     for each ev in events
-        title = ev.summary.Replace("LaGrange College ", "").Trim()
+        title = ev.summary.Replace(collegeName + " ", "").Trim()
         if Left(title, 9) <> "CANCELLED"
             item = {title: title, start: ev.start, allDay: ev.allDay, result: "", us: "", them: ""}
             mt = res.Match(title)
@@ -599,12 +645,13 @@ end function
 
 function deriveLc(events as dynamic, now as integer) as object
     out = {games: [], finals: []}
-    if events = invalid then return out
+    c = currentPlace().college
+    if events = invalid or c = invalid then return out
     for each ev in events
         title = ev.title
         if ev.result <> ""
             if ev.start >= now - 36 * 3600 and ev.start <= now
-                out.finals.Push({team: "Panthers", color: "#8E1B24", won: (ev.result = "W"), score: ev.us + "–" + ev.them,
+                out.finals.Push({team: c.team, color: c.color, won: (ev.result = "W"), score: ev.us + "–" + ev.them,
                                  detail: lcShort(title), start: ev.start, pro: false, rivalry: false})
             end if
         else if not ev.allDay and ev.start >= now and ev.start <= now + 14 * 86400
@@ -616,7 +663,7 @@ function deriveLc(events as dynamic, now as integer) as object
                 sport = LCase(parts[0].Trim())
                 opp = ""
                 if parts.Count() > 1 then opp = lcShort(parts[1].Split(" - ")[0])
-                out.games.Push({name: "Panthers " + sport, short: "LC", color: "#8E1B24", accent: invalid,
+                out.games.Push({name: c.team + " " + sport, short: c.short, color: c.color, accent: invalid,
                                 start: ev.start, state: "pre", detail: sep.Trim() + " " + opp, network: "", tbd: false})
             end if
         end if
@@ -645,7 +692,7 @@ function mergeFinals(a as object, b as object) as object
 end function
 
 function deriveCalendar(events as dynamic, cfg as object, now as integer) as object
-    out = {items: [], notes: [], groceries: []}
+    out = {items: [], notes: [], groceries: [], countdowns: []}
     if events = invalid then return out
     health = CreateObject("roRegex", "doctor|pediatric|well-?check|dentist|dental|orthodont|flu shot|vaccin|clinic|hospital|therap|physical|appointment|wellstar|medical|urgent care|derm|optom|eye exam", "i")
     school = CreateObject("roRegex", "\bSAT\b|\bACT\b|PSAT|school|exam|report card|early release|band|homecoming|graduation|registration|teacher|class|semester", "i")
@@ -658,7 +705,13 @@ function deriveCalendar(events as dynamic, cfg as object, now as integer) as obj
     end for
     today = tDay(now)
     for each ev in events
-        if not ev.cancelled
+        if not ev.cancelled and UCase(Left(ev.summary.Trim(), 10)) = "COUNTDOWN:"
+            ' "Countdown: Beach trip": days until its next occurrence, up to a year out
+            occ = icsOccurrences(ev, today, today + 366 * 86400)
+            if occ.Count() > 0
+                out.countdowns.Push({title: Mid(ev.summary.Trim(), 11).Trim(), day: tDay(occ[0]), days: (tDay(occ[0]) - today) \ 86400})
+            end if
+        else if not ev.cancelled
             for each start in icsOccurrences(ev, today - 7 * 86400, today + 21 * 86400)
                 title = ev.summary.Trim()
                 finish = start + 3600
@@ -706,6 +759,7 @@ function deriveCalendar(events as dynamic, cfg as object, now as integer) as obj
         end if
     end for
     out.items.SortBy("start")
+    out.countdowns.SortBy("days")
     return out
 end function
 
@@ -756,10 +810,11 @@ function headsUp(d as object) as object
     for each a in d.alerts
         p = 1
         if a.level = "warning" then p = 0
-        tips.Push({p: p, kind: "alert", ref: a.event, t: a.event + " for Troup County."})
+        tips.Push({p: p, kind: "alert", ref: a.event, t: a.event + " for " + d.place.area + "."})
     end for
     c = d.curb
-    n = (c.pickup - today) \ 86400
+    n = 99
+    if c <> invalid then n = (c.pickup - today) \ 86400
     if n <= 1 or (tWeekday(d.now) = 0 and n <= 2)
         moved = ""
         if c.holiday <> invalid then moved = " (moved for " + c.holiday + ")"
@@ -802,8 +857,20 @@ function headsUp(d as object) as object
     if d.shower <> invalid and (d.shower.peak - today) \ 86400 <= 4
         tips.Push({p: 7, kind: "shower", ref: d.shower.name, t: "The " + d.shower.name + " meteor shower peaks " + tDayWord(d.shower.peak, today) + " night. Best before dawn."})
     end if
-    if d.lake <> invalid and d.lake.level < 626
-        tips.Push({p: 8, kind: "lake", ref: "lake", t: "West Point Lake is low at " + fmt1(d.lake.level) + " ft. Check ramps before launching."})
+    if d.air <> invalid and d.air.peak >= 101
+        tips.Push({p: 5, kind: "air", ref: "air", t: "Air quality " + LCase(aqiLabel(d.air.peak)) + " " + tDayWord(d.air.peakAt, today) + " (AQI " + d.air.peak.ToStr() + "). Limit time outdoors if sensitive."})
+    end if
+    for each c in d.countdowns
+        if c.days > 0 and c.days <= 14 then tips.Push({p: 6, kind: "countdown", ref: c.title, t: c.title + " is in " + c.days.ToStr() + " days."})
+        if c.days = 0 then tips.Push({p: 6, kind: "countdown", ref: c.title, t: c.title + " is today!"})
+    end for
+    for each st in d.storms
+        p = 7
+        if st.miles <= 500 then p = 3
+        tips.Push({p: p, kind: "tropics", ref: st.name, t: st.kind + " " + st.name + " (" + st.mph.ToStr() + " mph) is " + st.miles.ToStr() + " mi from " + d.place.town + "."})
+    end for
+    if d.lake <> invalid and d.place.lake <> invalid and d.lake.level < d.place.lake.lowAlert
+        tips.Push({p: 8, kind: "lake", ref: "lake", t: d.place.lake.name + " is low at " + fmt1(d.lake.level) + " ft. Check ramps before launching."})
     end if
     ' SortBy doesn't promise a stable order; sort on priority, then insertion order.
     for i = 0 to tips.Count() - 1
@@ -811,4 +878,93 @@ function headsUp(d as object) as object
     end for
     tips.SortBy("order")
     return tips
+end function
+
+' --- air quality and the tropics ------------------------------------------------------
+
+' Open-Meteo air quality -> {aqi (now), pm25, hours: [{t, aqi}]}
+function normAir(j as dynamic) as dynamic
+    if j = invalid or j.current = invalid or j.current.us_aqi = invalid then return invalid
+    hours = []
+    if j.hourly <> invalid and j.hourly.us_aqi <> invalid
+        for i = 0 to j.hourly.time.Count() - 1
+            if j.hourly.us_aqi[i] <> invalid then hours.Push({t: tLocalIsoToWall(j.hourly.time[i]), aqi: Int(j.hourly.us_aqi[i])})
+        end for
+    end if
+    return {aqi: Int(j.current.us_aqi), pm25: numOr(j.current.pm2_5, 0), hours: hours}
+end function
+
+' Now, and the worst hour in the next 24 (for the heads-up).
+function deriveAir(a as dynamic, now as integer) as dynamic
+    if a = invalid then return invalid
+    peak = a.aqi
+    peakAt = now
+    for each h in a.hours
+        if h.t > now and h.t <= now + 24 * 3600 and h.aqi > peak
+            peak = h.aqi
+            peakAt = h.t
+        end if
+    end for
+    return {aqi: a.aqi, label: aqiLabel(a.aqi), peak: peak, peakAt: peakAt}
+end function
+
+' US AQI categories (EPA).
+function aqiLabel(aqi as integer) as string
+    if aqi <= 50 then return "Good"
+    if aqi <= 100 then return "Moderate"
+    if aqi <= 150 then return "Unhealthy for sensitive groups"
+    if aqi <= 200 then return "Unhealthy"
+    if aqi <= 300 then return "Very unhealthy"
+    return "Hazardous"
+end function
+
+' NHC CurrentStorms.json -> Atlantic storms [{name, kind, mph, lat, lon}]
+function normStorms(j as dynamic) as dynamic
+    if j = invalid or j.activeStorms = invalid then return invalid
+    kinds = {HU: "Hurricane", TS: "Tropical Storm", TD: "Tropical Depression", STS: "Subtropical Storm",
+             STD: "Subtropical Depression", PTC: "Potential Tropical Cyclone", PC: "Post-tropical cyclone"}
+    out = []
+    for each s in j.activeStorms
+        bin = ""
+        if s.binNumber <> invalid then bin = s.binNumber
+        if Left(bin, 2) = "AT"
+            kind = kinds[s.classification]
+            if kind = invalid then kind = "Storm"
+            kt = Val(strOrEmpty(s.intensity))
+            out.Push({name: s.name, kind: kind, mph: Int(kt * 1.15078 + 0.5), lat: s.latitudeNumeric, lon: s.longitudeNumeric})
+        end if
+    end for
+    return out
+end function
+
+function strOrEmpty(v as dynamic) as string
+    if v = invalid then return ""
+    if type(v) = "roString" or type(v) = "String" then return v
+    return v.ToStr()
+end function
+
+' Storms with their great-circle distance from home in miles, nearest first.
+function deriveStorms(storms as dynamic, cfg as object) as object
+    out = []
+    if storms = invalid then return out
+    for each s in storms
+        if s.lat <> invalid and s.lon <> invalid
+            st = {}
+            st.Append(s)
+            st.miles = milesBetween(cfg.lat, cfg.lon, s.lat, s.lon)
+            out.Push(st)
+        end if
+    end for
+    out.SortBy("miles")
+    return out
+end function
+
+function milesBetween(lat1 as float, lon1 as float, lat2 as float, lon2 as float) as integer
+    r = 3958.8
+    k = 3.14159265 / 180
+    dLat = (lat2 - lat1) * k
+    dLon = (lon2 - lon1) * k
+    a = Sin(dLat / 2) * Sin(dLat / 2) + Cos(lat1 * k) * Cos(lat2 * k) * Sin(dLon / 2) * Sin(dLon / 2)
+    c = 2 * Atn(Sqr(a) / Sqr(1 - a))
+    return Int(r * c + 0.5)
 end function
