@@ -43,6 +43,11 @@ sub Main()
     check("warning puts radar first", chooseScreens(d, "app")[0], "radar")
     texts = labelTexts(buildScreen("radar", d))
     check("radar lists the warning", texts.DoesExist("Tornado Warning"), true)
+    check("radar says it's live, with the scan time", texts.DoesExist("No rain nearby"), true)
+    check("legend explains very light echoes", texts.DoesExist("Very light"), true)
+    d.radarTimes = []
+    texts = labelTexts(buildScreen("radar", d))
+    check("no frames says unavailable", texts.DoesExist("Radar unavailable") and not texts.DoesExist("No rain nearby"), true)
     ' stale and missing data
     m.fetched.weather = m.testNowUtc - 30 * 60
     m.fetched.alerts = m.testNowUtc - 2 * 3600
