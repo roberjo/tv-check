@@ -19,11 +19,30 @@ sub Main()
     texts = labelTexts(buildScreen("briefing", d))
     check("briefing heads-up has no repeats", texts.DoesExist("Rain likely Tuesday (65%).") and not texts.DoesExist("Tomorrow: garbage plus yard waste (no grass clippings). Curb by 7 AM."), true)
     ' warning + rain reorders the app playlist
-    m.cache.alerts = ParseJson(ReadAsciiFile("pkg:/feeds/alerts_warning.json"))
+    feed("alerts", ["alerts_warning.json"])
     d = derive(cfg)
     check("warning puts radar first", chooseScreens(d, "app")[0], "radar")
     texts = labelTexts(buildScreen("radar", d))
     check("radar lists the warning", texts.DoesExist("Tornado Warning"), true)
+    ' stale and missing data
+    m.fetched.weather = m.testNowUtc - 30 * 60
+    m.fetched.alerts = m.testNowUtc - 2 * 3600
+    d = derive(cfg)
+    texts = labelTexts(buildScreen("briefing", d))
+    check("weather card says as of", texts.DoesExist("as of 9:30 AM"), true)
+    texts = labelTexts(buildScreen("radar", d))
+    check("expired alerts say unavailable", texts.DoesExist("Unavailable") and not texts.DoesExist("None in effect"), true)
+    ' radar frames are reused between builds and trimmed on low memory
+    a = buildScreen("radar", d)
+    framesA = m.radarFrames[0].poster
+    b = buildScreen("radar", d)
+    check("radar frames reused", framesA.isSameNode(m.radarFrames[0].poster) and m.radarFrames.Count() = 8, true)
+    check("frames moved to the new screen", a.getChildCount() < b.getChildCount(), true)
+    m.lowMemory = true
+    m.radarCache = invalid
+    g = buildScreen("radar", d)
+    check("low memory: 4 frames, no photos", m.radarFrames.Count().ToStr() + " " + buildScreen("ambient", d).getChild(0).subtype(), "4 Rectangle")
+    m.lowMemory = false
     testSummary("screens")
 end sub
 

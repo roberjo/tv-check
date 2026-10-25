@@ -2,6 +2,27 @@
 
 All notable changes to Daybreak. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Work is tracked on the [Daybreak roadmap](https://github.com/users/roberjo/projects/2) project.
 
+## [1.2.0] - 2026-10-25
+
+Performance, memory and reliability.
+
+### Changed
+- **Screens rebuild only when they rotate in or their data changes.** Before, the current screen was rebuilt and crossfaded every minute. The data task now publishes only when the content changes, and relative times are stamped when a screen is built (#7).
+- **Radar uses about 17 MB instead of about 100 MB.** It loads 8 frames at 960×540 (scaled up) instead of 12 at 1920×1080. The frames are built once per set of times and reused, so rotating back to radar doesn't download them again (#8).
+- **Feeds are reduced to compact forms when they arrive.** Raw ESPN schedules (up to ~360 KB each) and calendar descriptions are no longer held in memory (#10).
+- **All due feeds are fetched in parallel** with one 25-second deadline, instead of one after another with 25 seconds each (#11).
+
+### Added
+- **Warm start:** the last good data is saved to `cachefs:` and shown immediately on the next launch (#9).
+- **Freshness:** each source has a maximum age. Screens show "as of" on older data, and expired alerts show as "Unavailable" instead of "None in effect" (#12).
+- **Per-source health** (last success, status, latency, size, failures, last error), published for the diagnostics screen (#13).
+- **Low-memory mode:** on a low or critical memory level, or past 80% of the app's limit, radar keeps 4 frames and photo screens use a plain fill (#14).
+- `docs/ARCHITECTURE.md`: data flow, source limits, publishing rules and the memory budget.
+
+### Fixed
+- Empty or error-page responses no longer reach the JSON parser.
+- Calendar and member-name regexes are built once per refresh instead of once per event.
+
 ## [1.1.0] - 2026-10-25
 
 Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
@@ -23,5 +44,6 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
+[1.2.0]: https://github.com/roberjo/tv-check/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/roberjo/tv-check/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/roberjo/tv-check/releases/tag/v1.0.0

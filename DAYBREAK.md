@@ -58,9 +58,10 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 ## Privacy choices
 - **Health appointments** in the calendar show only as "Appointment".
 - **"Gentle news" (default on)** hides violent-crime headlines on the living-room screen.
+- **Warm-start cache:** the last good data, including parsed calendar events (without descriptions), is saved in the app's cache on the TV (`cachefs:`). It never leaves the TV, and removing the app removes it.
 - **The calendar's secret iCal URL** lives in `.env`. The build bakes it into the sideloaded package (`source/config.brs`, gitignored), so the package itself is private.
 
 ## Constraints
 - **Developer mode:** a sideloaded app needs it on, and only one dev app can be installed at a time.
-- **Memory:** about 325 MB is free during 4K playback; Daybreak only runs when nothing else is playing.
+- **Memory:** about 325 MB is free during 4K playback; Daybreak only runs when nothing else is playing. Radar uses about 17 MB of decoded frames, and a low-memory mode drops to 4 frames and skips photo backgrounds (see `docs/ARCHITECTURE.md`).
 - **No overlays:** a Roku app can't draw over other apps, and launching other apps from the app was deliberately left out.

@@ -6,19 +6,20 @@ sub Main()
     cfg.lat = cfg.home.lat
     cfg.lon = cfg.home.lon
     cfg.curbWeekday = 1
-    m.cache = {
-        weather: ParseJson(ReadAsciiFile("pkg:/live/weather.json")),
-        alerts: ParseJson(ReadAsciiFile("pkg:/live/alerts.json")),
-        lake: ParseJson(ReadAsciiFile("pkg:/live/lake.json")),
-        lc: icsParse(ReadAsciiFile("pkg:/live/lc.ics")),
-        calendar: icsParse(ReadAsciiFile("pkg:/sample.ics")),
-        news: [{headline: "Shriners blend fellowship with a mission of service", source: "LaGrange Daily News"}]
-    }
-    sports = []
-    for each team in espnTeams()
-        sports.Push({team: team, json: ParseJson(ReadAsciiFile("pkg:/live/espn_" + team.key + ".json"))})
+    m.cache = {}
+    m.fetched = {}
+    m.health = {}
+    for each name in ["weather", "alerts", "lake"]
+        store(name, ingest(name, [ReadAsciiFile("pkg:/live/" + name + ".json")]))
     end for
-    m.cache.sports = sports
+    store("lc", ingest("lc", [ReadAsciiFile("pkg:/live/lc.ics")]))
+    store("calendar", ingest("calendar", [ReadAsciiFile("pkg:/sample.ics")]))
+    store("news", [{headline: "Shriners blend fellowship with a mission of service", source: "LaGrange Daily News"}])
+    bodies = []
+    for each team in espnTeams()
+        bodies.Push(ReadAsciiFile("pkg:/live/espn_" + team.key + ".json"))
+    end for
+    store("sports", ingest("sports", bodies))
     d = derive(cfg)
     print "now "; tLongDate(d.now); " "; tClock(d.now)
     print "weather "; d.weather.temp; " code "; d.weather.code; " days "; d.weather.days.Count(); " hours "; d.weather.hours.Count()

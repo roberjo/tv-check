@@ -4,6 +4,7 @@
   <interface>
     <field id="config" type="assocarray" />
     <field id="data" type="assocarray" />
+    <field id="health" type="assocarray" />
   </interface>
   <script type="text/brightscript" uri="pkg:/source/lib/time.brs" />
   <script type="text/brightscript" uri="pkg:/source/lib/ics.brs" />

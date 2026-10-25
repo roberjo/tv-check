@@ -20,6 +20,7 @@
     <Timer id="rotateTimer" repeat="false" />
     <Timer id="clockTimer" repeat="true" duration="10" />
     <Timer id="frameTimer" repeat="true" duration="0.5" />
+    <Timer id="pausedTimer" repeat="true" duration="300" />
     <DataTask id="dataTask" />
   </children>
 </component>
