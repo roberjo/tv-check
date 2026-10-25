@@ -95,7 +95,9 @@ def digest_header(url, method, user, password):
     if not challenge.lower().startswith("digest "):
         sys.exit("The dev installer didn't ask for digest auth; is developer mode on?")
     c = dict(re.findall(r'(\w+)="?([^",]*)"?', challenge[7:]))
-    md5 = lambda t: hashlib.md5(t.encode()).hexdigest()
+    # MD5 is what HTTP Digest (RFC 2617) and the Roku dev installer require; the
+    # password is only used in the challenge-response, never stored.
+    md5 = lambda t: hashlib.md5(t.encode(), usedforsecurity=False).hexdigest()
     path = urllib.parse.urlsplit(url).path
     ha1, ha2 = md5(f"{user}:{c['realm']}:{password}"), md5(f"{method}:{path}")
     cnonce, nc = uuid.uuid4().hex[:16], "00000001"
