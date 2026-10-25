@@ -25,6 +25,16 @@ sub Main()
             print "SCENE|"; sc.name; "|"; id; "|"; FormatJson(dumpNode(g))
         end for
     end for
+    ' overlays: menu, settings, diagnostics, remote hint
+    menu = {page: "main", index: 1, settings: defaultSettings(cfg), paused: false, items: chooseScreens(d, "app"),
+            all: ["briefing", "ambient", "tonight", "week", "recap", "gameday", "radar", "lake", "sky", "school", "board", "season"]}
+    print "SCENE|overlay|menu|"; FormatJson(dumpNode(buildMenu(menu)))
+    menu.page = "settings"
+    menu.index = 1
+    menu.settings.hidden = {school: true}
+    print "SCENE|overlay|settings|"; FormatJson(dumpNode(buildMenu(menu)))
+    print "SCENE|overlay|diagnostics|"; FormatJson(dumpNode(buildDiagnostics(sampleDiagnostics())))
+    print "SCENE|overlay|hint|"; FormatJson(dumpNode(buildHint()))
     m.testNowWall = base.wall
     loading = buildLoading(base.wall, "Getting today's weather, calendar and games...")
     updateClock()

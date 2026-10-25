@@ -373,11 +373,11 @@ function parseNews(bodies as object) as dynamic
                 headline = tail.Replace(title, "").Trim()
                 key = LCase(Left(headline, 60))
                 ok = not seen.DoesExist(key) and not skip.IsMatch(title + " " + source) and not social.IsMatch(source)
-                ok = ok and not noise.IsMatch(title) and localRe.IsMatch(title + " " + source) and not gentle.IsMatch(title)
+                ok = ok and not noise.IsMatch(title) and localRe.IsMatch(title + " " + source)
                 if ok and Instr(1, source, "LaGrange") > 0 and headline.Split(" ").Count() <= 4 then ok = false
                 if ok
                     seen[key] = true
-                    out.Push({headline: headline, source: source})
+                    out.Push({headline: headline, source: source, violent: gentle.IsMatch(title)})
                 end if
             end for
         end if
@@ -423,8 +423,14 @@ function derive(cfg as object) as object
     d.calendar = cal.items
     d.notes = cal.notes
     d.groceries = cal.groceries
-    d.news = fresh("news")
-    if d.news = invalid then d.news = []
+    d.news = []
+    gentleNews = not isFalse(currentSettings().gentleNews)
+    news = fresh("news")
+    if news <> invalid
+        for each n in news
+            if not (gentleNews and isTrue(n.violent)) then d.news.Push(n)
+        end for
+    end if
     d.curb = curbNext(today, cfg.curbWeekday)
     d.birthdays = birthdays(cfg.members, today, 30)
     utc = tNowUtc()
@@ -437,6 +443,13 @@ function derive(cfg as object) as object
     d.tips = headsUp(d)
     d.headsUp = tipTexts(d.tips, {}, 3)
     return d
+end function
+
+' Settings from the scene (the menu); defaults off-device.
+function currentSettings() as object
+    if m.top <> invalid and m.top.settings <> invalid then return m.top.settings
+    if m.testSettings <> invalid then return m.testSettings
+    return {gentleNews: true}
 end function
 
 ' Wall-clock fetch times of sources older than twice their refresh interval

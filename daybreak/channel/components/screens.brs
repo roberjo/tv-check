@@ -21,8 +21,15 @@ function availableScreens(d as object) as object
     return a
 end function
 
-function chooseScreens(d as object, mode as string) as object
+' hidden: screens turned off in Settings (never all of them: if nothing is
+' left, the defaults come back).
+function chooseScreens(d as object, mode as string, hidden = {} as object) as object
     a = availableScreens(d)
+    trimmed = {}
+    for each k in a
+        if not hidden.DoesExist(k) then trimmed[k] = true
+    end for
+    if trimmed.Count() > 1 then a = trimmed
     h = tHour(d.now)
     wd = tWeekday(d.now)
     warning = false

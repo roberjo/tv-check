@@ -8,21 +8,28 @@
   <script type="text/brightscript" uri="pkg:/source/config.brs" />
   <script type="text/brightscript" uri="pkg:/components/ui.brs" />
   <script type="text/brightscript" uri="pkg:/components/screens.brs" />
+  <script type="text/brightscript" uri="pkg:/components/overlays.brs" />
   <script type="text/brightscript" uri="pkg:/components/DaybreakScene.brs" />
   <children>
     <Rectangle id="bg" width="1920" height="1080" color="0x0B1120FF" />
     <Group id="stage" />
-    <Label id="status" translation="[112,1030]" width="1696" horizAlign="center" color="0xF4A259FF">
+    <Group id="navLayer" />
+    <Label id="status" translation="[1108,1030]" width="700" horizAlign="right" color="0xF4A259FF">
       <Font role="font" uri="pkg:/fonts/Manrope-600.ttf" size="24" />
     </Label>
+    <Group id="overlay" />
     <Animation id="fade" duration="0.8" easeFunction="inOutQuad">
       <FloatFieldInterpolator id="fadeIn" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" />
       <FloatFieldInterpolator id="fadeOut" key="[0.0, 1.0]" keyValue="[1.0, 0.0]" />
+    </Animation>
+    <Animation id="progress" duration="20" easeFunction="linear">
+      <FloatFieldInterpolator id="progressWidth" key="[0.0, 1.0]" keyValue="[0.0, 1920.0]" />
     </Animation>
     <Timer id="rotateTimer" repeat="false" />
     <Timer id="clockTimer" repeat="true" duration="10" />
     <Timer id="frameTimer" repeat="true" duration="0.5" />
     <Timer id="pausedTimer" repeat="true" duration="300" />
+    <Timer id="hintTimer" repeat="false" duration="8" />
     <DataTask id="dataTask" />
   </children>
 </component>

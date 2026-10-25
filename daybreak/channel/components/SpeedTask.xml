@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- On-demand speed test for the diagnostics screen: latency, then a 25 MB download. -->
+<component name="SpeedTask" extends="Task">
+  <interface>
+    <field id="result" type="assocarray" />
+  </interface>
+  <script type="text/brightscript" uri="pkg:/components/SpeedTask.brs" />
+</component>
