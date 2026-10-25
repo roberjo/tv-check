@@ -111,22 +111,32 @@ def lake():
         {"value": "625.48", "dateTime": "2026-10-18T09:45:00.000-04:00"}]}]}]}}
 
 
+def radar_caps():
+    """WMS capabilities with MRMS times every 2 minutes for the 3 hours before now."""
+    end = dt.datetime(2026, 10, 18, 13, 58, tzinfo=dt.timezone.utc)
+    times = [(end - dt.timedelta(minutes=2 * i)).strftime("%Y-%m-%dT%H:%M:%S.000Z") for i in range(90)][::-1]
+    return ('<?xml version="1.0"?>\n<WMS_Capabilities><Capability><Layer><Layer><Name>conus_bref_qcd</Name>'
+            '<Dimension name="time" default="current" units="ISO8601">' + ",".join(times)
+            + "</Dimension></Layer></Layer></Capability></WMS_Capabilities>\n")
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     files = {"weather.json": weather(), "alerts.json": {"features": []},
              "alerts_warning.json": {"features": [{"properties": {"event": "Tornado Warning"}},
                                                   {"properties": {"event": "Flood Watch"}}]},
-             "lake.json": lake(), "radar.json": ["2026-10-18T12:20:00.000Z", "2026-10-18T13:10:00.000Z",
-                                                  "2026-10-18T13:50:00.000Z"]}
+             "lake.json": lake()}
     for key, doc in espn().items():
         files[f"espn_{key}.json"] = doc
     for name, doc in files.items():
         (OUT / name).write_text(json.dumps(doc, separators=(",", ":")) + "\n")
     (OUT / "lc.ics").write_text(lc_ics())
+    (OUT / "radar_caps.xml").write_text(radar_caps())
+    (OUT / "radar.json").unlink(missing_ok=True)
     now = dt.datetime(2026, 10, 18, 10, 0, tzinfo=EDT)
     (OUT / "now.json").write_text(json.dumps({"utc": int(now.timestamp()),
                                               "wall": int(now.replace(tzinfo=dt.timezone.utc).timestamp())}) + "\n")
-    print("wrote", len(files) + 2, "files to", OUT)
+    print("wrote", len(files) + 3, "files to", OUT)
 
 
 if __name__ == "__main__":
