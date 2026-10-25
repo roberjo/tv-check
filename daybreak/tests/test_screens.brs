@@ -62,6 +62,49 @@ sub Main()
     g = buildScreen("radar", d)
     check("low memory: 4 frames, no photos", m.radarFrames.Count().ToStr() + " " + buildScreen("ambient", d).getChild(0).subtype(), "4 Rectangle")
     m.lowMemory = false
+    ' settings: hidden screens leave the playlist (never all of them), speed scales time
+    d = derive(cfg)
+    check("hidden screens", chooseScreens(d, "app", {gameday: true, recap: true}).Join(", "), "briefing, board, week, radar, lake, sky, season, ambient")
+    everything = {}
+    for each k in availableScreens(d)
+        everything[k] = true
+    end for
+    check("hiding everything keeps the defaults", chooseScreens(d, "app", everything).Count() > 3, true)
+    check("rotation speed", rotationSeconds("briefing", "normal").ToStr() + " " + rotationSeconds("briefing", "slow").ToStr() + " " + rotationSeconds("briefing", "fast").ToStr(), "30 60 18")
+    ' gentle news: violent headlines are kept at ingest and hidden by the setting
+    store("news", [{headline: "Council approves park", source: "Local", violent: false}, {headline: "Two charged with assault", source: "Local", violent: true}, {headline: "Old cache item", source: "Local"}])
+    check("gentle news on", derive(cfg).news.Count(), 2)
+    m.testSettings = {gentleNews: false}
+    check("gentle news off", derive(cfg).news.Count(), 3)
+    m.testSettings = invalid
+    ' overlays
+    nav = buildNav(["briefing", "radar", "week"], 1, false)
+    check("nav names the screen", labelTexts(nav).DoesExist("Radar"), true)
+    check("nav dots", nav.getChildCount(), 6)
+    menu = {page: "main", index: 0, settings: defaultSettings(cfg), paused: false, items: ["briefing", "radar"], all: ["briefing", "radar", "week"]}
+    labels = []
+    for each e in menuEntries(menu)
+        labels.Push(e.label)
+    end for
+    check("main menu", labels.Join(", "), "Pause rotation, Go to screen, Settings, Diagnostics, Close")
+    menu.page = "settings"
+    menu.settings.hidden = {week: true}
+    vals = []
+    for each e in menuEntries(menu)
+        vals.Push(e.label + "=" + e.value)
+    end for
+    check("settings page", vals.Join(", "), "Gentle news=On, Rotation speed=Normal, Briefing=On, Radar=On, Week ahead=Off")
+    check("menu text >= 24 px", smallest(buildMenu(menu), 999) >= 24, true)
+    info = sampleDiagnostics()
+    g = buildDiagnostics(info)
+    texts = labelTexts(g)
+    check("diagnostics: source rows", texts.DoesExist("Family calendar") and texts.DoesExist("timed out (3x)"), true)
+    check("diagnostics: memory", texts.DoesExist("142 MB") and texts.DoesExist("38%"), true)
+    check("diagnostics: speed", texts.DoesExist("87.4 Mbps down · 23 ms"), true)
+    check("diagnostics: no text under 24 px", smallest(g, 999) >= 24, true)
+    check("source colors", sourceColor(info.health.sources.weather, info.limits, "weather", info.nowUtc) + " " + sourceColor(info.health.sources.lake, info.limits, "lake", info.nowUtc) + " " + sourceColor(info.health.sources.news, info.limits, "news", info.nowUtc), "#9EC79B #E5484D #F4A259")
+    check("diagnostics with nothing known", buildDiagnostics({nowUtc: 0}).getChildCount() > 10, true)
+    check("hint", labelTexts(buildHint()).DoesExist("diagnostics"), true)
     testSummary("screens")
 end sub
 
