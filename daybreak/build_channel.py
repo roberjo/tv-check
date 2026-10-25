@@ -76,6 +76,21 @@ def place_json():
     return json.dumps({k: ("none" if v is None else v) for k, v in place.items()}, ensure_ascii=False)
 
 
+def chores_json():
+    """family.json chores: [{"task", "rotate": [names], "every": "day" | "week"}]."""
+    names = {m["name"] for m in family["members"]}
+    out = []
+    for c in family.get("chores", []):
+        who = c.get("rotate", [])
+        if not c.get("task") or not who or c.get("every", "week") not in ("day", "week"):
+            sys.exit(f"family.json chores: each needs a task, a rotate list and every = day or week: {c}")
+        unknown = set(who) - names
+        if unknown:
+            sys.exit(f"family.json chores: {sorted(unknown)} aren't members")
+        out.append({"task": c["task"], "rotate": who, "every": c.get("every", "week")})
+    return json.dumps(out, ensure_ascii=False)
+
+
 def curb_weekday():
     name = (family.get("curbside") or {}).get("weekday", "Monday")
     if name not in WEEKDAYS:
@@ -99,6 +114,7 @@ function DaybreakConfig() as object
         lat: {family["home"]["lat"]}, lon: {family["home"]["lon"]},
         curbWeekday: {curb_weekday()},
         place: ParseJson({brs_str(place_json())}),
+        chores: ParseJson({brs_str(chores_json())}),
         gentleNews: {"false" if env.get("GENTLE_NEWS", "1").strip() == "0" else "true"},
         apps: [{", ".join(brs_str(a) for a in family.get("apps", [])[:6])}],
         calendarUrl: {brs_str(env.get("FAMILY_CALENDAR_ICS", ""))},
@@ -255,12 +271,17 @@ def make_images():
     predimmed("callaway_pavilion.jpg", 0.78, D.INK, IMG / "bg_briefing.jpg")
     predimmed("callaway_pool.jpg", 0.70, D.INK, IMG / "bg_season.jpg")
     stars(IMG / "bg_sky.jpg")
-    base = ROOT / "daybreak" / "cache" / "radar" / "base.png"
+    # the base map for a window centered on home (same window the TV computes)
+    center = (family["home"]["lat"], family["home"]["lon"])
+    base = ROOT / "daybreak" / "cache" / "radar" / f"base_{center[0]:.3f}_{center[1]:.3f}.png"
+    legacy = base.parent / "base.png"  # maps cached before 1.6 are for LaGrange
+    if not base.exists() and legacy.exists() and abs(center[0] - 33.0393) < 1e-3 and abs(center[1] + 85.0313) < 1e-3:
+        legacy.rename(base)
     if not base.exists():
         import radar_map
         base.parent.mkdir(parents=True, exist_ok=True)
         try:
-            radar_map.build_base(radar_map.bbox(), base.parent)
+            radar_map.build_base(radar_map.bbox(center), base.parent, base.name)
         except OSError as e:  # offline: a plain map keeps the build (and previews) working
             print(f"radar base map unavailable ({e}); using a plain background")
             Image.new("RGB", (1920, 1080), D.INK).save(base)

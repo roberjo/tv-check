@@ -14,6 +14,7 @@ function fixtureConfig() as object
     cfg.city = cfg.home.city
     cfg.curbWeekday = 1
     cfg.calendarUrl = ""
+    if cfg.chores = invalid then cfg.chores = []
     for each mem in cfg.members
         if mem.activities <> invalid then mem.band = true
     end for

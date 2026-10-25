@@ -2,6 +2,19 @@
 
 All notable changes to Daybreak. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Work is tracked on the [Daybreak roadmap](https://github.com/users/roberjo/projects/2) project.
 
+## [1.6.0] - 2026-10-25
+
+### Added
+- **Severe-weather takeover** (#39):
+  - **When:** a tornado, severe thunderstorm, flash flood, extreme wind or hurricane warning, or a tornado or flash-flood emergency.
+  - **What it does:** the app and the screensaver (even at night) show only the new alert screen and radar until the warning expires.
+  - **The alert screen:** the event, its expiry, the NWS headline and what to do.
+  - **Expired alerts** now drop out at derive time.
+  - **Radar wording:** while a warning is in effect, radar never says "No rain nearby".
+- **Radar follows home** (#40): the radar window, base map and labels are computed from `home` in `family.json`, and town and water labels come from `place.radar` as coordinates. Labels that would sit under a card are skipped. The base map is cached per location.
+- **Chores** (#41): `chores` in `family.json` rotate daily or weekly, and the Board shows whose turn it is and who's next.
+- **Season notes for every month** (#42): the Season screen no longer disappears from January to September.
+
 ## [1.5.1] - 2026-10-25
 
 ### Changed
@@ -112,6 +125,7 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
+[1.6.0]: https://github.com/roberjo/tv-check/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/roberjo/tv-check/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/roberjo/tv-check/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/roberjo/tv-check/compare/v1.3.0...v1.4.0

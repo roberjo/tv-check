@@ -84,6 +84,15 @@ sub Main()
     end for
     check("no curb or lake tips", tipKinds.Join(","), "deadline,rain,frost,countdown,shower,tropics")
     m.place = invalid
+    ' chores: Sunday Oct 18 2026 is day 290 and week 41 since the anchors
+    turns = []
+    for each c in d.chores
+        turns.Push(c.task + "=" + c.who + ">" + c.next)
+    end for
+    check("chore turns", turns.Join(" | "), "Dishes after dinner=Riley>Casey | Trash and recycling to the curb=Casey>Riley | Feed the dog=Jordan>Riley")
+    check("daily chore moves tomorrow", choreTurns(cfg.chores, cfg.members, d.today + 86400)[0].who, "Casey")
+    check("weekly chore holds through Saturday", choreTurns(cfg.chores, cfg.members, d.today + 6 * 86400)[1].who, "Casey")
+    check("weekly chore moves Sunday", choreTurns(cfg.chores, cfg.members, d.today + 7 * 86400)[1].who, "Riley")
     ' alerts
     feed("alerts", ["alerts_warning.json"])
     d = derive(cfg)
