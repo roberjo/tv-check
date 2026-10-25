@@ -6,7 +6,12 @@ source/config.brs from config/family.json + .env (gitignored: it holds the
 private calendar URL), validates with BrighterScript, and zips to
 daybreak/dist/daybreak.zip. Installs nothing.
 
-Usage: .venv/bin/python daybreak/build_channel.py
+The package's manifest gets build_version = the git commit count, so each
+install is distinguishable; the tracked manifest keeps major/minor only.
+
+Usage:
+  .venv/bin/python daybreak/build_channel.py           # full build + zip
+  .venv/bin/python daybreak/build_channel.py --check   # config + BrighterScript only (CI)
 """
 import json
 import math
@@ -29,9 +34,15 @@ FONTS = CH / "fonts"
 DIST = HERE / "dist"
 SRC_FONTS = HERE / "service" / "fonts"
 SRC_ART = HERE / "service" / "assets"
-env = dict(l.split("=", 1) for l in (ROOT / ".env").read_text().splitlines() if "=" in l and not l.startswith("#"))
+CHECK_ONLY = "--check" in sys.argv
+_env = ROOT / ".env"
+env = {}
+if _env.exists() and not CHECK_ONLY:
+    env = dict(l.split("=", 1) for l in _env.read_text().splitlines() if "=" in l and not l.startswith("#"))
 _family = ROOT / "config" / "family.json"
-family = json.loads((_family if _family.exists() else ROOT / "config" / "family.example.json").read_text())
+if CHECK_ONLY or not _family.exists():
+    _family = ROOT / "config" / "family.example.json"
+family = json.loads(_family.read_text())
 
 
 def brs_str(s):
@@ -229,19 +240,41 @@ def make_images():
 
 D_SYN = 29.530588853
 
-if __name__ == "__main__":
-    write_config()
-    make_fonts()
-    make_images()
+def build_number():
+    try:
+        return int(subprocess.run(["git", "rev-list", "--count", "HEAD"], capture_output=True, text=True,
+                                  cwd=ROOT, check=True).stdout.strip())
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return 0
+
+
+def manifest_text():
+    lines = (CH / "manifest").read_text().splitlines()
+    return "\n".join(f"build_version={build_number()}" if l.startswith("build_version=") else l for l in lines) + "\n"
+
+
+def bsc_check():
     check = subprocess.run(["npx", "-y", "brighterscript@0.65.27", "--rootDir", str(CH), "--createPackage", "false"],
                            capture_output=True, text=True, cwd=HERE)
     diag = [l for l in (check.stdout + check.stderr).splitlines() if " - error " in l or " - warning " in l or "Found " in l]
     print("\n".join(diag) or "bsc: no diagnostics")
     print("bsc exit:", check.returncode)
+    return check.returncode
+
+
+if __name__ == "__main__":
+    write_config()
+    if CHECK_ONLY:
+        sys.exit(bsc_check())
+    make_fonts()
+    make_images()
+    if bsc_check() != 0:
+        sys.exit("BrighterScript reported errors; not packaging.")
     DIST.mkdir(exist_ok=True)
     out = DIST / "daybreak.zip"
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("manifest", manifest_text())
         for p in sorted(CH.rglob("*")):
-            if p.is_file() and not p.name.startswith("."):
+            if p.is_file() and not p.name.startswith(".") and p.name != "manifest":
                 z.write(p, p.relative_to(CH))
-    print(f"packaged {out} ({out.stat().st_size // 1024} KB)")
+    print(f"packaged {out} ({out.stat().st_size // 1024} KB), build {build_number()}")
