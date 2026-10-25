@@ -7,7 +7,7 @@ daybreak/channel/
   source/main.brs            Main (app) + RunScreenSaver (screensaver)
   source/config.brs          generated: household, members, calendar URL (gitignored: private)
   source/lib/                time.brs, ics.brs (iCal + RRULE + EXDATE), rules.brs (curbside, moon, showers)
-  components/DataTask.*      fetches all sources, derives games/finals/calendar/heads-up, publishes every minute
+  components/DataTask.*      fetches due sources in parallel, keeps compact data, derives, publishes on change, saves a warm-start cache
   components/ui.brs          9-patch cards, fonts, labels, icons
   components/screens.brs     12 screens + playlist rules
   components/DaybreakScene.* crossfades, exact clock, radar animation, Left/Right/Play
@@ -15,16 +15,18 @@ daybreak/channel/
 
 ## Data (fetched by the TV)
 
-| Source | What | Refresh |
-|---|---|---|
-| Open-Meteo | Weather, hourly, 8-day, sunrise and sunset | 10 min |
-| NWS | Alerts for LaGrange (Troup County) | 2 min |
-| USGS 02339400 (param 00062) | West Point Lake level | 30 min |
-| ESPN (unofficial) | Braves, Falcons, Hawks, Georgia, Auburn | 15 min |
-| lagrangepanthers.com iCal | LaGrange College schedule and finals | 30 min |
-| Google News RSS | LaGrange and Troup County headlines (no obituaries or violent crime) | 30 min |
-| Family Google Calendar (secret iCal) | Events, deadlines, board notes, groceries | 10 min |
-| NOAA MRMS WMS | Radar frames, loaded straight into posters | 10 min |
+| Source | What | Refresh | Dropped after |
+|---|---|---|---|
+| Open-Meteo | Weather, hourly, 8-day, sunrise and sunset | 10 min | 3 h |
+| NWS | Alerts for LaGrange (Troup County) | 2 min | 30 min (then shown as "Unavailable") |
+| USGS 02339400 (param 00062) | West Point Lake level | 30 min | 12 h |
+| ESPN (unofficial) | Braves, Falcons, Hawks, Georgia, Auburn | 15 min | 6 h |
+| lagrangepanthers.com iCal | LaGrange College schedule and finals | 30 min | 24 h |
+| Google News RSS | LaGrange and Troup County headlines (no obituaries or violent crime) | 30 min | 12 h |
+| Family Google Calendar (secret iCal) | Events, deadlines, board notes, groceries | 10 min | 24 h |
+| NOAA MRMS WMS | Radar: 8 frames over about 2 hours, at 960×540 | 10 min | 30 min |
+
+All due sources are fetched in parallel. Screens show "as of" when a source is older than twice its refresh interval. The last good data is saved on the TV (`cachefs:`), so the screensaver starts with it immediately. How it all fits together is in [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 **Family board through the calendar:**
 - **Notes:** add an event called **"TV: Dinner at 6:30"**. It shows from 12 hours before the event until it ends.
