@@ -75,7 +75,7 @@ jobs:
         run: npm audit --audit-level=moderate
       - name: pip-audit (dev tools)
         run: |
-          pip install pip-audit==2.9.0
+          pip install "$(grep -E '^pip-audit==' requirements-dev.txt)"
           pip-audit -r requirements-dev.txt
 
   secrets:
