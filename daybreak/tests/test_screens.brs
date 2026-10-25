@@ -172,6 +172,27 @@ sub Main()
     end for
     check("no lake screen", availableScreens(d).DoesExist("lake"), false)
     m.place = invalid
+    ' wallpapers: the photo, a dimming fill in the screen's color, and the credit
+    d = derive(cfg)
+    d.wallpapers = {week: {uri: "cachefs:/wp-park-one.jpg", place: "Test Park", credit: "Test Photographer · CC0"}}
+    g = buildScreen("week", d)
+    credit = g.findNode("photoCredit")
+    check("week wallpaper", g.getChild(0).uri + " " + g.getChild(1).subtype() + " " + fmt1(g.getChild(1).opacity), "cachefs:/wp-park-one.jpg Rectangle 0.8")
+    check("photo credit", labelTexts(credit).DoesExist("Photo: Test Park · Test Photographer · CC0"), true)
+    d.wallpapers.week.place = "Dowdell's Knob at dawn"
+    check("label drops before the place", labelTexts(buildScreen("week", d).findNode("photoCredit")).DoesExist("Dowdell's Knob at dawn · Test Photographer · CC0"), true)
+    d.wallpapers.week.place = "Test Park"
+    d.wallpapers.week.place = "A Very Long Place Name, Somewhere Far Away In Georgia"
+    check("long place drops first, license stays", labelTexts(buildScreen("week", d).findNode("photoCredit")).DoesExist("Photo: Test Photographer · CC0"), true)
+    d.wallpapers = {ambient: {uri: "cachefs:/wp-park-one.jpg", place: "Test Park", credit: "Test Photographer · CC0"}}
+    texts = labelTexts(buildScreen("ambient", d))
+    check("ambient caption names the photo", texts.DoesExist("Test Park") and texts.DoesExist("Photo: Test Photographer · CC0"), true)
+    d.wallpapers = {week: {uri: "cachefs:/wp-park-one.jpg", place: "Test Park", credit: "Test Photographer · CC0"}}
+    check("no photo, no credit", buildScreen("board", d).findNode("photoCredit") = invalid and buildScreen("ambient", d).getChild(0).uri = "pkg:/images/bg_ambient.jpg", true)
+    m.lowMemory = true
+    g = buildScreen("week", d)
+    check("low memory: no wallpaper", g.getChild(0).subtype() + " " + (g.findNode("photoCredit") = invalid).ToStr(), "Rectangle true")
+    m.lowMemory = false
     testSummary("screens")
 end sub
 

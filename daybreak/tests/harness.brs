@@ -28,6 +28,7 @@ function fixtureConfig() as object
     feed("radar", ["radar_caps.xml"])
     feed("air", ["air.json"])
     feed("tropics", ["nhc.json"])
+    feed("wallpapers", ["wallpapers.json"])
     sports = []
     for each team in espnTeams()
         sports.Push("espn_" + team.key + ".json")

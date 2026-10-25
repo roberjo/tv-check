@@ -45,6 +45,23 @@ def weather():
     }
 
 
+def wallpapers():
+    """A small catalog shaped like daybreak/wallpapers/catalog.json, plus entries the TV must reject."""
+    every = ["ambient", "briefing", "season", "tonight", "week", "recap", "lake", "school", "board"]
+    def photo(pid, place, tags, screens):
+        return {"id": pid, "file": f"img/{pid}.jpg", "place": place, "area": place, "tags": tags,
+                "credit": "Test Photographer · CC0", "screens": screens}
+    return {"v": 1, "photos": [
+        photo("lake-one", "Test Lake", ["lake", "nature"], every),
+        photo("town-one", "Test Town", ["town"], [s for s in every if s != "ambient"]),
+        photo("park-one", "Test Park", ["nature"], every),
+        photo("lake-two", "Other Lake", ["lake"], ["lake", "week"]),
+        photo("dim-only", "Bright Field", ["nature"], ["week"]),
+        {"id": "../escape", "file": "img/escape.jpg", "screens": every},
+        {"id": "bad-file", "file": "../../etc/x.jpg", "screens": every},
+        {"id": "no-screens", "file": "img/no-screens.jpg"}]}
+
+
 def team(tid, name):
     return {"id": tid, "displayName": name, "shortDisplayName": name}
 
@@ -155,7 +172,8 @@ def main():
                                  "instruction": "TAKE COVER NOW! Move to a basement or an interior room on the lowest floor of a sturdy building.\nAvoid windows."}},
                  {"properties": {"event": "Flood Watch", "expires": "2026-10-19T08:00:00-04:00"}},
                  {"properties": {"event": "Wind Advisory", "expires": "2026-10-18T09:00:00-04:00"}}]},
-             "lake.json": lake(), "air.json": air(), "nhc.json": storms(), "espn_live.json": espn_live()}
+             "lake.json": lake(), "air.json": air(), "nhc.json": storms(), "espn_live.json": espn_live(),
+             "wallpapers.json": wallpapers()}
     for key, doc in espn().items():
         files[f"espn_{key}.json"] = doc
     for name, doc in files.items():

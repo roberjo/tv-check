@@ -1,0 +1,378 @@
+{
+ "about": "Wallpaper sources: Wikimedia Commons files, chosen by hand. build.py fetches each one's license and author, crops it to 1920x1080 and writes img/, catalog.json and CREDITS.md. focus is where to crop vertically (0 top, 1 bottom).",
+ "photos": [
+  {
+   "id": "bellevue-lagrange",
+   "file": "File:Bellevue (LaGrange, Georgia).JPG",
+   "place": "Bellevue, LaGrange",
+   "area": "LaGrange",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.25
+  },
+  {
+   "id": "lagrange-city-hall",
+   "file": "File:LaGrange, Georgia City Hall.JPG",
+   "place": "LaGrange City Hall",
+   "area": "LaGrange",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.25
+  },
+  {
+   "id": "nutwood-lagrange",
+   "file": "File:Nutwood; LaGrange, GA (NRHP).JPG",
+   "place": "Nutwood, LaGrange",
+   "area": "LaGrange",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "reid-glanton-lagrange",
+   "file": "File:Reid-Glanton House; LaGrange, GA.JPG",
+   "place": "Reid-Glanton House, LaGrange",
+   "area": "LaGrange",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "west-point-lake-egrets",
+   "file": "File:Egret in trouble?.jpg",
+   "place": "Egrets, West Point Lake",
+   "area": "West Point Lake",
+   "tags": [
+    "lake",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "mooty-bridge",
+   "file": "File:Mooty Bridge.jpg",
+   "place": "Mooty Bridge, West Point Lake",
+   "area": "West Point Lake",
+   "tags": [
+    "lake"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "murphy-lake-troup",
+   "file": "File:Murphy Lake (Troup County, Georgia).JPG",
+   "place": "Murphy Lake, Troup County",
+   "area": "Troup County",
+   "tags": [
+    "lake",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "newnan-carnegie-library",
+   "file": "File:Carnegie Library in Newnan, Georgia.jpg",
+   "place": "Carnegie Library, Newnan",
+   "area": "Newnan",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "columbus-riverwalk",
+   "file": "File:Blue Heron Zipline.jpg",
+   "place": "Chattahoochee RiverWalk, Columbus",
+   "area": "Columbus",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "columbus-oglethorpe-bridge",
+   "file": "File:General James Edward Oglethorpe Memorial Bridge.jpg",
+   "place": "Oglethorpe Bridge, Columbus",
+   "area": "Columbus",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "columbus-kayaks",
+   "file": "File:Kayaks (37144380).jpeg",
+   "place": "Kayaks on the Chattahoochee, Columbus",
+   "area": "Columbus",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "ptc-city-hall-dogwoods",
+   "file": "File:City Hall Dogwoods and Golf Cart.jpg",
+   "place": "Dogwoods at City Hall, Peachtree City",
+   "area": "Peachtree City",
+   "tags": [
+    "town",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "ptc-lake-kedron",
+   "file": "File:Lake Kedron Dam.jpg",
+   "place": "Lake Kedron, Peachtree City",
+   "area": "Peachtree City",
+   "tags": [
+    "lake",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "ptc-cart-bridge",
+   "file": "File:Peachtree City Cart Bridge.jpg",
+   "place": "Cart bridge, Peachtree City",
+   "area": "Peachtree City",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "dowdells-knob-1",
+   "file": "File:17 03 030 dowdell.jpg",
+   "place": "Dowdell's Knob, Pine Mountain",
+   "area": "Pine Mountain",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "fdr-park-stone-house",
+   "file": "File:17 03 131 FDR park.jpg",
+   "place": "F. D. Roosevelt State Park",
+   "area": "Pine Mountain",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "dowdells-knob-dawn",
+   "file": "File:18-35-242-dowdell.jpg",
+   "place": "Dowdell's Knob at dawn",
+   "area": "Pine Mountain",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "fdr-park-sunset",
+   "file": "File:20-06-001-FDR-park.jpg",
+   "place": "F. D. Roosevelt State Park at sunset",
+   "area": "Pine Mountain",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "dowdells-knob-2",
+   "file": "File:20-06-022-dowdell.jpg",
+   "place": "Dowdell's Knob, Pine Mountain",
+   "area": "Pine Mountain",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "dowdells-knob-3",
+   "file": "File:Dowdell knob.JPG",
+   "place": "Dowdell's Knob, Pine Mountain",
+   "area": "Pine Mountain",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "callaway-gazebo",
+   "file": "File:17 18 014 callaway.jpg",
+   "place": "Callaway Gardens",
+   "area": "Pine Mountain",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "callaway-robin-lake",
+   "file": "File:15-13-153, robin lake - panoramio.jpg",
+   "place": "Robin Lake, Callaway Gardens",
+   "area": "Pine Mountain",
+   "tags": [
+    "lake",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "callaway-whippoorwill",
+   "file": "File:15-22-289, whippoorwill lake - panoramio.jpg",
+   "place": "Whippoorwill Lake, Callaway Gardens",
+   "area": "Pine Mountain",
+   "tags": [
+    "lake",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "callaway-mountain-creek-1",
+   "file": "File:10-15-33, mountain creek lake - panoramio.jpg",
+   "place": "Mountain Creek Lake, Callaway Gardens",
+   "area": "Pine Mountain",
+   "tags": [
+    "lake",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "callaway-mountain-creek-2",
+   "file": "File:15-07-184, mountain creek lake - panoramio.jpg",
+   "place": "Mountain Creek Lake, Callaway Gardens",
+   "area": "Pine Mountain",
+   "tags": [
+    "lake",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "callaway-pavilion",
+   "file": "File:18-26-141-callaway.jpg",
+   "place": "Callaway Gardens",
+   "area": "Pine Mountain",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "piedmont-park-midtown",
+   "file": "File:Ab30 (55).jpg",
+   "place": "Midtown from Piedmont Park, Atlanta",
+   "area": "Atlanta",
+   "tags": [
+    "town",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "piedmont-park-spring",
+   "file": "File:Piedmont Park in the Spring.jpg",
+   "place": "Piedmont Park in spring, Atlanta",
+   "area": "Atlanta",
+   "tags": [
+    "town",
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "piedmont-park-skyline",
+   "file": "File:Atlanta's Midtown skyline as seen from Piedmont Park, September 2018.jpg",
+   "place": "Midtown from Piedmont Park, Atlanta",
+   "area": "Atlanta",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "piedmont-park-autumn",
+   "file": "File:Piedmont Park.jpg",
+   "place": "Piedmont Park, Atlanta",
+   "area": "Atlanta",
+   "tags": [
+    "nature"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "midtown-atlanta",
+   "file": "File:Midtown Atlanta Skyline.jpg",
+   "place": "Midtown Atlanta",
+   "area": "Atlanta",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "coweta-courthouse",
+   "file": "File:Coweta County Courthouse, Newnan, GA, US.jpg",
+   "place": "Coweta County Courthouse, Newnan",
+   "area": "Newnan",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.15
+  },
+  {
+   "id": "downtown-atlanta",
+   "file": "File:AATL202503-0850 (cropped).jpg",
+   "place": "Downtown Atlanta",
+   "area": "Atlanta",
+   "tags": [
+    "town"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "atlanta-dusk",
+   "file": "File:Atlanta09.jpg",
+   "place": "Atlanta at dusk",
+   "area": "Atlanta",
+   "tags": [
+    "town",
+    "night"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "jackson-street-bridge",
+   "file": "File:Jackson Street Bridge, Atlanta, United States (Unsplash vXtX07KVcE8).jpg",
+   "place": "Jackson Street Bridge, Atlanta",
+   "area": "Atlanta",
+   "tags": [
+    "town",
+    "night"
+   ],
+   "focus": 0.5
+  },
+  {
+   "id": "atlanta-over-trees",
+   "file": "File:Atlanta DowntownMtownBrookwood.jpg",
+   "place": "Atlanta over the trees",
+   "area": "Atlanta",
+   "tags": [
+    "town",
+    "nature"
+   ],
+   "focus": 0.5
+  }
+ ]
+}

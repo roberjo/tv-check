@@ -175,9 +175,10 @@ function buildDiagnostics(info as object) as object
         uiText(g, gx(1) + 40 + c[1], top + 88, c[0], 24, 700, "Manrope", "#A9B1C4")
     end for
     yy = top + 132
-    names = ["weather", "alerts", "air", "lake", "sports", "lc", "news", "calendar", "radar", "tropics"]
+    names = ["weather", "alerts", "air", "lake", "sports", "lc", "news", "calendar", "radar", "tropics", "wallpapers"]
     labels = {weather: "Weather", alerts: "NWS alerts", air: "Air quality", lake: "Lake gauge", sports: "Team schedules",
-              lc: "College iCal", news: "Headlines", calendar: "Family calendar", radar: "Radar times", tropics: "Tropics (NHC)"}
+              lc: "College iCal", news: "Headlines", calendar: "Family calendar", radar: "Radar times", tropics: "Tropics (NHC)",
+              wallpapers: "Wallpapers"}
     sources = {}
     if info.health <> invalid and info.health.sources <> invalid then sources = info.health.sources
     for each name in names
@@ -209,7 +210,7 @@ function buildDiagnostics(info as object) as object
         uiText(g, gx(1) + 510, yy, ms, 24, 400, "Manrope", "#C9CEDA", 120)
         uiText(g, gx(1) + 640, yy, size, 24, 400, "Manrope", "#C9CEDA", 120)
         uiText(g, gx(1) + 770, yy, status, 24, 400, "Manrope", "#C9CEDA", gw(8) - 810)
-        yy = yy + 54
+        yy = yy + 50
     end for
     warm = "No saved data yet"
     if info.health <> invalid and info.health.savedAt <> invalid and info.health.savedAt > 0

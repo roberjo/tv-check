@@ -125,6 +125,7 @@ sub show(i as integer, restartTimer as boolean)
     end if
     m.previous = m.current
     m.current = grp
+    syncCredit()
     m.fade.control = "start"
     updateClock()
     m.frameTimer.control = "stop"
@@ -208,7 +209,16 @@ sub onHealth()
     else
         m.status.text = ""
     end if
+    syncCredit()
     if m.overlayKind = "diagnostics" then refreshDiagnostics()
+end sub
+
+' The photo credit and the status line share the bottom-right corner; the
+' status line wins.
+sub syncCredit()
+    if m.current = invalid then return
+    c = m.current.findNode("photoCredit")
+    if c <> invalid then c.visible = m.status.text = ""
 end sub
 
 sub onClockTick()
@@ -415,7 +425,8 @@ function sourceLimitsForDiag() as object
         weather: {ttl: 600, maxAge: 3 * 3600}, alerts: {ttl: 120, maxAge: 1800}, lake: {ttl: 1800, maxAge: 12 * 3600},
         sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
         calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
-        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600}
+        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600},
+        wallpapers: {ttl: 86400, maxAge: 30 * 86400}
     }
 end function
 

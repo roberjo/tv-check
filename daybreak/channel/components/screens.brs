@@ -106,6 +106,7 @@ end function
 function buildScreen(id as string, d as object) as object
     m.clockNodes = invalid
     m.radarFrames = invalid
+    m.wallpaperCredit = invalid
     g = CreateObject("roSGNode", "Group")
     if id = "ambient" then buildAmbient(g, d)
     if id = "briefing" then buildBriefing(g, d)
@@ -121,6 +122,23 @@ function buildScreen(id as string, d as object) as object
     if id = "radar" then buildRadar(g, d)
     if id = "night" then buildNight(g, d)
     if id = "alert" then buildAlert(g, d)
+    ' the photo's credit, bottom right (the scene hides it while its status line shows)
+    ' (the license must stay readable: the "Photo:" label goes first, then the place)
+    w = m.wallpaperCredit
+    if w <> invalid
+        credit = g.createChild("Group")
+        credit.id = "photoCredit"
+        text = "Photo: " + w.credit ' Ambient names the place in its caption
+        if id <> "ambient"
+            for each t in [w.place + " · " + w.credit, "Photo: " + w.place + " · " + w.credit] ' the longest that fits
+                if uiTextWidth(credit, t, 24) <= 680 then text = t
+            end for
+        end if
+        tw = uiTextWidth(credit, text, 24)
+        if tw > 680 then tw = 680
+        uiCard(credit, 1808 - tw - 18, 1026, tw + 36, 44, "#0B1120", "", 22, 0.72) ' readable on any photo
+        uiText(credit, 1808, 1032, text, 24, 400, "Manrope", "#C9CEDA", 680, "right")
+    end if
     return g
 end function
 
@@ -176,6 +194,34 @@ sub updateClock()
 end sub
 
 ' Full-screen photo, or a plain fill when memory is low (a decoded 1080p photo is 8 MB).
+' Photo backdrop: today's wallpaper for this screen (d.wallpapers, downloaded
+' by DataTask) under a fill in the screen's color at wallpaperDim(), else the
+' packaged pre-dimmed photo, else the plain fill. Low-memory mode uses the fill.
+' Sets m.wallpaperCredit to the photo, which buildScreen credits in the corner.
+sub uiWallpaper(g as object, d as object, id as string, fill as string, packaged = "" as string)
+    w = invalid
+    if d.wallpapers <> invalid then w = d.wallpapers[id]
+    if m.lowMemory = true
+        uiRect(g, 0, 0, 1920, 1080, fill)
+    else if w <> invalid
+        uiImage(g, w.uri, 0, 0, 1920, 1080)
+        uiRect(g, 0, 0, 1920, 1080, fill, wallpaperDim(id))
+        m.wallpaperCredit = w
+    else if packaged <> ""
+        uiImage(g, packaged, 0, 0, 1920, 1080)
+    else
+        uiRect(g, 0, 0, 1920, 1080, fill)
+    end if
+end sub
+
+' How much of the screen's fill covers a wallpaper: the photo screens show
+' more of it, card screens keep it a quiet texture behind the cards.
+function wallpaperDim(id as string) as float
+    dims = {ambient: 0.55, briefing: 0.78, season: 0.7}
+    if dims.DoesExist(id) then return dims[id]
+    return 0.82
+end function
+
 sub uiBackdrop(g as object, uri as string, fallback as string)
     if m.lowMemory = true then uiRect(g, 0, 0, 1920, 1080, fallback) else uiImage(g, uri, 0, 0, 1920, 1080)
 end sub
@@ -324,7 +370,7 @@ end sub
 ' --- screens ------------------------------------------------------------------------
 
 sub buildAmbient(g as object, d as object)
-    uiBackdrop(g, "pkg:/images/bg_ambient.jpg", "#0B1120")
+    uiWallpaper(g, d, "ambient", "#0B1120", "pkg:/images/bg_ambient.jpg")
     w = d.weather
     today = w.days[0]
     addClock(g, 160, 96, 300, 200, "left")
@@ -341,7 +387,9 @@ sub buildAmbient(g as object, d as object)
     uiRect(g, 160, 880, 1600, 2, "#F4F1EA", 0.25)
     len = today.sunset - today.sunrise
     uiText(g, 160, 912, "Sunrise " + tClock(today.sunrise) + "      " + (len \ 3600).ToStr() + " h " + ((len mod 3600) \ 60).ToStr() + " m of daylight      Sunset " + tClock(today.sunset), 26, 400, "Manrope", "#E1E4EC")
-    uiText(g, 160, 960, "Reflection pool, Callaway Gardens · Pine Mountain, GA", 24, 400, "Manrope", "#E1E4EC", 1000)
+    caption = "Reflection pool, Callaway Gardens · Pine Mountain, GA"
+    if m.wallpaperCredit <> invalid then caption = m.wallpaperCredit.place
+    uiText(g, 160, 960, caption, 24, 400, "Manrope", "#E1E4EC", 1000)
     nxt = nextUp(d)
     if nxt <> ""
         tw = uiTextWidth(g, nxt, 26, 600)
@@ -401,7 +449,7 @@ sub weatherCard(g as object, x as integer, y as integer, w as integer, h as inte
 end sub
 
 sub buildBriefing(g as object, d as object)
-    uiBackdrop(g, "pkg:/images/bg_briefing.jpg", "#0B1120")
+    uiWallpaper(g, d, "briefing", "#0B1120", "pkg:/images/bg_briefing.jpg")
     header(g, UCase(tLongDate(d.now) + " · " + d.place.town + ", " + d.place.region), greeting(d))
     top = 246
     weatherCard(g, gx(1), top, gw(4), 540, d)
@@ -538,7 +586,7 @@ function sortStable(items as object, key as string) as object
 end function
 
 sub buildTonight(g as object, d as object)
-    uiRect(g, 0, 0, 1920, 1080, "#090C18")
+    uiWallpaper(g, d, "tonight", "#090C18")
     header(g, UCase(tWeekdayNames()[tWeekday(d.now)]) + " NIGHT", greeting(d), "#B3A6F2")
     top = 246
     hero = invalid
@@ -620,7 +668,7 @@ sub buildTonight(g as object, d as object)
 end sub
 
 sub buildWeek(g as object, d as object)
-    uiRect(g, 0, 0, 1920, 1080, "#0B1120")
+    uiWallpaper(g, d, "week", "#0B1120")
     start = d.today
     if tHour(d.now) >= 17 then start = d.today + 86400
     title = "The week ahead"
@@ -715,7 +763,7 @@ end sub
 
 sub buildLake(g as object, d as object)
     lk = d.lake
-    uiRect(g, 0, 0, 1920, 1080, "#081420")
+    uiWallpaper(g, d, "lake", "#081420")
     pl = d.place.lake
     header(g, "OUTDOORS · " + UCase(pl.name), "Lake conditions", "#7FB7E8", false)
     uiText(g, 1808, 140, "USGS gauge " + pl.site + " · " + tClock(lk.time), 24, 400, "Manrope", "#9FB3C8", 600, "right")
@@ -846,7 +894,7 @@ sub buildSky(g as object, d as object)
 end sub
 
 sub buildRecap(g as object, d as object)
-    uiRect(g, 0, 0, 1920, 1080, "#0B1120")
+    uiWallpaper(g, d, "recap", "#0B1120")
     header(g, "GAME RECAP · " + UCase(tLongDate(d.now)), "How your teams did", "#F4A259", false)
     top = 246
     r = d.rivalry
@@ -1032,7 +1080,7 @@ sub buildGameday(g as object, d as object)
 end sub
 
 sub buildSchool(g as object, d as object)
-    uiRect(g, 0, 0, 1920, 1080, "#0B1120")
+    uiWallpaper(g, d, "school", "#0B1120")
     schools = {}
     for each mem in d.members
         if mem.school <> invalid then schools[UCase(mem.school)] = true
@@ -1088,7 +1136,7 @@ sub buildSchool(g as object, d as object)
 end sub
 
 sub buildBoard(g as object, d as object)
-    uiRect(g, 0, 0, 1920, 1080, "#0B1120")
+    uiWallpaper(g, d, "board", "#0B1120")
     header(g, "FAMILY BOARD", "Notes for the " + d.household, "#F4A259", false)
     uiText(g, 1808, 140, "Add an event called ""TV: your note"" to the family calendar", 24, 400, "Manrope", "#A9B1C4", 900, "right")
     top = 246
@@ -1180,7 +1228,7 @@ function seasonItems(month as integer) as dynamic
 end function
 
 sub buildSeason(g as object, d as object)
-    uiBackdrop(g, "pkg:/images/bg_season.jpg", "#0B1120")
+    uiWallpaper(g, d, "season", "#0B1120", "pkg:/images/bg_season.jpg")
     header(g, "WHAT'S IN SEASON · " + UCase(tMonthNames()[tParts(d.now).m - 1]), "The season in " + d.place.seasonRegion, "#F4A259", false)
     cards = []
     cards.Append(seasonItems(tParts(d.now).m))
