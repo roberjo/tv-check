@@ -40,12 +40,40 @@ sub Main()
     ' warning + rain reorders the app playlist
     feed("alerts", ["alerts_warning.json"])
     d = derive(cfg)
-    check("warning puts radar first", chooseScreens(d, "app")[0], "radar")
+    ' a tornado warning takes over the app and the screensaver (even at night) until it expires
+    check("takeover in the app", chooseScreens(d, "app").Join(","), "alert,radar")
+    check("takeover in the screensaver", chooseScreens(d, "screensaver").Join(","), "alert,radar")
+    texts = labelTexts(buildScreen("alert", d))
+    check("alert screen", texts.DoesExist("Tornado Warning") and texts.DoesExist("Until 10:45 AM"), true)
+    check("alert instructions", texts.DoesExist("TAKE COVER NOW! Move to a basement or an interior room on the lowest floor of a sturdy building. Avoid windows."), true)
+    check("alert text >= 24 px", smallest(buildScreen("alert", d), 999) >= 24, true)
+    m.testNowUtc = m.testNowUtc + 50 * 60
+    m.testNowWall = m.testNowWall + 50 * 60
+    feed("alerts", ["alerts_warning.json"]) ' the TV re-fetches alerts every 2 minutes
+    after = derive(cfg)
+    check("takeover ends at expiry", after.takeover = invalid and chooseScreens(after, "app")[0] <> "alert", true)
+    check("expired alerts drop out", after.alerts.Count().ToStr() + " " + after.alerts[0].event, "1 Flood Watch")
+    m.testNowUtc = m.testNowUtc - 50 * 60
+    m.testNowWall = m.testNowWall - 50 * 60
+    ' radar geometry: the same window and label pixels as scripts/radar_map.py
+    v = radarView(33.0393, -85.0313)
+    want = [-9644575, 3799871, -9286707, 4001172]
+    got = v.bbox.Split(",")
+    close = true
+    for i = 0 to 3
+        if Abs(Val(got[i]) - want[i]) > 10 then close = false ' within 10 m (0.06 px): single-precision math
+    end for
+    check("radar bbox matches radar_map.py", close, true)
+    wp = radarPx(v, 32.878, -85.183)
+    check("West Point label pixel", wp[0].ToStr() + "," + wp[1].ToStr(), "869,655")
+    at = radarPx(v, 33.749, -84.388)
+    check("Atlanta label pixel", at[0].ToStr() + "," + at[1].ToStr(), "1344,32")
     texts = labelTexts(buildScreen("radar", d))
     check("radar lists the warning", texts.DoesExist("Tornado Warning"), true)
-    check("radar says it's live, with the scan time", texts.DoesExist("No rain nearby"), true)
+    check("a warning outranks no-rain wording", texts.DoesExist("Warning in effect") and not texts.DoesExist("No rain nearby"), true)
     check("legend explains very light echoes", texts.DoesExist("Very light"), true)
     d.radarTimes = []
+    d.alerts = []
     texts = labelTexts(buildScreen("radar", d))
     check("no frames says unavailable", texts.DoesExist("Radar unavailable") and not texts.DoesExist("No rain nearby"), true)
     ' stale and missing data
@@ -110,10 +138,23 @@ sub Main()
     check("source colors", sourceColor(info.health.sources.weather, info.limits, "weather", info.nowUtc) + " " + sourceColor(info.health.sources.lake, info.limits, "lake", info.nowUtc) + " " + sourceColor(info.health.sources.news, info.limits, "news", info.nowUtc), "#9EC79B #E5484D #F4A259")
     check("diagnostics with nothing known", buildDiagnostics({nowUtc: 0}).getChildCount() > 10, true)
     check("hint", labelTexts(buildHint()).DoesExist("diagnostics"), true)
+    ' season notes exist for every month, and each fits its card (3 notes, body under 140 characters)
+    full = true
+    for mo = 1 to 12
+        items = seasonItems(mo)
+        if items = invalid or items.Count() <> 3 then full = false
+        if items <> invalid
+            for each it in items
+                if Len(it[2]) > 140 or Len(it[1]) > 28 then full = false
+            end for
+        end if
+    end for
+    check("season notes for all 12 months", full, true)
     ' 1.5: countdowns on the board, air on the weather card, storms on radar, live scores
     d = derive(cfg)
     texts = labelTexts(buildScreen("board", d))
     check("board countdown", texts.DoesExist("Beach trip") and texts.DoesExist("12"), true)
+    check("board chores", texts.DoesExist("Whose turn") and texts.DoesExist("Feed the dog") and texts.DoesExist("Next week: Riley"), true)
     check("weather card air", labelTexts(buildScreen("briefing", d)).DoesExist("Air moderate · 58"), true)
     check("radar tropics line", labelTexts(buildScreen("radar", d)).DoesExist("Tropics: Hurricane Nadine, " + d.storms[0].miles.ToStr() + " mi away"), true)
     store("sports", ingest("sports", ["", "", "", "", ReadAsciiFile("pkg:/feeds/espn_live.json")]))

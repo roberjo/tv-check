@@ -8,7 +8,7 @@ sub Main()
         {name: "morning", hours: 0, screens: ["briefing", "ambient", "gameday", "recap", "lake", "season", "board", "school"]},
         {name: "evening", hours: 9, screens: ["tonight", "week", "sky"]},
         {name: "night", hours: 14, screens: ["night"]},
-        {name: "warning", hours: 0, alerts: "alerts_warning.json", screens: ["radar"]}
+        {name: "warning", hours: 0, alerts: "alerts_warning.json", screens: ["alert", "radar"]}
     ]
     for each sc in scenarios
         m.testNowUtc = base.utc + sc.hours * 3600
