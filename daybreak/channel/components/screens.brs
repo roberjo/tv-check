@@ -143,6 +143,22 @@ sub updateClock()
     end if
 end sub
 
+' Full-screen photo, or a plain fill when memory is low (a decoded 1080p photo is 8 MB).
+sub uiBackdrop(g as object, uri as string, fallback as string)
+    if m.lowMemory = true then uiRect(g, 0, 0, 1920, 1080, fallback) else uiImage(g, uri, 0, 0, 1920, 1080)
+end sub
+
+' Small right-aligned amber "as of" note in a card header (nothing when fresh).
+sub asOfTag(g as object, xRight as integer, y as integer, text as string)
+    if text <> "" then uiText(g, xRight, y, text, 20, 600, "Manrope", "#F4A259", 240, "right")
+end sub
+
+' "as of 9:40 AM" when a source's data is older than twice its refresh interval.
+function asOfText(d as object, source as string) as string
+    if d.asOf = invalid or d.asOf[source] = invalid then return ""
+    return "as of " + tClock(d.asOf[source])
+end function
+
 function soonGames(d as object) as object
     out = []
     for each gm in d.games
@@ -176,7 +192,7 @@ end sub
 ' --- screens ------------------------------------------------------------------------
 
 sub buildAmbient(g as object, d as object)
-    uiImage(g, "pkg:/images/bg_ambient.jpg", 0, 0, 1920, 1080)
+    uiBackdrop(g, "pkg:/images/bg_ambient.jpg", "#0B1120")
     w = d.weather
     today = w.days[0]
     addClock(g, 160, 96, 300, 200, "left")
@@ -186,7 +202,9 @@ sub buildAmbient(g as object, d as object)
     uiImage(g, "pkg:/images/wx_" + kind + ".png", 1440, 136, 104, 104, "#F4A259")
     uiText(g, 1760, 128, w.temp.ToStr() + "°", 96, 300, "Outfit", "#F4F1EA", 300, "right")
     uiText(g, 1760, 258, wxLabel(w.code) + " · high " + today.hi.ToStr() + "°", 30, 400, "Manrope", "#E1E4EC", 700, "right")
-    uiText(g, 1760, 302, d.city, 24, 400, "Manrope", "#E1E4EC", 500, "right")
+    city = d.city
+    if asOfText(d, "weather") <> "" then city = city + " · weather " + asOfText(d, "weather")
+    uiText(g, 1760, 302, city, 24, 400, "Manrope", "#E1E4EC", 700, "right")
     sunArc(g, 200, 690, 1520, 190, "pkg:/images/arc_ambient.png", d, 16)
     uiRect(g, 160, 880, 1600, 2, "#F4F1EA", 0.25)
     len = today.sunset - today.sunrise
@@ -222,6 +240,7 @@ sub weatherCard(g as object, x as integer, y as integer, w as integer, h as inte
     uiCard(g, x, y, w, h)
     uiImage(g, "pkg:/images/wx_sun.png", x + 36, y + 34, 44, 44, "#A9B1C4")
     uiLabel(g, x + 90, y + 44, "Weather")
+    asOfTag(g, x + w - 40, y + 44, asOfText(d, "weather"))
     uiText(g, x + 40, y + 96, wx.temp.ToStr() + "°", 168, 300, "Outfit")
     uiText(g, x + 330, y + 150, wxLabel(wx.code), 36, 600, "Manrope", "#F4F1EA", w - 360)
     uiText(g, x + 330, y + 200, "High " + today.hi.ToStr() + "° · low " + today.lo.ToStr() + "°", 26, 400, "Manrope", "#A9B1C4", w - 360)
@@ -242,7 +261,7 @@ sub weatherCard(g as object, x as integer, y as integer, w as integer, h as inte
 end sub
 
 sub buildBriefing(g as object, d as object)
-    uiImage(g, "pkg:/images/bg_briefing.jpg", 0, 0, 1920, 1080)
+    uiBackdrop(g, "pkg:/images/bg_briefing.jpg", "#0B1120")
     header(g, UCase(tLongDate(d.now)) + " · LAGRANGE, GA", greeting(d))
     top = 246
     weatherCard(g, 112, top, 600, 540, d)
@@ -251,6 +270,7 @@ sub buildBriefing(g as object, d as object)
     w = 532
     uiCard(g, x, top, w, 540)
     uiLabel(g, x + 40, top + 44, "Family calendar")
+    asOfTag(g, x + w - 40, top + 44, asOfText(d, "calendar"))
     rows = briefingRows(d)
     shownRefs = {}
     yy = top + 98
@@ -270,6 +290,7 @@ sub buildBriefing(g as object, d as object)
     x = 1308
     uiCard(g, x, top, w, 540)
     uiLabel(g, x + 40, top + 44, "Game watch")
+    asOfTag(g, x + w - 40, top + 44, asOfText(d, "sports"))
     seen = {}
     yy = top + 98
     shown = 0
@@ -441,7 +462,9 @@ sub buildWeek(g as object, d as object)
     title = "The week ahead"
     if tWeekday(d.now) = 0 then title = "Sunday Reset"
     header(g, "THE WEEK AHEAD · " + UCase(tShortDate(start)) + " TO " + UCase(tShortDate(start + 6 * 86400)), title, "#F4A259", false)
-    uiText(g, 1808, 140, "Updated " + tClock(d.now), 24, 400, "Manrope", "#A9B1C4", 400, "right")
+    updated = "Updated " + tClock(d.now)
+    if asOfText(d, "weather") <> "" then updated = "Forecast " + asOfText(d, "weather")
+    uiText(g, 1808, 140, updated, 24, 400, "Manrope", "#A9B1C4", 400, "right")
     top = 240
     h = 560
     cw = (1696 - 6 * 16) / 7
@@ -590,7 +613,7 @@ function tUtcToWallApprox(utc as integer) as integer
 end function
 
 sub buildSky(g as object, d as object)
-    uiImage(g, "pkg:/images/bg_sky.jpg", 0, 0, 1920, 1080)
+    uiBackdrop(g, "pkg:/images/bg_sky.jpg", "#05070F")
     cloud = 0
     n = 0
     for each hr in d.weather.hours
@@ -887,7 +910,7 @@ function seasonItems(month as integer) as dynamic
 end function
 
 sub buildSeason(g as object, d as object)
-    uiImage(g, "pkg:/images/bg_season.jpg", 0, 0, 1920, 1080)
+    uiBackdrop(g, "pkg:/images/bg_season.jpg", "#0B1120")
     header(g, "WHAT'S IN SEASON · " + UCase(tMonthNames()[tParts(d.now).m - 1]), "The season in West Georgia", "#F4A259", false)
     cards = []
     cards.Append(seasonItems(tParts(d.now).m))
@@ -912,13 +935,13 @@ end sub
 
 sub buildRadar(g as object, d as object)
     uiImage(g, "pkg:/images/radar_base.jpg", 0, 0, 1920, 1080)
-    frames = []
-    bbox = "-9644575,3799871,-9286707,4001172"
-    for each t in d.radarTimes
-        url = "https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&version=1.3.0&request=GetMap&layers=conus_bref_qcd&crs=EPSG:3857&bbox=" + bbox + "&width=1920&height=1080&format=image/png&transparent=true&time=" + t
-        p = uiImage(g, url, 0, 0, 1920, 1080)
-        p.visible = false
-        frames.Push({poster: p, time: t})
+    layer = radarLayer(d.radarTimes)
+    parent = layer.group.getParent()
+    if parent <> invalid then parent.removeChild(layer.group)
+    g.appendChild(layer.group)
+    frames = layer.frames
+    for each f in frames
+        f.poster.visible = false
     end for
     if frames.Count() > 0 then frames[frames.Count() - 1].poster.visible = true
     m.radarFrames = frames
@@ -963,6 +986,9 @@ sub buildRadar(g as object, d as object)
                 yy = yy + uiHeight(l, 32) + 8
             end if
         end for
+    else if d.alertsKnown = false
+        uiText(g, 1388, 140, "Unavailable", 40, 500, "Outfit")
+        uiText(g, 1388, 214, "Couldn't reach the National Weather Service. Check local news in severe weather.", 21, 400, "Manrope", "#F4A259", 400, "left", 2)
     else
         uiText(g, 1388, 140, "None in effect", 40, 500, "Outfit")
         uiText(g, 1388, 214, "National Weather Service, Peachtree City", 21, 400, "Manrope", "#A9B1C4", 400)
@@ -990,6 +1016,36 @@ sub buildRadar(g as object, d as object)
     end for
     showRadarFrame(m.radarFrame)
 end sub
+
+' Radar frames as one group of posters, kept between builds of the radar
+' screen while the frame times are unchanged, so rotating back to radar (or a
+' data refresh) doesn't create and download a second set. Frames load at
+' 960x540 (about 2 MB each decoded instead of 8 MB) and are scaled to fill
+' the screen; low memory keeps only the latest 4.
+function radarLayer(times as object) as object
+    picks = times
+    if m.lowMemory = true and times.Count() > 4
+        picks = []
+        for i = times.Count() - 4 to times.Count() - 1
+            picks.Push(times[i])
+        end for
+    end if
+    key = picks.Join(",")
+    if m.radarCache <> invalid and m.radarCache.key = key then return m.radarCache
+    group = CreateObject("roSGNode", "Group")
+    frames = []
+    bbox = "-9644575,3799871,-9286707,4001172"
+    for each t in picks
+        url = "https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&version=1.3.0&request=GetMap&layers=conus_bref_qcd&crs=EPSG:3857&bbox=" + bbox + "&width=960&height=540&format=image/png&transparent=true&time=" + t
+        p = uiImage(group, url, 0, 0, 1920, 1080)
+        p.loadWidth = 960
+        p.loadHeight = 540
+        p.visible = false
+        frames.Push({poster: p, time: t})
+    end for
+    m.radarCache = {key: key, group: group, frames: frames}
+    return m.radarCache
+end function
 
 sub showRadarFrame(i as integer)
     if m.radarFrames = invalid or m.radarFrames.Count() = 0 then return

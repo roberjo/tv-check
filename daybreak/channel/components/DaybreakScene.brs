@@ -1,5 +1,8 @@
 ' Daybreak scene: owns the data task, picks screens, crossfades between them,
 ' keeps the clock exact and animates radar. Left/Right browse, Play pauses.
+' Screens rebuild only when they rotate in or their data changes; the data
+' task publishes only on content changes. Memory is checked every 10 s and
+' low memory trims radar frames and photo backgrounds.
 
 sub init()
     m.stage = m.top.findNode("stage")
@@ -10,6 +13,7 @@ sub init()
     m.rotateTimer = m.top.findNode("rotateTimer")
     m.clockTimer = m.top.findNode("clockTimer")
     m.frameTimer = m.top.findNode("frameTimer")
+    m.pausedTimer = m.top.findNode("pausedTimer")
     m.dataTask = m.top.findNode("dataTask")
     m.items = []
     m.index = 0
@@ -17,9 +21,13 @@ sub init()
     m.current = invalid
     m.serial = 0
     m.paused = false
+    m.lowMemory = false
+    m.memMonitor = CreateObject("roAppMemoryMonitor")
+    m.deviceInfo = CreateObject("roDeviceInfo")
     m.rotateTimer.observeField("fire", "onRotate")
-    m.clockTimer.observeField("fire", "updateClock")
+    m.clockTimer.observeField("fire", "onClockTick")
     m.frameTimer.observeField("fire", "onFrame")
+    m.pausedTimer.observeField("fire", "onPausedRefresh")
     m.fade.observeField("state", "onFadeState")
     m.status.text = "Loading Daybreak..."
     m.top.setFocus(true)
@@ -59,6 +67,9 @@ sub show(i as integer, restartTimer as boolean)
     if m.items.Count() = 0 then return
     m.index = i
     id = m.items[i]
+    ' relative times ("in 2 h 10 m", the sun's position) use the time of building
+    m.data.now = tNowWall()
+    m.data.today = tDay(m.data.now)
     grp = invalid
     try
         grp = buildScreen(id, m.data)
@@ -105,6 +116,34 @@ sub onFadeState()
     end if
 end sub
 
+sub onClockTick()
+    updateClock()
+    checkMemory()
+end sub
+
+' "low" or "critical" general memory, or the app past 80% of its limit, turns
+' on the light mode: fewer radar frames and no photo backgrounds.
+sub checkMemory()
+    low = false
+    if m.deviceInfo <> invalid
+        level = m.deviceInfo.GetGeneralMemoryLevel()
+        if level = "low" or level = "critical" then low = true
+    end if
+    if m.memMonitor <> invalid
+        if m.memMonitor.GetMemoryLimitPercent() >= 80 then low = true
+    end if
+    if low <> m.lowMemory
+        m.lowMemory = low
+        print "Daybreak: low memory mode "; low
+        if low then m.radarCache = invalid
+    end if
+end sub
+
+' While paused, rebuild the screen every 5 minutes so relative times stay right.
+sub onPausedRefresh()
+    if m.paused and m.items.Count() > 0 then show(m.index, false)
+end sub
+
 sub onRotate()
     if m.items.Count() = 0 then return
     show((m.index + 1) mod m.items.Count(), true)
@@ -128,9 +167,11 @@ function onKeyEvent(key as string, press as boolean) as boolean
         m.paused = not m.paused
         if m.paused
             m.rotateTimer.control = "stop"
+            m.pausedTimer.control = "start"
             m.status.text = "Paused. Press Play to resume."
         else
             m.status.text = ""
+            m.pausedTimer.control = "stop"
             m.rotateTimer.control = "start"
         end if
         return true
