@@ -120,12 +120,38 @@ def radar_caps():
             + "</Dimension></Layer></Layer></Capability></WMS_Capabilities>\n")
 
 
+def air():
+    """US AQI: moderate now, never reaching 101 in the next day."""
+    hours = [(dt.datetime.combine(DAY0, dt.time()) + dt.timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M") for h in range(48)]
+    aqi = [40 + (h % 24) * 2 for h in range(48)]
+    return {"current": {"time": "2026-10-18T10:00", "us_aqi": 58, "pm2_5": 12.4}, "hourly": {"time": hours, "us_aqi": aqi}}
+
+
+def storms():
+    """One Atlantic hurricane in the Gulf and one East Pacific storm (ignored)."""
+    return {"activeStorms": [
+        {"id": "al142026", "binNumber": "AT4", "name": "Nadine", "classification": "HU", "intensity": "85",
+         "latitudeNumeric": 25.4, "longitudeNumeric": -88.1},
+        {"id": "ep182026", "binNumber": "EP3", "name": "Rosa", "classification": "TS", "intensity": "45",
+         "latitudeNumeric": 16.2, "longitudeNumeric": -108.4},
+    ]}
+
+
+def espn_live():
+    """A Braves game in progress, for the live-score tests."""
+    ev = event("2026-10-18T13:20Z", team("15", "Braves"), team("21", "Mets"), True, "in", 4, 2, "TBS")
+    ev["competitions"][0]["status"]["type"]["shortDetail"] = "Bot 6th"
+    for c in ev["competitions"][0]["competitors"]:
+        c.pop("winner", None)
+    return {"events": [ev]}
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     files = {"weather.json": weather(), "alerts.json": {"features": []},
              "alerts_warning.json": {"features": [{"properties": {"event": "Tornado Warning"}},
                                                   {"properties": {"event": "Flood Watch"}}]},
-             "lake.json": lake()}
+             "lake.json": lake(), "air.json": air(), "nhc.json": storms(), "espn_live.json": espn_live()}
     for key, doc in espn().items():
         files[f"espn_{key}.json"] = doc
     for name, doc in files.items():

@@ -105,6 +105,25 @@ sub Main()
     check("source colors", sourceColor(info.health.sources.weather, info.limits, "weather", info.nowUtc) + " " + sourceColor(info.health.sources.lake, info.limits, "lake", info.nowUtc) + " " + sourceColor(info.health.sources.news, info.limits, "news", info.nowUtc), "#9EC79B #E5484D #F4A259")
     check("diagnostics with nothing known", buildDiagnostics({nowUtc: 0}).getChildCount() > 10, true)
     check("hint", labelTexts(buildHint()).DoesExist("diagnostics"), true)
+    ' 1.5: countdowns on the board, air on the weather card, storms on radar, live scores
+    d = derive(cfg)
+    texts = labelTexts(buildScreen("board", d))
+    check("board countdown", texts.DoesExist("Beach trip") and texts.DoesExist("12"), true)
+    check("weather card air", labelTexts(buildScreen("briefing", d)).DoesExist("Air moderate · 58"), true)
+    check("radar tropics line", labelTexts(buildScreen("radar", d)).DoesExist("Tropics: Hurricane Nadine, " + d.storms[0].miles.ToStr() + " mi away"), true)
+    store("sports", ingest("sports", ["", "", "", "", ReadAsciiFile("pkg:/feeds/espn_live.json")]))
+    d = derive(cfg)
+    texts = labelTexts(buildScreen("gameday", d))
+    check("game day live score", texts.DoesExist("4–2") and texts.DoesExist("Bot 6th") and texts.DoesExist("ON NOW"), true)
+    check("tonight live", labelTexts(buildScreen("tonight", d)).DoesExist("vs Mets · Live · 4–2 · Bot 6th on TBS"), true)
+    ' every screen still builds for a town with no lake, college or curbside
+    m.place = placeOf({place: {town: "Athens", lake: "none", college: "none", curbside: "none"}})
+    d = derive(cfg)
+    for each id in ["ambient", "briefing", "tonight", "week", "sky", "recap", "school", "board", "season", "radar", "night"]
+        check("Athens builds " + id, buildScreen(id, d).getChildCount() > 4, true)
+    end for
+    check("no lake screen", availableScreens(d).DoesExist("lake"), false)
+    m.place = invalid
     testSummary("screens")
 end sub
 

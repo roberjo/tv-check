@@ -45,9 +45,45 @@ sub Main()
     for each t in d.tips
         kinds.Push(t.kind)
     end for
-    check("tip order", kinds.Join(","), "curb,deadline,rain,frost,shower,lake")
+    check("tip order", kinds.Join(","), "curb,deadline,rain,frost,countdown,shower,tropics,lake")
     check("heads up (top 3)", d.headsUp.Join(" / "), "Tomorrow: garbage plus yard waste (no grass clippings). Curb by 7 AM. / Science fair registration deadline is Friday (Nov 7 fair) for Riley and Casey. / Rain likely Tuesday (65%).")
     check("tips skip what's shown", tipTexts(d.tips, {curb: true, "Science fair registration deadline": true}, 2).Join(" / "), "Rain likely Tuesday (65%). / Frost possible Wednesday morning (33°). Cover tender plants.")
+    ' air quality, countdowns, the tropics
+    check("air now", d.air.aqi.ToStr() + " " + d.air.label + " peak " + d.air.peak.ToStr(), "58 Moderate peak 86")
+    check("countdown", d.countdowns[0].title + " in " + d.countdowns[0].days.ToStr() + " days", "Beach trip in 12 days")
+    check("countdowns aren't calendar rows", d.calendar.Count(), 6)
+    check("atlantic storms only", d.storms.Count().ToStr() + " " + d.storms[0].kind + " " + d.storms[0].name + " " + d.storms[0].mph.ToStr() + " mph", "1 Hurricane Nadine 98 mph")
+    check("storm distance (559 mi by haversine)", d.storms[0].miles, 559)
+    stormTip = invalid
+    for each t in d.tips
+        if t.kind = "tropics" then stormTip = t
+    end for
+    check("far storm tip is low priority", stormTip.p.ToStr() + " " + stormTip.t, "7 Hurricane Nadine (98 mph) is 559 mi from LaGrange.")
+    check("AQI categories", aqiLabel(42) + ", " + aqiLabel(120) + ", " + aqiLabel(180) + ", " + aqiLabel(320), "Good, Unhealthy for sensitive groups, Unhealthy, Hazardous")
+    ' live scores: an in-progress game keeps its score and status, and sports refresh every 2 minutes
+    check("no live game", liveGame(), false)
+    live = ingest("sports", ["", "", "", "", ReadAsciiFile("pkg:/feeds/espn_live.json")])
+    store("sports", live)
+    d5 = derive(cfg)
+    g = d5.games[0]
+    check("live game", g.name + " " + g.state + " " + g.my + "-" + g.their + " " + g.status, "Braves in 4-2 Bot 6th")
+    check("live refresh", liveGame(), true)
+    m.fetched.sports = m.testNowUtc - 150
+    check("sports due after 2 minutes during a game", due("sports", 900), true)
+    feed("sports", ["espn_georgia.json", "espn_auburn.json", "espn_falcons.json", "espn_hawks.json", "espn_braves.json"])
+    ' another town: no lake, college or curbside, different rivalry and area
+    m.place = placeOf({place: {town: "Athens", region: "GA", area: "Clarke County", lake: "none", college: "none", curbside: "none", rivalry: ["Georgia", "Falcons"]}})
+    d6 = derive(cfg)
+    check("no curbside", d6.curb, invalid)
+    check("no college games", d6.games.Count(), 4)
+    check("place names", d6.place.town + " / " + d6.place.area, "Athens / Clarke County")
+    check("other rivalry has no final", d6.rivalry, invalid)
+    tipKinds = []
+    for each t in d6.tips
+        tipKinds.Push(t.kind)
+    end for
+    check("no curb or lake tips", tipKinds.Join(","), "deadline,rain,frost,countdown,shower,tropics")
+    m.place = invalid
     ' alerts
     feed("alerts", ["alerts_warning.json"])
     d = derive(cfg)

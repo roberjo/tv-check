@@ -25,6 +25,15 @@ sub Main()
             print "SCENE|"; sc.name; "|"; id; "|"; FormatJson(dumpNode(g))
         end for
     end for
+    ' a game in progress
+    m.testNowUtc = base.utc
+    m.testNowWall = base.wall
+    feed("alerts", ["alerts.json"])
+    store("sports", ingest("sports", ["", "", "", "", ReadAsciiFile("pkg:/feeds/espn_live.json")]))
+    d = derive(cfg)
+    print "SCENE|live|gameday|"; FormatJson(dumpNode(buildScreen("gameday", d)))
+    feed("sports", ["espn_georgia.json", "espn_auburn.json", "espn_falcons.json", "espn_hawks.json", "espn_braves.json"])
+    d = derive(cfg)
     ' overlays: menu, settings, diagnostics, remote hint
     menu = {page: "main", index: 1, settings: defaultSettings(cfg), paused: false, items: chooseScreens(d, "app"),
             all: ["briefing", "ambient", "tonight", "week", "recap", "gameday", "radar", "lake", "sky", "school", "board", "season"]}
