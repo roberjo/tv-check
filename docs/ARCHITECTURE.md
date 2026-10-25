@@ -45,6 +45,13 @@ Daybreak is one sideloaded Roku package with two entry points: `Main` (the app) 
 - **Offline:** when every source has failed twice in a row, the scene's status line says "Offline · showing saved data from 9:40 AM". It clears on the first success.
 - **Night:** from 11 PM to 5 AM the screensaver plays only `buildNight()`, a dim clock that moves every 5 minutes. Radar is added in a warning.
 
+## Overlays (`components/overlays.brs`)
+- **Layers:** the scene stacks `stage` (screens), then `navLayer` (page dots and the progress line, app only), then `overlay` (hint, menu, diagnostics).
+- **Rotation:** the menu and diagnostics hold the rotation while they're open.
+- **Builders take plain data.** `buildMenu(state)` and `buildDiagnostics(info)` don't call device APIs. The scene's `gatherDiagnostics()` collects `roDeviceInfo`, `roAppMemoryMonitor`, `roAppInfo` and the data task's `health` field. That lets tests and previews render the overlays with sample values.
+- **Settings** live in the `daybreak` registry section as JSON. The data task gets them through its `settings` field. Gentle news is applied in `derive()`, so a change takes effect within a minute, without refetching.
+- **Speed test:** `SpeedTask` runs only on request: three empty requests for latency, then a 25 MB download to `tmp:`, deleted afterwards.
+
 ## Memory budget
 | Item | Before 1.2 | 1.2 |
 |---|---|---|

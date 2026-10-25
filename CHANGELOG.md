@@ -2,6 +2,27 @@
 
 All notable changes to Daybreak. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Work is tracked on the [Daybreak roadmap](https://github.com/users/roberjo/projects/2) project.
 
+## [1.4.0] - 2026-10-25
+
+Remote navigation, settings and the diagnostics screen.
+
+### Added
+- **Page dots and a progress line** (app only): dots for the playlist with the current screen's name, and a line along the bottom edge that fills until the next screen (#21).
+- **First-run remote hint** on the first three launches (#22).
+- **OK menu:** pause or resume, go to a screen, settings, diagnostics. The menu and diagnostics hold the rotation while open (#23).
+- **Settings saved on the TV:** gentle news, rotation speed (Normal, Slow, Fast) and per-screen on or off. The gentle-news default comes from `GENTLE_NEWS` (#24).
+- **Diagnostics screen** (the * key, or from the menu) (#25):
+  - per-source status, age, latency, size and errors, colored by freshness
+  - app memory, % of its limit, memory level, low-memory mode, screen element count
+  - device, display and network
+  - the warm-start cache
+  - an on-demand speed test
+- `isTrue`/`isFalse` helpers for values that may be missing.
+
+### Changed
+- Violent-crime headlines are kept at ingest with a flag and hidden in `derive()` when gentle news is on, so the setting applies without refetching.
+- The offline status line moved to the bottom right, clear of the page dots.
+
 ## [1.3.0] - 2026-10-25
 
 Design system, screen refresh and previews from the TV code.
@@ -67,6 +88,7 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
+[1.4.0]: https://github.com/roberjo/tv-check/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/roberjo/tv-check/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/roberjo/tv-check/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/roberjo/tv-check/compare/v1.0.0...v1.1.0
