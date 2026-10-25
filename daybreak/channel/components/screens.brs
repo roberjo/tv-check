@@ -1175,8 +1175,15 @@ sub buildRadar(g as object, d as object)
     uiText(g, 984, 516, "LaGrange", 34, 600, "Outfit")
     uiText(g, 840, 532, "West Point Lake", 24, 600, "Manrope", "#A9C8EE", 260, "right")
     uiText(g, 960, 244, "25 mi", 24, 600, "Manrope", "#C9CEDA", 120, "center")
+    ' Say plainly whether the map is clear or the radar didn't load, so an
+    ' empty map never looks like a broken one.
+    ' (the TV can't read the frames' pixels, so "no rain" comes from the forecast)
     status = "No rain nearby"
-    sub2 = "Forecast for " + d.place.town + " shows no rain in the next 2 hours"
+    sub2 = "Radar is live · latest scan " + radarLatestText(d) + ". Rain shows in color."
+    if d.radarTimes.Count() = 0
+        status = "Radar unavailable"
+        sub2 = "Couldn't reach NOAA's radar just now. The forecast shows no rain for " + d.place.town + " in the next 2 hours."
+    end if
     if d.rainSoon
         status = "Rain likely soon"
         sub2 = "Forecast shows rain near " + d.place.town + " within 2 hours"
@@ -1227,9 +1234,10 @@ sub buildRadar(g as object, d as object)
     lx0 = gx(7)
     uiCard(g, lx0, 876, gw(6), 140, "#0B1120", "#1F2A44", 28, 0.92)
     uiLabel(g, lx0 + 40, 898, "Precipitation")
-    legend = [["Light", "#02FD02", "#01C501"], ["Moderate", "#FDF802", "#FD9500"], ["Heavy", "#FD0000", "#BC0000"], ["Severe, hail", "#F800FD", "#9854C6"]]
-    lw = (gw(6) - 80 - 3 * 16) / 4
-    for j = 0 to 3
+    ' colors sampled from MRMS frames: blue for drizzle and very light rain up to magenta for hail
+    legend = [["Very light", "#4660A0", "#5BA5CA"], ["Light", "#02FD02", "#01C501"], ["Moderate", "#FDF802", "#FD9500"], ["Heavy", "#FD0000", "#BC0000"], ["Hail", "#F800FD", "#9854C6"]]
+    lw = (gw(6) - 80 - 4 * 16) / 5
+    for j = 0 to 4
         lx = lx0 + 40 + j * (lw + 16)
         uiRect(g, lx, 944, lw / 2, 14, legend[j][1])
         uiRect(g, lx + lw / 2, 944, lw / 2, 14, legend[j][2])
@@ -1266,6 +1274,12 @@ function radarLayer(times as object) as object
     end for
     m.radarCache = {key: key, group: group, frames: frames}
     return m.radarCache
+end function
+
+' Clock time of the newest radar frame ("1:08 PM"), or "—".
+function radarLatestText(d as object) as string
+    if d.radarTimes.Count() = 0 then return "—"
+    return tClock(tUtcIsoToWall(Left(d.radarTimes[d.radarTimes.Count() - 1], 19) + "Z"))
 end function
 
 sub showRadarFrame(i as integer)
