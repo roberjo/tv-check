@@ -33,16 +33,20 @@ daybreak/channel/
 
 ## Build and test (Mac)
 ```
-.venv/bin/python daybreak/build_channel.py      # assets + config + BrighterScript check + daybreak/dist/daybreak.zip
-daybreak/tests/run.sh      <fixtures-dir>       # library unit tests
-daybreak/tests/run_data.sh <fixtures-dir>       # derive() on saved live feeds
+.venv/bin/python daybreak/build_channel.py          # assets + config + BrighterScript + daybreak/dist/daybreak.zip
+.venv/bin/python daybreak/build_channel.py --check  # BrighterScript only, with the example config (what CI runs)
+daybreak/tests/run.sh                               # library unit tests
+daybreak/tests/run_data.sh                          # derive() + every screen on synthetic feeds, clock pinned
+daybreak/tests/run_live.sh                          # optional smoke run on live feeds (fetch_fixtures.sh first)
 ```
-Fixtures (saved feeds plus a copy of `config/family.json`) stay outside the repo because the calendar is private.
+The synthetic feeds in `tests/fixtures/feeds/` come from `tests/make_fixtures.py` and are committed. Live feeds and the copy of `family.example.json` stay out of git. See [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md).
 
 ## Install (only when nobody is watching)
-1. Check: `curl -s http://192.168.1.176:8060/query/media-player` should show `state="close"`, with the Home screen active.
-2. Upload `daybreak/dist/daybreak.zip` to the dev installer at `http://192.168.1.176` (user `rokudev`). This replaces any other dev app.
-3. **Screensaver:** Settings → Theme → Screensaver → **Daybreak**.
+```
+python3 scripts/deploy.py --check   # read-only: media player idle and Home or Daybreak in front?
+python3 scripts/deploy.py           # asks, re-checks, uploads to the dev installer, logs the install
+```
+The install replaces any other dev app. Then choose **Settings → Theme → Screensaver → Daybreak**.
 
 ## Remote
 - **Left/Right:** previous or next screen.
