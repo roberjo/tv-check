@@ -131,8 +131,8 @@ sub updateClock()
     if h12 = 0 then h12 = 12
     c.clock.text = h12.ToStr() + ":" + tPad((now mod 3600) \ 60, 2)
     c.ampm.text = suffix
-    cw = c.clock.boundingRect().width
-    aw = c.ampm.boundingRect().width
+    cw = uiWidth(c.clock, c.size)
+    aw = uiWidth(c.ampm, Int(c.size * 0.33))
     drop = Int(c.size * 0.6)
     if c.align = "right"
         c.ampm.translation = [c.x - aw, c.y + drop]
@@ -251,28 +251,13 @@ sub buildBriefing(g as object, d as object)
     w = 532
     uiCard(g, x, top, w, 540)
     uiLabel(g, x + 40, top + 44, "Family calendar")
-    rows = []
-    if (d.curb.pickup - d.today) \ 86400 <= 3
-        sub2 = "Curb by 7 AM"
-        if d.curb.holiday <> invalid then sub2 = sub2 + " · moved for " + d.curb.holiday
-        rows.Push({when: tDayWord(d.curb.pickup, d.today), title: curbText(d.curb), sub: sub2, color: "#F4A259"})
-    end if
-    for each e in d.calendar
-        if e.start >= d.now - 3600
-            when = tDayWord(e.start, d.today)
-            if not e.allDay then when = when + " " + tClock(e.start).Replace(":00", "")
-            s = e.whoText
-            if e.subtitle <> "" then s = s + " · " + e.subtitle
-            rows.Push({when: when, title: e.title, sub: s, color: e.color})
-        end if
-    end for
-    for each b in d.birthdays
-        rows.Push({when: tDayWord(b.day, d.today), title: b.name + "'s birthday", sub: "Celebrate!", color: b.color})
-    end for
+    rows = briefingRows(d)
+    shownRefs = {}
     yy = top + 98
     for i = 0 to rows.Count() - 1
         if i < 4
             r = rows[i]
+            shownRefs[r.ref] = true
             uiText(g, x + 40, yy, r.when, 22, 700, "Manrope", "#F4A259", w - 80)
             uiText(g, x + 40, yy + 30, r.title, 28, 600, "Manrope", "#F4F1EA", w - 80)
             uiDot(g, x + 47, yy + 82, 6, r.color)
@@ -315,13 +300,58 @@ sub buildBriefing(g as object, d as object)
     uiCard(g, hx, fy, 554, 200, "#1A2440", "#2A3656")
     uiLabel(g, hx + 36, fy + 28, "Heads up", 20, "#F4A259")
     yy = fy + 66
-    for i = 0 to 1
-        if i < d.headsUp.Count()
-            l = uiText(g, hx + 36, yy, d.headsUp[i], 23, 500, "Manrope", "#F4F1EA", 482, "left", 2)
-            yy = yy + l.boundingRect().height + 10
-        end if
+    for each t in tipTexts(d.tips, shownRefs, 2)
+        l = uiText(g, hx + 36, yy, t, 23, 500, "Manrope", "#F4F1EA", 482, "left", 2)
+        yy = yy + uiHeight(l, 23) + 10
     end for
 end sub
+
+' Briefing calendar rows in time order: curbside counts as 7 AM on pickup day,
+' all-day events and birthdays as the start of their day. ref matches the
+' heads-up tip about the same thing.
+function briefingRows(d as object) as object
+    rows = []
+    if (d.curb.pickup - d.today) \ 86400 <= 3
+        sub2 = "Curb by 7 AM"
+        if d.curb.holiday <> invalid then sub2 = sub2 + " · moved for " + d.curb.holiday
+        caveat = curbCaveat(d.curb)
+        if caveat <> "" then sub2 = sub2 + " · " + caveat
+        rows.Push({when: tDayWord(d.curb.pickup, d.today), title: curbText(d.curb), sub: sub2, color: "#F4A259",
+                   sort: d.curb.pickup + 7 * 3600, ref: "curb"})
+    end if
+    for each e in d.calendar
+        if e.start >= d.now - 3600 or (e.allDay and e.start >= d.today)
+            when = tDayWord(e.start, d.today)
+            if not e.allDay then when = when + " " + tClock(e.start).Replace(":00", "")
+            s = e.whoText
+            if e.subtitle <> "" then s = s + " · " + e.subtitle
+            rows.Push({when: when, title: e.title, sub: s, color: e.color, sort: e.start, ref: e.title})
+        end if
+    end for
+    for each b in d.birthdays
+        ref = b.name + "'s birthday"
+        rows.Push({when: tDayWord(b.day, d.today), title: ref, sub: "Celebrate!", color: b.color, sort: b.day, ref: ref})
+    end for
+    return sortStable(rows, "sort")
+end function
+
+' Insertion sort that keeps equal items in their original order (SortBy
+' doesn't promise that). Fine for the short lists screens use.
+function sortStable(items as object, key as string) as object
+    out = []
+    for each it in items
+        k = out.Count()
+        while k > 0 and out[k - 1][key] > it[key]
+            k = k - 1
+        end while
+        out.Push(invalid)
+        for j = out.Count() - 1 to k + 1 step -1
+            out[j] = out[j - 1]
+        end for
+        out[k] = it
+    end for
+    return out
+end function
 
 sub buildTonight(g as object, d as object)
     uiRect(g, 0, 0, 1920, 1080, "#090C18")
@@ -376,6 +406,7 @@ sub buildTonight(g as object, d as object)
         uiText(g, rx + 54, yy, tDayWord(d.curb.pickup, d.today) + ": " + LCase(curbText(d.curb)), 26, 700, "Manrope", "#F4F1EA", rw - 108)
         s = "Curb by 7 AM"
         if d.curb.yard then s = s + " · no grass clippings"
+        if curbCaveat(d.curb) <> "" then s = s + " · " + curbCaveat(d.curb)
         uiText(g, rx + 54, yy + 40, s, 21, 400, "Manrope", "#E1E4EC", rw - 108)
         yy = yy + 108
     end if
@@ -478,7 +509,7 @@ sub buildWeek(g as object, d as object)
                 else
                     uiText(g, x + 20, yy, it.head, 20, 400, "Manrope", "#A9B1C4", cw - 40)
                     l = uiText(g, x + 20, yy + 28, it.body, 20, 600, "Manrope", "#F4F1EA", cw - 40, "left", 2)
-                    yy = yy + 40 + l.boundingRect().height
+                    yy = yy + 40 + uiHeight(l, 20)
                 end if
                 shown = shown + 1
             end if
@@ -929,7 +960,7 @@ sub buildRadar(g as object, d as object)
         for each a in d.alerts
             if yy < 280
                 l = uiText(g, 1388, yy, a.event, 32, 600, "Manrope", "#F4F1EA", 380, "left", 2)
-                yy = yy + l.boundingRect().height + 8
+                yy = yy + uiHeight(l, 32) + 8
             end if
         end for
     else
