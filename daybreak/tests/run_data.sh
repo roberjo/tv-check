@@ -1,11 +1,14 @@
 #!/bin/sh
-# Runs DataTask.derive() and builds every screen off-device against saved live feeds
-# (fetch them first with tests/fetch_fixtures.sh) plus the synthetic calendar.
+# derive() and every screen, off-device, against the committed synthetic feeds
+# (tests/fixtures/feeds) with the clock pinned. Needs no network.
+set -e
 DIR=$(cd "$(dirname "$0")/.." && pwd)
-FIXTURES=${1:-$DIR/tests/fixtures}
+FIXTURES=$DIR/tests/fixtures
+cp "$DIR/../config/family.example.json" "$FIXTURES/family.example.json"
+L=$DIR/channel/source/lib
+C=$DIR/channel/components
 for t in test_data test_screens; do
-  npx -y -p @rokucommunity/brs@0.47.6 brs --root "$FIXTURES" \
-    "$DIR/channel/source/lib/time.brs" "$DIR/channel/source/lib/ics.brs" "$DIR/channel/source/lib/rules.brs" \
-    "$DIR/channel/components/DataTask.brs" "$DIR/channel/components/ui.brs" "$DIR/channel/components/screens.brs" \
-    "$DIR/tests/$t.brs" 2>&1 | grep -v 'npm warn'
+  sh "$DIR/tests/brs.sh" "$FIXTURES" "$L/time.brs" "$L/ics.brs" "$L/rules.brs" \
+    "$C/DataTask.brs" "$C/ui.brs" "$C/screens.brs" \
+    "$DIR/tests/assert.brs" "$DIR/tests/harness.brs" "$DIR/tests/$t.brs"
 done

@@ -14,6 +14,19 @@ sub Main()
     check("Memorial Day shift", tKey(c.pickup), "2026-05-26")
     c = curbNext(tYmd(2026, 11, 25), 4)
     check("Thanksgiving Thursday route", tKey(c.pickup) + " confirm=" + c.confirm.ToStr(), "2026-11-28 confirm=true")
+    check("weekend shift caveat", curbCaveat(c), "Weekend pickup: confirm with the city")
+    c = curbNext(tYmd(2026, 10, 18), 1)
+    check("2026 is verified", c.known.ToStr() + " '" + curbCaveat(c) + "'", "true ''")
+    ' --- 2027 (provisional until the city's 2027 flyer)
+    c = curbNext(tYmd(2027, 1, 17), 1)
+    check("MLK 2027 shift", tKey(c.pickup) + " " + c.holiday, "2027-01-19 Martin Luther King Jr. Day")
+    check("2027 holiday caveat", curbCaveat(c), "Holiday shift not yet confirmed by the city")
+    c = curbNext(tYmd(2027, 7, 4), 1)
+    check("July 4 2027 observed Monday", tKey(c.pickup) + " " + c.holiday, "2027-07-06 Independence Day (observed)")
+    c = curbNext(tYmd(2027, 2, 7), 1)
+    check("2027 ordinary week caveat", c.known.ToStr() + " " + curbCaveat(c), "false Schedule not yet confirmed by the city")
+    c = curbNext(tYmd(2027, 11, 24), 4)
+    check("Thanksgiving 2027 Thursday route", tKey(c.pickup) + " confirm=" + c.confirm.ToStr(), "2027-11-27 confirm=true")
     ' --- dates
     check("weekday Oct 17 2026", tWeekday(tYmd(2026, 10, 17)).ToStr(), "6")
     check("day word", tDayWord(tYmd(2026, 10, 23) + 3600, tYmd(2026, 10, 17)), "Friday")
@@ -57,15 +70,5 @@ sub Main()
     else
         print "  skip LaGrange College feed (run tests/fetch_fixtures.sh)"
     end if
-    print ""
-    if m.fails = 0 then print "ALL TESTS PASSED" else print m.fails; " FAILED"
-end sub
-
-sub check(name as string, got as string, want as string)
-    if got = want
-        print "  ok   "; name
-    else
-        print "  FAIL "; name; ": got '"; got; "' want '"; want; "'"
-        m.fails = m.fails + 1
-    end if
+    testSummary("lib")
 end sub

@@ -2,13 +2,16 @@
 ' (America/New_York) wall-clock time encoded as if it were UTC seconds since
 ' 1970. Day math is then plain integer math, and DST never shifts a date.
 
+' Tests pin the clock by setting m.testNowUtc and m.testNowWall.
 function tNowWall() as integer
+    if m.testNowWall <> invalid then return m.testNowWall
     d = CreateObject("roDateTime")
     d.ToLocalTime()
     return d.AsSeconds()
 end function
 
 function tNowUtc() as integer
+    if m.testNowUtc <> invalid then return m.testNowUtc
     return CreateObject("roDateTime").AsSeconds()
 end function
 

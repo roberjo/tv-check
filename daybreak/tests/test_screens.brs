@@ -1,44 +1,42 @@
-' Builds every screen off-device with real derived data to catch runtime errors.
+' Builds every screen off-device from the synthetic feeds (clock pinned to
+' Sunday 2026-10-18 10:00 AM) and checks the playlists and key content.
 sub Main()
-    cfg = ParseJson(ReadAsciiFile("pkg:/family.example.json"))
-    cfg.lat = cfg.home.lat
-    cfg.lon = cfg.home.lon
-    cfg.curbWeekday = 1
-    cfg.city = cfg.home.city
-    for each mem in cfg.members
-        if mem.activities <> invalid then mem.band = true
-    end for
-    m.cache = {
-        weather: ParseJson(ReadAsciiFile("pkg:/live/weather.json")),
-        alerts: ParseJson(ReadAsciiFile("pkg:/live/alerts.json")),
-        lake: ParseJson(ReadAsciiFile("pkg:/live/lake.json")),
-        lc: icsParse(ReadAsciiFile("pkg:/live/lc.ics")),
-        calendar: icsParse(ReadAsciiFile("pkg:/sample.ics")),
-        news: [{headline: "Shriners blend fellowship with a mission of service", source: "LaGrange Daily News"}],
-        radar: ["2026-10-18T02:19:50.000Z", "2026-10-18T02:29:50.000Z"]
-    }
-    sports = []
-    for each team in espnTeams()
-        sports.Push({team: team, json: ParseJson(ReadAsciiFile("pkg:/live/espn_" + team.key + ".json"))})
-    end for
-    m.cache.sports = sports
+    cfg = fixtureConfig()
     d = derive(cfg)
-    ' city now comes from derive()
-    ' extra cases: a board note, groceries, a live alert and a game in 3 hours
-    d.notes = [{text: "Dinner at 6:30 tonight", from: "Jordan", color: "#9EC79B"}]
-    d.groceries = ["Milk", "Eggs"]
-    print "app playlist: "; chooseScreens(d, "app").Join(", ")
-    print "screensaver:  "; chooseScreens(d, "screensaver").Join(", ")
-    for each id in ["ambient", "briefing", "tonight", "week", "lake", "sky", "recap", "school", "board", "season", "radar"]
+    check("app playlist", chooseScreens(d, "app").Join(", "), "gameday, briefing, recap, board, week, radar, lake, sky, season, ambient")
+    check("screensaver playlist", chooseScreens(d, "screensaver").Join(", "), "ambient, gameday, briefing, recap")
+    for each id in ["ambient", "briefing", "tonight", "week", "lake", "sky", "recap", "gameday", "school", "board", "season", "radar"]
         g = buildScreen(id, d)
-        print "  built "; id; ": "; g.getChildCount(); " nodes"
+        check("builds " + id, g.getChildCount() > 10, true)
     end for
-    d.games.Unshift({name: "Falcons", short: "ATL", color: "#A71930", accent: invalid, start: d.now + 3 * 3600, state: "pre", detail: "vs Bears", network: "Fox", tbd: false})
-    d.alerts = [{event: "Tornado Warning", level: "warning"}]
-    print "with warning + game: "; chooseScreens(d, "app").Join(", ")
-    g = buildScreen("gameday", d)
-    print "  built gameday: "; g.getChildCount(); " nodes"
-    g = buildScreen("radar", d)
-    print "  built radar (alert): "; g.getChildCount(); " nodes"
-    print "SCREENS OK"
+    ' Briefing: calendar rows in time order, heads-up skips what the calendar shows
+    rows = briefingRows(d)
+    whens = []
+    for i = 0 to 3
+        whens.Push(rows[i].when + " " + rows[i].title)
+    end for
+    check("briefing rows in time order", whens.Join(" | "), "Today 6 PM Family photo with Grandma | Tomorrow Garbage + yard waste | Tuesday 4 PM Casey band rehearsal | Friday Science fair registration deadline")
+    texts = labelTexts(buildScreen("briefing", d))
+    check("briefing heads-up has no repeats", texts.DoesExist("Rain likely Tuesday (65%).") and not texts.DoesExist("Tomorrow: garbage plus yard waste (no grass clippings). Curb by 7 AM."), true)
+    ' warning + rain reorders the app playlist
+    m.cache.alerts = ParseJson(ReadAsciiFile("pkg:/feeds/alerts_warning.json"))
+    d = derive(cfg)
+    check("warning puts radar first", chooseScreens(d, "app")[0], "radar")
+    texts = labelTexts(buildScreen("radar", d))
+    check("radar lists the warning", texts.DoesExist("Tornado Warning"), true)
+    testSummary("screens")
+end sub
+
+' Every label's text in a built screen, as a set.
+function labelTexts(node as object) as object
+    out = {}
+    collectTexts(node, out)
+    return out
+end function
+
+sub collectTexts(node as object, out as object)
+    if node.subtype() = "Label" then out[node.text] = true
+    for i = 0 to node.getChildCount() - 1
+        collectTexts(node.getChild(i), out)
+    end for
 end sub
