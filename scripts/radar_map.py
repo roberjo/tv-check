@@ -44,9 +44,9 @@ def merc(lat, lon):
     return math.radians(lon) * r, math.log(math.tan(math.pi / 4 + math.radians(lat) / 2)) * r
 
 
-def bbox():
-    x, y = merc(*CENTER)
-    hw = HALF_WIDTH_KM * 1000 / math.cos(math.radians(CENTER[0]))
+def bbox(center=CENTER):
+    x, y = merc(*center)
+    hw = HALF_WIDTH_KM * 1000 / math.cos(math.radians(center[0]))
     hh = hw * H / W
     return x - hw, y - hh, x + hw, y + hh
 
@@ -81,7 +81,7 @@ def paint(base, layer, color, strength=1.0):
     base.paste(Image.new("RGB", base.size, color), (0, 0), mask)
 
 
-def build_base(b, out):
+def build_base(b, out, name="base.png"):
     relief = arcgis("basemap.nationalmap.gov/arcgis/rest/services/USGSShadedReliefOnly", b).convert("L")
     base = Image.merge("RGB", [relief.point(lambda v, g=g: int(g * (0.55 + 0.6 * v / 255))) for g in GROUND])
     # NHD waterbodies (lakes) and wide-river areas only: no creek lines or baked-in labels.
@@ -92,7 +92,7 @@ def build_base(b, out):
     paint(base, arcgis("carto.nationalmap.gov/arcgis/rest/services/govunits", b, "23"), COUNTY, 0.9)
     paint(base, arcgis("carto.nationalmap.gov/arcgis/rest/services/govunits", b, "22"), STATE, 1.2)
     paint(base, arcgis("carto.nationalmap.gov/arcgis/rest/services/transportation", b, "29"), ROAD, 1.0)
-    base.save(out / "base.png", optimize=True)
+    base.save(out / name, optimize=True)
 
 
 MRMS = "https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows"

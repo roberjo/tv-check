@@ -6,6 +6,7 @@
 
 function availableScreens(d as object) as object
     a = {ambient: true, briefing: true, tonight: true, week: true, sky: true, school: true, radar: true, night: true}
+    if d.takeover <> invalid then a.alert = true
     if d.weather = invalid
         a.Delete("briefing")
         a.Delete("ambient")
@@ -16,7 +17,7 @@ function availableScreens(d as object) as object
     if d.lake <> invalid and d.weather <> invalid and d.place.lake <> invalid then a.lake = true
     if d.finals.Count() > 0 then a.recap = true
     if soonGames(d).Count() > 0 then a.gameday = true
-    if d.notes.Count() > 0 or d.groceries.Count() > 0 or d.countdowns.Count() > 0 then a.board = true
+    if d.notes.Count() > 0 or d.groceries.Count() > 0 or d.countdowns.Count() > 0 or d.chores.Count() > 0 then a.board = true
     if seasonItems(tParts(d.now).m) <> invalid and d.weather <> invalid then a.season = true
     return a
 end function
@@ -36,6 +37,8 @@ function chooseScreens(d as object, mode as string, hidden = {} as object) as ob
     for each al in d.alerts
         if al.level = "warning" then warning = true
     end for
+    ' a dangerous-weather warning takes over everything: the alert and radar only
+    if d.takeover <> invalid then return ["alert", "radar"]
     ' late at night the screensaver is just a dim clock (plus radar in a warning)
     if mode = "screensaver" and (h >= 23 or h < 5)
         if warning then return ["radar", "night"]
@@ -89,6 +92,7 @@ end function
 function screenSeconds(id as string) as integer
     if id = "briefing" or id = "week" or id = "tonight" then return 30
     if id = "radar" then return 16
+    if id = "alert" then return 30
     if id = "night" then return 60
     return 20
 end function
@@ -96,7 +100,7 @@ end function
 function screenTitles() as object
     return {ambient: "Ambient", briefing: "Briefing", tonight: "Tonight", week: "Week ahead", lake: "Lake", sky: "Sky",
             recap: "Game recap", gameday: "Game day", school: "School", board: "Family board", season: "Season",
-            radar: "Radar", night: "Night clock"}
+            radar: "Radar", night: "Night clock", alert: "Weather warning"}
 end function
 
 function buildScreen(id as string, d as object) as object
@@ -116,6 +120,7 @@ function buildScreen(id as string, d as object) as object
     if id = "season" then buildSeason(g, d)
     if id = "radar" then buildRadar(g, d)
     if id = "night" then buildNight(g, d)
+    if id = "alert" then buildAlert(g, d)
     return g
 end function
 
@@ -227,6 +232,29 @@ sub sunArc(g as object, x as float, y as float, w as float, h as float, uri as s
         uiDot(g, px, py, dotR * 2.1, "#F4A259", 0.16)
         uiDot(g, px, py, dotR, "#F4A259")
     end if
+end sub
+
+' --- weather warning -------------------------------------------------------------
+
+' Full-screen warning: the event, the NWS headline and instructions, and how
+' long it lasts. Alternates with radar until the warning expires.
+sub buildAlert(g as object, d as object)
+    a = d.takeover
+    uiRect(g, 0, 0, 1920, 1080, "#5C0A18")
+    uiRect(g, 0, 0, 1920, 12, "#F4A259")
+    uiLabel(g, 112, 72, "National Weather Service · " + d.place.area, 26, "#F4C9A8")
+    uiText(g, 112, 116, a.event, 104, 600, "Outfit", "#FFFFFF", 1696)
+    until = ""
+    if a.expires <> invalid and a.expires > 0 then until = "Until " + tClock(a.expires)
+    if tDay(a.expires) <> d.today and a.expires > 0 then until = until + " " + tDayWord(a.expires, d.today)
+    if until <> "" then uiText(g, 112, 262, until, 48, 500, "Outfit", "#FFFFFF", 1696)
+    if a.headline <> "" then uiText(g, 112, 360, a.headline, 30, 500, "Manrope", "#FFFFFF", 1696, "left", 3)
+    uiCard(g, 112, 520, 1696, 380, "#3A0610", "#8A2A38", 28)
+    uiLabel(g, 152, 552, "What to do", 26, "#F4C9A8")
+    todo = a.instruction
+    if todo = "" then todo = "Follow instructions from local officials and the National Weather Service."
+    uiText(g, 152, 600, todo, 34, 500, "Manrope", "#FFFFFF", 1616, "left", 7)
+    uiText(g, 112, 950, "Radar follows. This screen stays up until the warning ends.", 26, 400, "Manrope", "#F4C9A8", 1696)
 end sub
 
 ' --- loading and night -----------------------------------------------------------
@@ -627,11 +655,11 @@ sub buildWeek(g as object, d as object)
             end if
         end for
         items = []
-        if isPickup then items.Push({box: true, head: "Curb by 7 AM", body: curbText(d.curb), color: "#F4A259", bg: "#2A2418", sort: 0})
+        if isPickup then items.Push({hitBox: true, head: "Curb by 7 AM", body: curbText(d.curb), color: "#F4A259", bg: "#2A2418", sort: 0})
         for each e in d.calendar
             if tDay(e.start) = day
                 if e.deadline
-                    items.Push({box: true, head: "Deadline", body: e.title, color: "#D9A6E0", bg: "#2A2033", sort: 1})
+                    items.Push({hitBox: true, head: "Deadline", body: e.title, color: "#D9A6E0", bg: "#2A2033", sort: 1})
                 else
                     head = "All day"
                     srt = 2
@@ -639,7 +667,7 @@ sub buildWeek(g as object, d as object)
                         head = tClock(e.start)
                         srt = e.start - day
                     end if
-                    items.Push({box: false, head: head, body: e.title, sort: srt})
+                    items.Push({hitBox: false, head: head, body: e.title, sort: srt})
                 end if
             end if
         end for
@@ -647,12 +675,12 @@ sub buildWeek(g as object, d as object)
             if tDay(gm.start) = day
                 head = tClock(gm.start)
                 if gm.tbd then head = "Time TBA"
-                items.Push({box: false, head: head, body: gm.name + " " + gm.detail, sort: gm.start - day})
+                items.Push({hitBox: false, head: head, body: gm.name + " " + gm.detail, sort: gm.start - day})
             end if
         end for
         if tWeekday(day) = 5
             for each mem in d.members
-                if mem.band = true then items.Push({box: true, head: mem.name, body: "Marching band at the game", color: mem.color, bg: "#2A2614", sort: 19 * 3600 + 1800})
+                if mem.band = true then items.Push({hitBox: true, head: mem.name, body: "Marching band at the game", color: mem.color, bg: "#2A2614", sort: 19 * 3600 + 1800})
             end for
         end if
         items = sortStable(items, "sort")
@@ -660,7 +688,7 @@ sub buildWeek(g as object, d as object)
         shown = 0
         for each it in items
             if yy < top + h - 120
-                if it.box
+                if it.hitBox
                     bh = 104
                     uiCard(g, x + 12, yy - 8, cw - 24, bh, it.bg, "", 14)
                     uiText(g, x + 24, yy, it.head, 24, 700, "Manrope", it.color, cw - 48)
@@ -1065,8 +1093,10 @@ sub buildBoard(g as object, d as object)
     uiText(g, 1808, 140, "Add an event called ""TV: your note"" to the family calendar", 24, 400, "Manrope", "#A9B1C4", 900, "right")
     top = 246
     cw = gw(4)
+    maxNotes = 4
+    if d.chores.Count() > 0 then maxNotes = 2 ' chores take the bottom row
     for i = 0 to d.notes.Count() - 1
-        if i < 4
+        if i < maxNotes
             n = d.notes[i]
             x = gx(1 + (i mod 2) * 4)
             y = top + (i \ 2) * 397
@@ -1076,6 +1106,23 @@ sub buildBoard(g as object, d as object)
             uiText(g, x + 40, y + 316, n.from, 24, 400, "Manrope", "#A9B1C4", cw - 80)
         end if
     end for
+    if d.chores.Count() > 0
+        cy0 = top + 397
+        uiCard(g, gx(1), cy0, gw(8), 373)
+        uiLabel(g, gx(1) + 40, cy0 + 36, "Whose turn")
+        yy = cy0 + 88
+        for each c in d.chores
+            if yy < cy0 + 340
+                uiDot(g, gx(1) + 52, yy + 18, 9, c.color)
+                uiText(g, gx(1) + 76, yy, c.who, 30, 700, "Manrope", "#F4F1EA", 220)
+                uiText(g, gx(1) + 310, yy + 2, c.task, 28, 500, "Manrope", "#F4F1EA", gw(8) - 600)
+                when = "Tomorrow: "
+                if c.every = "week" then when = "Next week: "
+                uiText(g, gx(1) + gw(8) - 40, yy + 4, when + c.next, 24, 400, "Manrope", "#A9B1C4", 260, "right")
+                yy = yy + 64
+            end if
+        end for
+    end if
     gx0 = gx(9)
     gw0 = gw(4)
     gtop = top
@@ -1115,7 +1162,17 @@ sub buildBoard(g as object, d as object)
     if d.groceries.Count() = 0 then uiText(g, gx0 + 40, yy, "Add ""Buy: milk, eggs"" to the family calendar", 24, 400, "Manrope", "#A9B1C4", gw0 - 80, "left", 3)
 end sub
 
+' Three notes per month for West Georgia (USDA zone 8a), shown on the Season screen.
 function seasonItems(month as integer) as dynamic
+    if month = 1 then return [["Winter", "Long nights", "Early sunsets and cold, clear air make January good for stargazing. Orion is high in the evening sky."], ["In the garden", "Plan and prune", "Order seeds and prune fruit trees and summer-blooming shrubs while they're dormant."], ["On the wing", "Winter visitors", "Juncos and white-throated sparrows visit feeders, and bald eagles nest near big lakes."]]
+    if month = 2 then return [["Late winter", "First blooms", "Red maples, daffodils and Japanese magnolias often bloom in February, ahead of spring."], ["In the garden", "Prune roses, plant peas", "Prune roses in mid to late February. Lettuce, peas and onions can go in now."], ["Outdoors", "Frogs are calling", "Spring peepers and chorus frogs call from wet ditches and ponds on mild nights."]]
+    if month = 3 then return [["Spring color", "Azaleas and dogwoods", "Native azaleas and then dogwoods bloom from late March into April. Callaway's azalea trails are a highlight."], ["In the garden", "Last frost is near", "The last frost usually comes in late March or early April. Wait for April to plant tomatoes."], ["On the wing", "Hummingbirds return", "Ruby-throated hummingbirds arrive in late March. Put feeders out by mid-month."]]
+    if month = 4 then return [["Spring", "Pine pollen season", "Yellow pine pollen coats cars and porches in early April. Keep windows closed on the worst days."], ["In the garden", "Warm-season planting", "Tomatoes, peppers and beans go in once nights stay above 50°, usually by mid-April."], ["On the lake", "Spring fishing", "Crappie and bass move shallow as the water warms. A good month for an early boat ride."]]
+    if month = 5 then return [["Early summer", "Magnolias and gardenias", "Southern magnolias and gardenias bloom, and evenings are still comfortable."], ["In the garden", "Mulch before the heat", "Mulch beds now and water deeply once a week instead of a little every day."], ["Outdoors", "Fireflies", "Fireflies start blinking over lawns and fields on warm, still evenings."]]
+    if month = 6 then return [["Summer", "The longest days", "Around the June solstice there are more than 14 hours of daylight."], ["In the garden", "First tomatoes", "Pick in the morning and water early, not at night, to keep leaf disease down."], ["Outdoors", "Pop-up storms", "Afternoon thunderstorms are common. When thunder roars, go indoors."]]
+    if month = 7 then return [["Summer", "Peak heat", "July is usually the hottest month. Plan outdoor time for early morning or evening."], ["In the garden", "Keep it going", "Water deeply in the morning. Late July is the time to start fall vegetables from seed."], ["On the lake", "Early and late", "Boating and swimming are best before the heat and the afternoon storms build."]]
+    if month = 8 then return [["Late summer", "Dog days", "Hot, humid days with pop-up storms, and the tropics get busier."], ["In the garden", "Start fall crops", "Sow collards, kale and broccoli for a fall harvest."], ["Night sky", "Perseid meteors", "The Perseids peak around August 12. The best viewing is after midnight."]]
+    if month = 9 then return [["Early fall", "Goldenrod and asters", "Roadsides turn gold with goldenrod, and nights start to cool late in the month."], ["In the garden", "Fall planting begins", "Plant cool-season greens, and divide crowded perennials as the heat breaks."], ["On the wing", "Hummingbirds leave", "Most hummingbirds head south by early October. Leave feeders up until then."]]
     if month = 10 then return [["Fall color", "Starting to turn", "Usually peaks here in late October to early November. Callaway's trails are the closest showcase."], ["In the garden", "Plant pansies and shrubs", "Fall is Georgia's best season for trees and shrubs. Divide perennials; spring bulbs go in next month."], ["On the wing", "Monarchs passing through", "October is monarch migration month in Georgia. Late-blooming flowers help them refuel."]]
     if month = 11 then return [["Fall color", "Peak season", "Early November is usually peak color around LaGrange and Pine Mountain."], ["In the garden", "Plant spring bulbs", "Tulips, daffodils and hyacinths go in now through December. Mulch beds before the first hard freeze."], ["Outdoors", "Fantasy in Lights season", "Callaway Gardens' holiday light show opens in mid-November."]]
     if month = 12 then return [["Winter", "Bare branches, big skies", "Long nights and clear air make December great for stargazing; the Geminids peak mid-month."], ["In the garden", "Protect and plan", "Cover tender plants on frost nights and order seeds for spring."], ["On the wing", "Winter birds at feeders", "Juncos, white-throated sparrows and yellow-rumped warblers arrive for the winter."]]
@@ -1150,7 +1207,7 @@ end sub
 
 sub buildRadar(g as object, d as object)
     uiImage(g, "pkg:/images/radar_base.jpg", 0, 0, 1920, 1080)
-    layer = radarLayer(d.radarTimes)
+    layer = radarLayer(d.radarTimes, radarView(d.home.lat, d.home.lon).bbox)
     parent = layer.group.getParent()
     if parent <> invalid then parent.removeChild(layer.group)
     g.appendChild(layer.group)
@@ -1165,15 +1222,36 @@ sub buildRadar(g as object, d as object)
     uiDot(g, 960, 540, 40, "#F4A259", 0.18)
     uiDot(g, 960, 540, 13, "#0B1120")
     uiDot(g, 960, 540, 9, "#F4A259")
-    places = [["West Point", 869, 655], ["Hogansville", 1029, 445], ["Pine Mountain", 1066, 664], ["Newnan", 1098, 296], ["Carrollton", 933, 154], ["Auburn", 692, 845]]
-    for each p in places
-        uiDot(g, p[1], p[2], 5, "#E1E4EC")
-        uiText(g, p[1] + 14, p[2] - 15, p[0], 24, 600, "Manrope", "#E1E4EC")
-    end for
-    uiDot(g, 1344, 32, 6, "#E1E4EC")
-    uiText(g, 1328, 17, "Atlanta", 24, 600, "Manrope", "#E1E4EC", 160, "right")
-    uiText(g, 984, 516, "LaGrange", 34, 600, "Outfit")
-    uiText(g, 840, 532, "West Point Lake", 24, 600, "Manrope", "#A9C8EE", 260, "right")
+    ' town and water labels from the place, skipping any that would sit under a card
+    view = radarView(d.home.lat, d.home.lon)
+    cards = [[gx(1), 64, gx(1) + gw(4), 314], [gx(9), 64, 1808, 314], [gx(1), 876, gx(1) + gw(6), 1016], [gx(7), 876, 1808, 1016]]
+    rp = d.place.radar
+    if rp <> invalid
+        for each pl in rp.places
+            px = radarPx(view, pl.lat, pl.lon)
+            w = Len(pl.name) * 15 + 20
+            lx = px[0] + 14
+            align = "left"
+            if lx + w > 1880
+                lx = px[0] - 14
+                align = "right"
+            end if
+            hitBox = [lx, px[1] - 15, lx + w, px[1] + 15]
+            if align = "right" then hitBox = [lx - w, px[1] - 15, lx, px[1] + 15]
+            if onMap(px, hitBox, cards) and Abs(px[0] - 960) + Abs(px[1] - 540) > 60
+                uiDot(g, px[0], px[1], 5, "#E1E4EC")
+                if align = "right" then uiText(g, lx, px[1] - 15, pl.name, 24, 600, "Manrope", "#E1E4EC", w, "right") else uiText(g, lx, px[1] - 15, pl.name, 24, 600, "Manrope", "#E1E4EC")
+            end if
+        end for
+        if rp.water <> invalid
+            for each wl in rp.water
+                px = radarPx(view, wl.lat, wl.lon)
+                w = Len(wl.name) * 15 + 20
+                if onMap(px, [px[0] - w, px[1] - 13, px[0], px[1] + 13], cards) then uiText(g, px[0], px[1] - 13, wl.name, 24, 600, "Manrope", "#A9C8EE", w, "right")
+            end for
+        end if
+    end if
+    uiText(g, 984, 516, d.place.town, 34, 600, "Outfit")
     uiText(g, 960, 244, "25 mi", 24, 600, "Manrope", "#C9CEDA", 120, "center")
     ' Say plainly whether the map is clear or the radar didn't load, so an
     ' empty map never looks like a broken one.
@@ -1192,6 +1270,13 @@ sub buildRadar(g as object, d as object)
         st = d.storms[0]
         sub2 = "Tropics: " + st.kind + " " + st.name + ", " + st.miles.ToStr() + " mi away"
     end if
+    ' a warning outranks the forecast: never say "no rain" while one is in effect
+    for each al in d.alerts
+        if al.level = "warning" and status <> "Warning in effect"
+            status = "Warning in effect"
+            sub2 = "Watch for storms moving toward " + d.place.town + ". Details are on the alert screen."
+        end if
+    end for
     uiCard(g, gx(1), 64, gw(4), 250, "#0B1120", "#1F2A44", 28, 0.92)
     dotColor = "#9EC79B"
     if d.rainSoon then dotColor = "#F4A259"
@@ -1251,7 +1336,7 @@ end sub
 ' data refresh) doesn't create and download a second set. Frames load at
 ' 960x540 (about 2 MB each decoded instead of 8 MB) and are scaled to fill
 ' the screen; low memory keeps only the latest 4.
-function radarLayer(times as object) as object
+function radarLayer(times as object, bbox as string) as object
     picks = times
     if m.lowMemory = true and times.Count() > 4
         picks = []
@@ -1259,11 +1344,10 @@ function radarLayer(times as object) as object
             picks.Push(times[i])
         end for
     end if
-    key = picks.Join(",")
+    key = bbox + "|" + picks.Join(",")
     if m.radarCache <> invalid and m.radarCache.key = key then return m.radarCache
     group = CreateObject("roSGNode", "Group")
     frames = []
-    bbox = "-9644575,3799871,-9286707,4001172"
     for each t in picks
         url = "https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&version=1.3.0&request=GetMap&layers=conus_bref_qcd&crs=EPSG:3857&bbox=" + bbox + "&width=960&height=540&format=image/png&transparent=true&time=" + t
         p = uiImage(group, url, 0, 0, 1920, 1080)
@@ -1274,6 +1358,15 @@ function radarLayer(times as object) as object
     end for
     m.radarCache = {key: key, group: group, frames: frames}
     return m.radarCache
+end function
+
+' True when a label's point is on screen and its hitBox clears every card.
+function onMap(px as object, hitBox as object, cards as object) as boolean
+    if px[0] < 20 or px[0] > 1900 or px[1] < 20 or px[1] > 1060 then return false
+    for each c in cards
+        if hitBox[0] < c[2] and hitBox[2] > c[0] and hitBox[1] < c[3] and hitBox[3] > c[1] then return false
+    end for
+    return true
 end function
 
 ' Clock time of the newest radar frame ("1:08 PM"), or "—".

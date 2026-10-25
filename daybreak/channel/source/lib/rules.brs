@@ -119,6 +119,35 @@ function tipTexts(tips as object, shown as object, max as integer) as object
     return out
 end function
 
+' --- chores ---------------------------------------------------------------------------
+' Whose turn: weekly chores rotate each Sunday-to-Saturday week (counted from
+' Sunday 2026-01-04), daily ones each day (from 2026-01-01). Returns
+' [{task, who, next, every, color}] where next is the following turn.
+function choreTurns(chores as dynamic, members as object, today as integer) as object
+    out = []
+    if chores = invalid then return out
+    colors = {}
+    for each mem in members
+        colors[mem.name] = mem.color
+    end for
+    for each c in chores
+        n = c.rotate.Count()
+        if n > 0
+            if c.every = "day"
+                k = (today - tYmd(2026, 1, 1)) \ 86400
+            else
+                k = ((today - tWeekday(today) * 86400) - tYmd(2026, 1, 4)) \ (7 * 86400)
+            end if
+            i = ((k mod n) + n) mod n
+            who = c.rotate[i]
+            color = colors[who]
+            if color = invalid then color = "#F4F1EA"
+            out.Push({task: c.task, who: who, next: c.rotate[(i + 1) mod n], every: c.every, color: color})
+        end if
+    end for
+    return out
+end function
+
 ' --- place --------------------------------------------------------------------------
 ' Everything town- and household-specific beyond family members. These are
 ' the LaGrange, Georgia defaults; config/family.json "place" overrides any
@@ -141,8 +170,40 @@ function placeDefaults() as object
                   ics: "https://lagrangepanthers.com/calendar.ashx/calendar.ics"},
         news: {queries: ["%22LaGrange%22+GA+when%3A2d", "%22Troup+County%22+when%3A3d", "%22LaGrange+Daily+News%22+when%3A2d"],
                local: "lagrange|troup|west point|hogansville|callaway|pine mountain", ownSource: "LaGrange"},
-        curbside: "lagrange"
+        curbside: "lagrange",
+        ' radar map: towns labeled around home (lat/lon; projected on the TV), and
+        ' water labels drawn to the left of their point in blue
+        radar: {places: [{name: "West Point", lat: 32.878, lon: -85.183}, {name: "Hogansville", lat: 33.173, lon: -84.915},
+                         {name: "Pine Mountain", lat: 32.865, lon: -84.854}, {name: "Newnan", lat: 33.381, lon: -84.800},
+                         {name: "Carrollton", lat: 33.580, lon: -85.077}, {name: "Auburn", lat: 32.610, lon: -85.481},
+                         {name: "Atlanta", lat: 33.749, lon: -84.388}],
+                water: [{name: "West Point Lake", lat: 33.032, lon: -85.232}]}
     }
+end function
+
+' --- radar map geometry ----------------------------------------------------------------
+' The radar window: Web Mercator (EPSG:3857), 1920x1080, centered on home and
+' 300 km across on the ground, the same window scripts/radar_map.py renders
+' the base map for. 25 miles is 257 px.
+function radarView(lat as float, lon as float) as object
+    r = 6378137.0
+    k = 3.14159265358979 / 180
+    x = lon * k * r
+    y = Log(Tan(3.14159265358979 / 4 + lat * k / 2)) * r
+    hw = 150000.0 / Cos(lat * k)
+    hh = hw * 1080 / 1920
+    v = {x0: x - hw, y0: y - hh, x1: x + hw, y1: y + hh}
+    v.bbox = Int(v.x0).ToStr() + "," + Int(v.y0).ToStr() + "," + Int(v.x1).ToStr() + "," + Int(v.y1).ToStr()
+    return v
+end function
+
+' Screen pixel [x, y] of a lat/lon in the radar window.
+function radarPx(v as object, lat as float, lon as float) as object
+    r = 6378137.0
+    k = 3.14159265358979 / 180
+    x = lon * k * r
+    y = Log(Tan(3.14159265358979 / 4 + lat * k / 2)) * r
+    return [Int((x - v.x0) / (v.x1 - v.x0) * 1920 + 0.5), Int((v.y1 - y) / (v.y1 - v.y0) * 1080 + 0.5)]
 end function
 
 ' cfg.place over the defaults, key by key. An explicit null (invalid) in

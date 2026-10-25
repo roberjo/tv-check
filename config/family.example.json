@@ -54,5 +54,33 @@
     "Disney+",
     "Hulu",
     "Max"
+  ],
+  "chores": [
+    {
+      "task": "Dishes after dinner",
+      "rotate": [
+        "Riley",
+        "Casey"
+      ],
+      "every": "day"
+    },
+    {
+      "task": "Trash and recycling to the curb",
+      "rotate": [
+        "Riley",
+        "Casey"
+      ],
+      "every": "week"
+    },
+    {
+      "task": "Feed the dog",
+      "rotate": [
+        "Alex",
+        "Jordan",
+        "Riley",
+        "Casey"
+      ],
+      "every": "week"
+    }
   ]
 }
