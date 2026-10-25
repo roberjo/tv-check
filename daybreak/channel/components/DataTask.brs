@@ -724,6 +724,8 @@ function deriveCalendar(events as dynamic, cfg as object, now as integer) as obj
     health = CreateObject("roRegex", "doctor|pediatric|well-?check|dentist|dental|orthodont|flu shot|vaccin|clinic|hospital|therap|physical|appointment|wellstar|medical|urgent care|derm|optom|eye exam", "i")
     school = CreateObject("roRegex", "\bSAT\b|\bACT\b|PSAT|school|exam|report card|early release|band|homecoming|graduation|registration|teacher|class|semester", "i")
     deadline = CreateObject("roRegex", "deadline|due|closes", "i")
+    ' closings and schedule changes, added by the family when the district announces them
+    closing = CreateObject("roRegex", "\bno school\b|school(s)? (closed|closing|cancel)|early release|early dismissal|delayed (opening|start)|late start|virtual (learning )?day|e-?learning day", "i")
     both = CreateObject("roRegex", "\s*[—-]\s*(both|all) (kids|girls|boys)\s*$", "i")
     groupRe = CreateObject("roRegex", "\b(both|all) (kids|girls|boys)\b", "i")
     memberRes = []
@@ -779,7 +781,8 @@ function deriveCalendar(events as dynamic, cfg as object, now as integer) as obj
                         end if
                     end for
                     out.items.Push({start: start, allDay: ev.allDay, title: main, subtitle: subText, who: who, whoText: whoText(who),
-                                    color: colorFor(who, cfg), health: isHealth, school: isSchool,
+                                    color: colorFor(who, cfg), health: isHealth, school: isSchool or closing.IsMatch(title),
+                                    closing: closing.IsMatch(title) and not isHealth,
                                     deadline: deadline.IsMatch(title) and not isHealth})
                 end if
             end for
@@ -852,6 +855,16 @@ function headsUp(d as object) as object
         if caveat <> "" then t = t + " " + caveat + "."
         tips.Push({p: 2, kind: "curb", ref: "curb", t: t})
     end if
+    ' school closings and early releases today or tomorrow come right after warnings
+    for each e in d.calendar
+        dn = (tDay(e.start) - today) \ 86400
+        if isTrue(e.closing) and dn >= 0 and dn <= 1
+            t = tDayWord(e.start, today) + ": " + e.title
+            if not e.allDay then t = t + " at " + tClock(e.start)
+            if e.subtitle <> "" then t = t + " (" + e.subtitle + ")"
+            tips.Push({p: 1, kind: "school", ref: e.title, t: t + "."})
+        end if
+    end for
     for each e in d.calendar
         dn = (tDay(e.start) - today) \ 86400
         if e.deadline and dn >= 0 and dn <= 7
