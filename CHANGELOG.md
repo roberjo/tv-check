@@ -4,6 +4,17 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-10-25
+
+### Changed
+- **Tool versions live only in the lockfiles** (#57). The `npx` fallbacks in `brs.sh` and `build_channel.py` read their versions from `package.json`, and the CI audit job installs pip-audit from `requirements-dev.txt`, so Dependabot updates take full effect.
+- **Dependabot's first updates:**
+  - GitHub Actions to their latest majors: checkout v7, setup-node v7, setup-python v7, upload-artifact v7, CodeQL v4, gitleaks v3, attest-build-provenance v4 (#56)
+  - brighterscript 0.73.7 (#55)
+  - pip-audit 2.10.1 (#54)
+
+  All are pinned to commit SHAs.
+
 ## [1.7.0] - 2026-10-25
 
 Engineering: vulnerability scanning, reproducible tooling, a release pipeline and versioning.
@@ -151,7 +162,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/roberjo/tv-check/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/roberjo/tv-check/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/roberjo/tv-check/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/roberjo/tv-check/compare/v1.5.0...v1.5.1

@@ -312,7 +312,8 @@ def manifest_text():
 
 def bsc_check():
     local = ROOT / "node_modules" / ".bin" / "bsc"  # locked in package-lock.json (npm ci)
-    cmd = [str(local)] if local.exists() else ["npx", "-y", "brighterscript@0.65.27"]
+    version = json.loads((ROOT / "package.json").read_text())["devDependencies"]["brighterscript"]
+    cmd = [str(local)] if local.exists() else ["npx", "-y", f"brighterscript@{version}"]
     check = subprocess.run(cmd + ["--rootDir", str(CH), "--createPackage", "false"],
                            capture_output=True, text=True, cwd=HERE)
     diag = [l for l in (check.stdout + check.stderr).splitlines() if " - error " in l or " - warning " in l or "Found " in l]
