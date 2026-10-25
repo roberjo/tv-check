@@ -4,6 +4,21 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-10-25
+
+Daybreak's first install since 1.0 (#44), with fixes found on the TV. Start-up and memory were measured on the TV for the first time (see `docs/ARCHITECTURE.md`).
+
+### Added
+- **Launch beacon and start-up time.** Daybreak signals Roku's `AppLaunchComplete` on its first real screen, logs the time on the dev console, and diagnostics shows it ("Up · ready in 0 min · 0.2 s").
+- **`scripts/screenshot.py`** saves Daybreak's screen through the dev installer, for checking the real TV. Images go to the gitignored `captures/`.
+
+### Fixed
+- **`deploy.py` couldn't install.** The dev installer drops an unauthorized 2 MB upload mid-body, so the digest handshake now happens before the upload. The script also accepts Roku OS 16's Home screen ("Roku Dynamic Menu", `type="home"`) as idle.
+- **Diagnostics after a warm start** listed every saved source as "not yet / waiting". Rows now show "saved data" and when it was fetched.
+- **Diagnostics' display row** said "1080p · UI FHD" on a 4K TV. It now shows the TV's output mode and the app's drawing size ("2160p60 · app 1080p").
+- **Week screen:** the curbside, deadline and marching band chips cut off their second line on the TV (the TV's lines are about 39 px, taller than the off-device estimate). Chips now size to their text, and the off-device height estimate matches the TV.
+- **First launch** logged a `ReadAsciiFile` error when there was no saved data yet.
+
 ## [1.7.1] - 2026-10-25
 
 ### Changed
@@ -162,7 +177,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.7.2...HEAD
+[1.7.2]: https://github.com/roberjo/tv-check/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/roberjo/tv-check/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/roberjo/tv-check/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/roberjo/tv-check/compare/v1.5.1...v1.6.0

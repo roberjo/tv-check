@@ -112,7 +112,7 @@ function uiHeight(l as object, size as integer) as float
         lines = 1
         if l.wrap and l.width > 0 then lines = Int(uiEstimate(l, size) / l.width) + 1
         if l.maxLines > 0 and lines > l.maxLines then lines = l.maxLines
-        h = lines * size * 1.3
+        h = lines * size * 1.45 + (lines - 1) * l.lineSpacing ' matches the TV: a 24 px wrapped line is 39 px
     end if
     return h
 end function

@@ -148,5 +148,12 @@ sub Main()
     m.fetched = {}
     check("cache loads", loadCache(), true)
     check("same data after a warm start", dataSignature(derive(cfg)) = dataSignature(before), true)
+    m.health = {}
+    seedHealth()
+    g = buildDiagnostics({nowUtc: m.testNowUtc, health: {sources: m.health}, limits: sourceLimits()})
+    texts = labelTexts(g)
+    check("warm start rows show saved data", m.health.weather.lastOk = m.fetched.weather and texts.DoesExist("saved data"), true)
+    noteHealth("weather", true, {code: 200, ms: 150, bytes: 900, error: "", parts: 1, okParts: 1})
+    check("a fetch replaces the saved row", isTrue(m.health.weather.saved), false)
     testSummary("data")
 end sub

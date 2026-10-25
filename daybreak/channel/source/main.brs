@@ -2,7 +2,7 @@
 ' Main for the app, RunScreenSaver for the screensaver. All data is fetched
 ' on the TV by DataTask; no other computer is involved.
 
-sub Main(args as dynamic)
+sub Main()
     RunDaybreak("app")
 end sub
 

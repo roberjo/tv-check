@@ -70,5 +70,5 @@ Also at priority 5, air quality reaching "unhealthy for sensitive groups" (US AQ
 
 ## Constraints
 - **Developer mode:** a sideloaded app needs it on, and only one dev app can be installed at a time.
-- **Memory:** about 325 MB is free during 4K playback; Daybreak only runs when nothing else is playing. Radar uses about 17 MB of decoded frames, and a low-memory mode drops to 4 frames and skips photo backgrounds (see `docs/ARCHITECTURE.md`).
+- **Memory:** about 325 MB is free during 4K playback; Daybreak only runs when nothing else is playing. Measured on the TV, Daybreak's images take 25 MB (radar frames 17 MB, the base map 8 MB) and it starts in 0.2 s with saved data (2.3 s cold). A low-memory mode drops to 4 frames and skips photo backgrounds (see `docs/ARCHITECTURE.md`).
 - **No overlays:** a Roku app can't draw over other apps, and launching other apps from the app was deliberately left out.

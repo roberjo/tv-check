@@ -62,6 +62,20 @@ function sampleDiagnostics() as object
     return {nowUtc: now, version: "1.4.52", limits: sourceLimits(), speed: {state: "done", mbps: 87.42, latencyMs: 23},
             health: {sources: sources, savedAt: now - 300, warm: true, cacheBytes: 210000},
             memory: {availableKb: 145400, limitPercent: 38, level: "normal", lowMode: false, nodes: 412},
-            device: {model: "TCL Roku TV (A108X)", os: "15.0 build 4170", display: "2160p60 · UI FHD", appUptimeMin: 135},
+            device: {model: "TCL Roku TV (A108X)", os: "15.0 build 4170", display: "2160p60 · app 1080p", appUptimeMin: 135, readyMs: 2380},
             network: {type: "Ethernet", ip: "192.168.1.20", link: true}}
 end function
+
+' Every label's text in a built screen, as a set.
+function labelTexts(node as object) as object
+    out = {}
+    collectTexts(node, out)
+    return out
+end function
+
+sub collectTexts(node as object, out as object)
+    if node.subtype() = "Label" then out[node.text] = true
+    for i = 0 to node.getChildCount() - 1
+        collectTexts(node.getChild(i), out)
+    end for
+end sub
