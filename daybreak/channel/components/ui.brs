@@ -1,6 +1,30 @@
 ' SceneGraph drawing helpers mirroring daybreak/service/draw.py: tinted
 ' 9-patch cards, labels in the bundled Outfit/Manrope weights, dots, images.
 
+' --- design tokens -----------------------------------------------------------------
+' Layout: 1920x1080, 112 px side margins, a 12-column grid with 32 px gutters
+' (columns are 112 px wide). Type: nothing smaller than 24 px, the comfortable
+' minimum at living-room distance. Colors: the palette in DAYBREAK.md.
+
+function uiType() as object
+    return {caption: 24, body: 26, lead: 30, title: 36, h3: 44, h2: 56, h1: 76}
+end function
+
+function uiColors() as object
+    return {ink: "#0B1120", inkDeep: "#070B14", night: "#090C18", card: "#131B2E", cardHi: "#1A2440", line: "#1F2A44",
+            text: "#F4F1EA", text2: "#A9B1C4", text3: "#C9CEDA", amber: "#F4A259", violet: "#B3A6F2", blue: "#7FB7E8",
+            green: "#9EC79B", rose: "#F2A7B0"}
+end function
+
+' Left edge of grid column c (1..12) and the width of a span of n columns.
+function gx(c as integer) as integer
+    return 112 + (c - 1) * 144
+end function
+
+function gw(n as integer) as integer
+    return n * 144 - 32
+end function
+
 function hexc(h as string, alpha = "FF" as string) as string
     return "0x" + Mid(h, 2) + alpha
 end function
@@ -45,7 +69,7 @@ function uiText(p as object, x as float, y as float, text as dynamic, size as in
     return l
 end function
 
-function uiLabel(p as object, x as float, y as float, text as string, size = 22 as integer, color = "#A9B1C4" as string) as object
+function uiLabel(p as object, x as float, y as float, text as string, size = 24 as integer, color = "#A9B1C4" as string) as object
     return uiText(p, x, y, UCase(text), size, 700, "Manrope", color)
 end function
 
@@ -145,11 +169,18 @@ function wxLabel(code as integer) as string
     return "—"
 end function
 
+' Team badge: a rounded square in the team color with its short name. The
+' text is 24 px at the 64 px size Daybreak uses.
 function teamChip(p as object, x as float, y as float, size as float, short as string, color as string, accent as dynamic) as object
     border = ""
     if accent <> invalid then border = accent
     uiCard(p, x, y, size, size, color, border, 14)
-    fs = Int(size * 0.34)
-    if Len(short) >= 3 then fs = Int(size * 0.3)
+    fs = Int(size * 0.375)
     return uiText(p, x + size / 2, y + size / 2 - fs * 0.62, short, fs, 600, "Outfit", "#F4F1EA", Int(size), "center")
 end function
+
+' Section label with an optional amber "as of" note on the right of the same line.
+sub cardLabel(g as object, x as integer, y as integer, w as integer, text as string, color = "#A9B1C4" as string, note = "" as string)
+    uiLabel(g, x, y, text, 24, color)
+    if note <> "" then uiText(g, x + w, y, note, 24, 600, "Manrope", "#F4A259", 300, "right")
+end sub
