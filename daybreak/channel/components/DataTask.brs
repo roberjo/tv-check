@@ -52,7 +52,7 @@ sub publish(cfg as object)
         m.lastSig = sig
         m.top.data = d
     end if
-    m.top.health = {sources: m.health, savedAt: m.lastSave, warm: m.warm, cacheBytes: m.cacheBytes}
+    m.top.health = {sources: m.health, savedAt: m.lastSave, warm: m.warm, cacheBytes: m.cacheBytes, wallpapers: m.wallpaperFiles}
 end sub
 
 ' Everything in the data except the clock fields, as JSON.
@@ -1145,16 +1145,21 @@ sub syncWallpapers()
         if Left(f, 3) = "wp-" and (Right(f, 4) <> ".jpg" or not keep.DoesExist(Mid(f, 4, Len(f) - 7))) then fs.Delete("cachefs:/" + f)
     end for
     budget = 3
+    have = 0
     for each id in keep
         if budget > 0 and not fs.Exists(wallpaperPath(id))
             budget = budget - 1
-            downloadWallpaper(base + keep[id].file, wallpaperPath(id))
+            err = downloadWallpaper(base + keep[id].file, wallpaperPath(id))
+            if err <> "" then m.wallpaperError = err
         end if
+        if fs.Exists(wallpaperPath(id)) then have = have + 1
     end for
+    m.wallpaperFiles = {have: have, want: keep.Count(), error: m.wallpaperError}
 end sub
 
 ' Saves under a temporary name and keeps the file only if it arrived whole.
-sub downloadWallpaper(url as string, path as string)
+' Returns "" or what went wrong.
+function downloadWallpaper(url as string, path as string) as string
     tmp = path + ".part"
     ut = CreateObject("roUrlTransfer")
     ut.SetUrl(url)
@@ -1164,5 +1169,10 @@ sub downloadWallpaper(url as string, path as string)
     code = ut.GetToFile(tmp)
     fs = CreateObject("roFileSystem")
     st = fs.Stat(tmp)
-    if code = 200 and st <> invalid and st.size > 20000 then fs.Rename(tmp, path) else fs.Delete(tmp)
-end sub
+    if code = 200 and st <> invalid and st.size > 20000 and fs.Rename(tmp, path) then return ""
+    fs.Delete(tmp)
+    err = "HTTP " + code.ToStr()
+    if code = 200 then err = "incomplete photo"
+    print "Daybreak wallpaper download failed: "; err; " "; url
+    return err
+end function

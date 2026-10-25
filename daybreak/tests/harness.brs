@@ -54,14 +54,14 @@ function sampleDiagnostics() as object
     now = m.testNowUtc
     ok = {ok: true, lastTry: now - 30, lastOk: now - 30, fails: 0, code: 200, ms: 180, bytes: 48000, error: "", parts: 1, okParts: 1}
     sources = {}
-    for each k in ["weather", "alerts", "lc", "calendar", "radar"]
+    for each k in ["weather", "alerts", "lc", "calendar", "radar", "wallpapers"]
         sources[k] = ok
     end for
     sources.sports = {ok: true, lastTry: now - 60, lastOk: now - 60, fails: 0, code: 200, ms: 640, bytes: 920000, error: "", parts: 5, okParts: 4}
     sources.lake = {ok: false, lastTry: now - 60, lastOk: now - 13 * 3600, fails: 3, code: 0, ms: 25000, bytes: 0, error: "timed out", parts: 1, okParts: 0}
     sources.news = {ok: false, lastTry: now - 60, lastOk: now - 1900, fails: 1, code: 503, ms: 300, bytes: 0, error: "", parts: 3, okParts: 0}
     return {nowUtc: now, version: "1.4.52", limits: sourceLimits(), speed: {state: "done", mbps: 87.42, latencyMs: 23},
-            health: {sources: sources, savedAt: now - 300, warm: true, cacheBytes: 210000},
+            health: {sources: sources, savedAt: now - 300, warm: true, cacheBytes: 210000, wallpapers: {have: 12, want: 16, error: "HTTP 404"}},
             memory: {availableKb: 145400, limitPercent: 38, level: "normal", lowMode: false, nodes: 412},
             device: {model: "TCL Roku TV (A108X)", os: "15.0 build 4170", display: "2160p60 · app 1080p", appUptimeMin: 135, readyMs: 2380},
             network: {type: "Ethernet", ip: "192.168.1.20", link: true}}

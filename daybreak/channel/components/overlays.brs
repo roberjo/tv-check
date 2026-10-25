@@ -203,6 +203,12 @@ function buildDiagnostics(info as object) as object
             else if s.parts > 1 and s.okParts < s.parts
                 status = s.okParts.ToStr() + " of " + s.parts.ToStr() + " answered"
             end if
+            wf = invalid
+            if info.health.wallpapers <> invalid then wf = info.health.wallpapers
+            if name = "wallpapers" and wf <> invalid and s.ok
+                status = wf.have.ToStr() + " of " + wf.want.ToStr() + " photos"
+                if wf.have < wf.want and wf.error <> invalid then status = status + " · " + wf.error
+            end if
         end if
         uiDot(g, gx(1) + 48, yy + 16, 8, dot)
         uiText(g, gx(1) + 68, yy, labels[name], 26, 600, "Manrope", "#F4F1EA", 250)

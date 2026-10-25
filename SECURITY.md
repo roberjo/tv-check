@@ -30,4 +30,7 @@ Out of scope:
   - `npm audit` and `pip-audit` on the locked dev tools
   - Dependabot alerts, security updates and weekly version updates (Actions, npm, pip)
 - **Supply chain:** workflows pin every action to a commit SHA, run with read-only permissions by default, and release builds carry a build-provenance attestation and SHA-256 checksums.
+- **Wallpapers:** the TV downloads photos from this repo's protected `main` branch, from `place.wallpapers`.
+  - **Validation:** catalog ids and paths are checked (`[a-z0-9-]` ids, `img/<id>.jpg` files, at most 100), so a bad catalog can't name files outside `cachefs:/wp-*`.
+  - **Downloads:** a download is kept only if it arrives whole. The photos are plain JPEGs, decoded by Roku OS.
 - **Developer mode** and "Control by mobile apps" open the TV to the local network. Only use them on a network you trust (see the README).

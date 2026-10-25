@@ -68,6 +68,7 @@ Without a `place` block, Daybreak uses its LaGrange, Georgia defaults (`placeDef
 | `news` | Google News queries (plain text, which the build URL-encodes), a regex that a headline or source must match to count as local, and the town paper's name (very short headlines from it are section labels) |
 | `curbside` | `"lagrange"` (the built-in rules) or `null` |
 | `radar` | `{places: [{name, lat, lon}], water: [{name, lat, lon}]}`: town labels and water labels on the radar map. The TV projects them, and skips any that would sit under a card |
+| `wallpapers` | The base URL of a wallpaper catalog (`catalog.json` plus `img/`). The default is this repo's `daybreak/wallpapers/`, which is West Georgia photos; `null` uses only the packaged photos. `DAYBREAK_WALLPAPERS=<url>` at build time overrides it, e.g. to test a branch |
 
 The build rejects unknown keys, so a typo fails loudly instead of being ignored.
 
@@ -75,7 +76,7 @@ The build rejects unknown keys, so a typo fails loudly instead of being ignored.
 These are content rather than settings, and need code or art changes for another town:
 - **Radar map:** nothing; it follows `home` in `family.json`. The build makes a base map for a 300 km window centered there (cached per location in `daybreak/cache/radar/`), the TV requests radar for the same window, and labels come from `place.radar`.
 - **Season notes:** the monthly nature and garden notes in `seasonItems()`.
-- **Photos:** the Callaway Gardens backgrounds in `daybreak/art/assets/`.
+- **Photos:** the wallpapers in `daybreak/wallpapers/` (pick your own in `sources.json`, then run `build.py --audit`), and the packaged Callaway Gardens fallbacks in `daybreak/art/assets/`.
 
 ## Settings on the TV
 Gentle news, rotation speed and which screens to show can be changed on the TV (OK → Settings) and are saved there. `GENTLE_NEWS=0` in `.env` changes the default.

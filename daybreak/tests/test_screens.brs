@@ -134,6 +134,7 @@ sub Main()
     check("diagnostics: source rows", texts.DoesExist("Family calendar") and texts.DoesExist("timed out (3x)"), true)
     check("diagnostics: memory", texts.DoesExist("142 MB") and texts.DoesExist("38%"), true)
     check("diagnostics: speed", texts.DoesExist("87.4 Mbps down · 23 ms"), true)
+    check("diagnostics: wallpaper downloads", texts.DoesExist("12 of 16 photos · HTTP 404"), true)
     check("diagnostics: start-up time", texts.DoesExist("2 h 15 min · 2.4 s"), true)
     check("up text before the first screen", upText(3, 0) + " / " + upText(invalid, 900), "3 min / —")
     check("diagnostics: no text under 24 px", smallest(g, 999) >= 24, true)
@@ -172,6 +173,7 @@ sub Main()
     end for
     check("no lake screen", availableScreens(d).DoesExist("lake"), false)
     m.place = invalid
+    check("moon sentences", moonWords("Full moon").line + " / " + moonWords("New moon").line + " / " + moonWords("First quarter").line + " / " + moonWords("Waxing crescent").line, "The moon is full / It's a new moon / The moon is at first quarter / The moon is a waxing crescent")
     ' wallpapers: the photo, a dimming fill in the screen's color, and the credit
     d = derive(cfg)
     d.wallpapers = {week: {uri: "cachefs:/wp-park-one.jpg", place: "Test Park", credit: "Test Photographer · CC0"}}

@@ -144,6 +144,16 @@ end function
 
 ' --- shared pieces ----------------------------------------------------------------
 
+' The Sky card's sentence and tip for a moon phase name from moonPhase().
+function moonWords(name as string) as object
+    if name = "Full moon" then return {line: "The moon is full", tip: "Bright enough for an evening walk, too bright for faint stars."}
+    if name = "New moon" then return {line: "It's a new moon", tip: "The darkest skies of the month: the best night for stars and the Milky Way."}
+    if Right(name, 7) = "quarter" then return {line: "The moon is at " + LCase(name), tip: "Half lit. Binoculars show craters along the shadow line."}
+    tip = "A thin moon leaves the sky dark for stars."
+    if Right(name, 7) = "gibbous" then tip = "A bright moon washes out faint stars; planets still shine through."
+    return {line: "The moon is a " + LCase(name), tip: tip}
+end function
+
 function greeting(d as object) as string
     h = tHour(d.now)
     part = "evening"
@@ -868,7 +878,9 @@ sub buildSky(g as object, d as object)
         uiText(g, tx, 540, tip, 26, 400, "Manrope", "#C9CEDA", tw, "left", 3)
     else
         uiLabel(g, tx, 340, "Tonight", 24, "#B3A6F2")
-        uiText(g, tx, 384, "The moon is " + LCase(mp.name), 54, 500, "Outfit", "#F4F1EA", tw, "left", 2)
+        m2 = moonWords(mp.name)
+        uiText(g, tx, 384, m2.line, 54, 500, "Outfit", "#F4F1EA", tw, "left", 2)
+        uiText(g, tx, 540, m2.tip, 26, 400, "Manrope", "#C9CEDA", tw, "left", 3)
     end if
     lo = 99
     for each hr in d.weather.hours

@@ -58,7 +58,8 @@ Also at priority 5, air quality reaching "unhealthy for sensitive groups" (US AQ
 - **Accents:** a thin amber rule marks Heads up. Member colors mark notes and students. An amber "as of" note marks data that's getting old.
 
 ## Imagery and licensing
-- Callaway Gardens photos: CC0 (Wikimedia Commons, D. Dugan).
+- **Wallpapers:** 36 photos from Wikimedia Commons (CC0, public domain, CC BY, CC BY-SA), credited on screen and in `daybreak/wallpapers/CREDITS.md`. The packaged Callaway Gardens fallbacks are CC0 (D. Dugan).
+- **Not covered yet:** Commons has no usable free photos of Fayetteville; add one to `sources.json` when there is.
 - Map layers: USGS National Map (public domain). Radar: NOAA/NCEP MRMS (public domain).
 - Callaway Gardens' and tourism boards' own marketing media isn't used; it's copyrighted.
 

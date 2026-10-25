@@ -49,7 +49,8 @@ Built in one evening, pair-programming with [Claude Code](https://claude.com/cla
 - **Family board through the calendar:** an event called `TV: Dinner at 6:30` shows as a note, `Buy: milk, eggs` adds to a grocery list, and `Countdown: Beach trip` counts down the days.
 - **On the remote:** OK opens a menu (settings, go to a screen, diagnostics), and * shows diagnostics: feed health, memory, network and a speed test.
 - **Privacy defaults:** health appointments show as "Appointment", and violent-crime headlines are filtered out.
-- **Design:** tested for readability, with contrast measured against the photo behind every line of text.
+- **Local wallpapers:** 36 free-licensed photos from around LaGrange, West Point Lake, Pine Mountain, Columbus, Newnan, Peachtree City and Atlanta, a different one behind each screen every day. The TV downloads them from this repo, each with an on-screen credit.
+- **Design:** tested for readability, with contrast measured against the photo behind every line of text, for every wallpaper on every screen it can appear on.
 
 ## Run it yourself
 You need a Roku TV with **developer mode** on (Home ×3, Up ×2, Right, Left, Right, Left, Right) and "Control by mobile apps" set to **Enabled**. Both open interfaces to anyone on your LAN, so only do this on a network you trust.
@@ -79,7 +80,7 @@ Daybreak defaults to LaGrange, Georgia. Your town, teams, rivalry, lake, college
 ## Licensing
 - **Code:** MIT (see `LICENSE`).
 - **Fonts:** Outfit and Manrope, SIL Open Font License 1.1 (`daybreak/art/fonts/OFL-*.txt`).
-- **Photos:** Callaway Gardens, CC0 (Wikimedia Commons).
+- **Photos:** Wikimedia Commons, under each photo's own license: CC0, public domain, CC BY or CC BY-SA. The list is in [`daybreak/wallpapers/CREDITS.md`](daybreak/wallpapers/CREDITS.md). The cropped copies keep their licenses, so the BY-SA ones stay BY-SA.
 - **Map and radar data:** USGS and NOAA, public domain.
 
 Not affiliated with Roku, TCL or any of the data providers.

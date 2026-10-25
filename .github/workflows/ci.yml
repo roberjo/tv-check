@@ -45,7 +45,7 @@ jobs:
       - name: BrighterScript
         run: python3 daybreak/build_channel.py --check
       - name: pyflakes
-        run: pyflakes scripts daybreak/build_channel.py daybreak/tests daybreak/art daybreak/preview
+        run: pyflakes scripts daybreak/build_channel.py daybreak/tests daybreak/art daybreak/preview daybreak/wallpapers
       - name: Design audit (every screen from the TV code; 24 px minimum, WCAG contrast)
         run: |
           python3 daybreak/build_channel.py --assets

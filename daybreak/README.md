@@ -27,6 +27,7 @@ daybreak/channel/
 | NOAA MRMS WMS | Radar: 8 frames over about 2 hours, at 960×540 | 10 min | 30 min |
 | Open-Meteo air quality | US AQI now and for the next day | 30 min | 6 h |
 | National Hurricane Center | Active Atlantic storms (June to November only) | 30 min | 6 h |
+| This repo (`daybreak/wallpapers/catalog.json`) | Wallpaper catalog; the photos themselves download in the background, a few per refresh | 1 day | 30 days |
 
 Team schedules refresh every 2 minutes while a tracked game is in progress, for live scores. Open-Meteo's pollen data only covers Europe, so Daybreak shows air quality but not pollen.
 
