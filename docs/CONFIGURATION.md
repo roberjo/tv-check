@@ -15,6 +15,17 @@ Each member has a `name` (matched as a whole word in calendar titles), a `color`
 - `school` and `grade`: show the member on the School screen
 - `activities`: `["Marching band"]` adds the Friday-game note
 
+## Chores
+```json
+"chores": [
+  {"task": "Dishes after dinner", "rotate": ["Riley", "Casey"], "every": "day"},
+  {"task": "Feed the dog", "rotate": ["Alex", "Jordan", "Riley", "Casey"], "every": "week"}
+]
+```
+- **How turns rotate:** in the `rotate` order. Weekly chores move each Sunday, and daily ones each day.
+- **On screen:** the Board shows whose turn it is and who's next.
+- **Names** must be members; the build checks.
+
 ## Curbside
 `"curbside": {"weekday": "Monday"}` is the household's pickup day. The rules themselves (alternating yard and bulky weeks, city holidays) are the City of LaGrange's, in `rules.brs`. Another town needs its own rules there, or `"place": {"curbside": null}` to turn curbside off.
 
@@ -56,12 +67,13 @@ Without a `place` block, Daybreak uses its LaGrange, Georgia defaults (`placeDef
 | `college` | `{name, short, team, color, ics}`: a college athletics iCal feed whose titles start with `[W]`/`[L]` for results (Sidearm Sports sites) |
 | `news` | Google News queries (plain text, which the build URL-encodes), a regex that a headline or source must match to count as local, and the town paper's name (very short headlines from it are section labels) |
 | `curbside` | `"lagrange"` (the built-in rules) or `null` |
+| `radar` | `{places: [{name, lat, lon}], water: [{name, lat, lon}]}`: town labels and water labels on the radar map. The TV projects them, and skips any that would sit under a card |
 
 The build rejects unknown keys, so a typo fails loudly instead of being ignored.
 
 ## Still LaGrange-specific
 These are content rather than settings, and need code or art changes for another town:
-- **Radar map:** the base map, its bounding box and the town labels on it. `scripts/radar_map.py` builds the base map from `CENTER`, and the labels are in `buildRadar()`.
+- **Radar map:** nothing; it follows `home` in `family.json`. The build makes a base map for a 300 km window centered there (cached per location in `daybreak/cache/radar/`), the TV requests radar for the same window, and labels come from `place.radar`.
 - **Season notes:** the monthly nature and garden notes in `seasonItems()`.
 - **Photos:** the Callaway Gardens backgrounds in `daybreak/art/assets/`.
 

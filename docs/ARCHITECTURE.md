@@ -58,6 +58,15 @@ During a game (an event `in` progress, or one that should have started in the la
 - **Settings** live in the `daybreak` registry section as JSON. The data task gets them through its `settings` field. Gentle news is applied in `derive()`, so a change takes effect within a minute, without refetching.
 - **Speed test:** `SpeedTask` runs only on request: three empty requests for latency, then a 25 MB download to `tmp:`, deleted afterwards.
 
+## Radar geometry
+- **The window:** `radarView(lat, lon)` (`rules.brs`) computes the Web Mercator window around home, 300 km across on the ground and 1920×1080. It's the same window `scripts/radar_map.py` uses for the base map, so the radar frames, the base map and the labels line up. `radarPx()` places labels.
+- **Precision:** the math is single precision, as BrightScript floats are. Tests check it against the Python projection: the bounding box agrees to within 10 m (under 0.1 px), and the label pixels match exactly.
+
+## Severe-weather takeover
+`takeoverAlert()` finds an unexpired tornado, severe thunderstorm, flash flood, extreme wind or hurricane warning, or a tornado or flash-flood emergency. While there is one:
+- `chooseScreens()` returns only `alert` and `radar`, in the app and the screensaver alike, at any hour.
+- Expired alerts drop out at derive time, so the takeover ends on its own, even if a refresh is late.
+
 ## Memory budget
 | Item | Before 1.2 | 1.2 |
 |---|---|---|

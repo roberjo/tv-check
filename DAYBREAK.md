@@ -23,8 +23,9 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 | Lake | Weekends or dry days | West Point Lake level vs summer and winter pool, best lake day, sunset, moon |
 | Sky | Clear nights or a meteor shower within 2 weeks | Moon phase, shower, viewing conditions |
 | School | School mornings and evenings | School-related calendar items, a card per student |
-| Board | When there are notes, groceries or countdowns | "TV: …" calendar events as notes, "Buy: …" as groceries, "Countdown: …" as days to go |
-| Season | Midday | Monthly nature and garden notes for West Georgia, frost watch |
+| Board | When there are notes, groceries, countdowns or chores | "TV: …" calendar events as notes, "Buy: …" as groceries, "Countdown: …" as days to go, and whose turn it is for each chore |
+| Season | Midday, all year | Three nature and garden notes for each month in West Georgia, frost watch |
+| Weather warning | A tornado, severe thunderstorm, flash flood, extreme wind or hurricane warning | Takes over the app and the screensaver, alternating with radar until the warning expires. Shows the NWS headline, expiry and what to do |
 | Night | Screensaver, 11 PM to 5 AM | A dim clock that drifts every 5 minutes, plus the coming day's forecast and first event. Radar joins it during a warning |
 | Loading | Before the first data arrives | The real date and clock with placeholder cards. If the TV is offline, a note says when the saved data is from |
 
