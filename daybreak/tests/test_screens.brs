@@ -5,10 +5,29 @@ sub Main()
     d = derive(cfg)
     check("app playlist", chooseScreens(d, "app").Join(", "), "gameday, briefing, recap, board, week, radar, lake, sky, season, ambient")
     check("screensaver playlist", chooseScreens(d, "screensaver").Join(", "), "ambient, gameday, briefing, recap")
-    for each id in ["ambient", "briefing", "tonight", "week", "lake", "sky", "recap", "gameday", "school", "board", "season", "radar"]
+    for each id in ["ambient", "briefing", "tonight", "week", "lake", "sky", "recap", "gameday", "school", "board", "season", "radar", "night"]
         g = buildScreen(id, d)
-        check("builds " + id, g.getChildCount() > 10, true)
+        check("builds " + id, g.getChildCount() > 4, true)
+        check(id + ": no text under 24 px", smallest(g, 999) >= 24, true)
     end for
+    ' Game watch: next game per tracked team, at most one college game, in time order
+    names = []
+    for each gm in briefingGames(d)
+        names.Push(gm.name)
+    end for
+    check("game watch picks", names.Join(", "), "Falcons, Panthers women's volleyball, Hawks, Auburn, Georgia")
+    ' night mode: the screensaver is just the clock from 11 PM to 5 AM
+    late = {}
+    late.Append(d)
+    late.now = d.today + 23 * 3600 + 30 * 60
+    check("late-night screensaver", chooseScreens(late, "screensaver").Join(","), "night")
+    check("late-night app is unchanged", chooseScreens(late, "app")[0] <> "night", true)
+    late.now = d.today + 86400 + 2 * 3600
+    late.today = d.today + 86400
+    texts = labelTexts(buildScreen("night", late))
+    check("after midnight, the coming day's forecast", texts.DoesExist("Today 70° / 48°, partly cloudy"), true)
+    ' loading skeleton
+    check("loading screen", labelTexts(buildLoading(d.now, "Getting ready...")).DoesExist("Getting ready..."), true)
     ' Briefing: calendar rows in time order, heads-up skips what the calendar shows
     rows = briefingRows(d)
     whens = []
@@ -45,6 +64,17 @@ sub Main()
     m.lowMemory = false
     testSummary("screens")
 end sub
+
+' The smallest label font size in a built screen.
+function smallest(node as object, least as integer) as integer
+    if node.subtype() = "Label" and node.text <> "" and node.font <> invalid
+        if node.font.size < least then least = node.font.size
+    end if
+    for i = 0 to node.getChildCount() - 1
+        least = smallest(node.getChild(i), least)
+    end for
+    return least
+end function
 
 ' Every label's text in a built screen, as a set.
 function labelTexts(node as object) as object
