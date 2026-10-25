@@ -2,6 +2,23 @@
 
 All notable changes to Daybreak. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). Work is tracked on the [Daybreak roadmap](https://github.com/users/roberjo/projects/2) project.
 
+## [1.5.0] - 2026-10-25
+
+Configurable town and household, and new data features.
+
+### Added
+- **`place` in `config/family.json`:** town, region, alert area, season region, timezone, tracked teams, the rivalry pair, the lake gauge, the college feed, news queries and curbside, with LaGrange as the default. `lake`, `college` and `curbside` can be turned off. The build URL-encodes news queries and rejects unknown keys. See `docs/CONFIGURATION.md` (#26).
+- **Live scores:** during a tracked game, Game Day shows the score and period. Tonight, Ambient and Briefing show it too, and team schedules refresh every 2 minutes (#27).
+- **Air quality:** the US AQI from Open-Meteo on the weather card, and a heads-up tip when the next 24 hours reach "unhealthy for sensitive groups". Pollen isn't available for the US from this free source (#28).
+- **Countdowns:** `Countdown: Beach trip` calendar events show on the Board as days to go, up to a year out, with a heads-up tip in the last two weeks (#29).
+- **Tropics:** from June to November, active Atlantic storms from the National Hurricane Center, with distance from home, in Heads up (priority 3 within 500 miles) and on Radar (#30).
+- Diagnostics lists the air-quality and tropics sources.
+
+### Changed
+- `curbside.weekday` in `family.json` is now honored. The build had always used Monday.
+- Recap's "house divided" card uses the winning team's colors.
+- The shelved voice concierge moved to `attic/concierge/` and is marked unmaintained (#31).
+
 ## [1.4.0] - 2026-10-25
 
 Remote navigation, settings and the diagnostics screen.
@@ -88,6 +105,7 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
+[1.5.0]: https://github.com/roberjo/tv-check/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/roberjo/tv-check/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/roberjo/tv-check/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/roberjo/tv-check/compare/v1.1.0...v1.2.0

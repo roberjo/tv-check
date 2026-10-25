@@ -25,10 +25,12 @@ Built in one evening, pair-programming with [Claude Code](https://claude.com/cla
 | `daybreak/tests/` | Off-device tests run with [`@rokucommunity/brs`](https://github.com/rokucommunity/brs) against synthetic feeds and a synthetic calendar, with the clock pinned |
 | `daybreak/preview/` | Renders every screen from the TV's own code, off-device, and audits text size and contrast |
 | `daybreak/art/` | Photos, fonts and drawing code the build turns into the package's images |
-| `concierge/` | A shelved experiment: Siri → Claude → Roku voice control |
+| `attic/` | Shelved experiments, unmaintained: the Siri → Claude → Roku voice concierge |
 | `DAYBREAK.md` | Daybreak design notes: screens, triggers, rules, visual system, licensing, privacy |
 | `CLAUDE.md` | The working rules the AI followed: what's read-only, what needs permission first |
 | `docs/DEVELOPMENT.md` | Build, test, CI, install and release process |
+| `docs/CONFIGURATION.md` | `family.json` and the `place` block for other towns |
+| `docs/ARCHITECTURE.md` | Data flow, freshness rules, memory budget, overlays |
 
 ## Daybreak at a glance
 - **Data, all fetched on the TV:**
@@ -40,8 +42,12 @@ Built in one evening, pair-programming with [Claude Code](https://claude.com/cla
   - **LaGrange College athletics:** iCal feed.
   - **Local headlines:** Google News RSS.
   - **The family calendar:** Google Calendar secret iCal.
-- **Rule-based "heads up" insights:** deadlines, schedule overlaps, curbside pickup (including holiday shifts), rain and frost, birthdays, meteor showers and low lake levels. No AI at runtime.
-- **Family board through the calendar:** an event called `TV: Dinner at 6:30` shows as a note; `Buy: milk, eggs` adds to a grocery list.
+  - **Air quality:** Open-Meteo (US AQI).
+  - **The tropics:** National Hurricane Center, June to November.
+- **Rule-based "heads up" insights:** deadlines, schedule overlaps, curbside pickup (including holiday shifts), rain and frost, air quality, countdowns, birthdays, meteor showers, Atlantic storms and low lake levels. No AI at runtime.
+- **Live scores** during your teams' games, refreshed every 2 minutes.
+- **Family board through the calendar:** an event called `TV: Dinner at 6:30` shows as a note, `Buy: milk, eggs` adds to a grocery list, and `Countdown: Beach trip` counts down the days.
+- **On the remote:** OK opens a menu (settings, go to a screen, diagnostics), and * shows diagnostics: feed health, memory, network and a speed test.
 - **Privacy defaults:** health appointments show as "Appointment", and violent-crime headlines are filtered out.
 - **Design:** tested for readability, with contrast measured against the photo behind every line of text.
 
@@ -65,7 +71,7 @@ daybreak/tests/fetch_fixtures.sh && daybreak/tests/run_live.sh   # optional: tod
 ```
 More in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
-Daybreak is tuned for LaGrange, Georgia: the curbside schedule, West Point Lake, LaGrange College and the local news filter. Swap those sources out for your town.
+Daybreak defaults to LaGrange, Georgia. Your town, teams, rivalry, lake, college feed and news queries go in a `place` block in `config/family.json`; see [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md).
 
 ## Licensing
 - **Code:** MIT (see `LICENSE`).

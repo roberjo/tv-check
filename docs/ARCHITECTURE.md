@@ -27,6 +27,12 @@ Daybreak is one sideloaded Roku package with two entry points: `Main` (the app) 
 | news (3 Google News RSS queries) | 30 min | 12 h | `[{headline, source}]`, already filtered |
 | calendar (family iCal) | 10 min | 24 h | parsed events without descriptions |
 | radar (MRMS capabilities) | 10 min | 30 min | the latest 8 frame times, about 16 min apart |
+| air (Open-Meteo air quality) | 30 min | 6 h | `{aqi, pm25, hours: [{t, aqi}]}` |
+| tropics (NHC CurrentStorms, June to November) | 30 min | 6 h | Atlantic storms `[{name, kind, mph, lat, lon}]` |
+
+During a game (an event `in` progress, or one that should have started in the last 4 hours), `sports` refreshes every 2 minutes instead of 15.
+
+**Place:** `placeOf(cfg)` merges `family.json`'s `place` over `placeDefaults()` (`rules.brs`). The data task keeps it in `m.place`, and derived data carries it as `d.place`, so screens use `d.place.town`, `d.place.lake` and so on. Sources a town doesn't have (lake, college) get no URLs.
 
 - **Fetching:** `fetchAll` starts every due request at once on one message port with a shared 25-second deadline. One slow source no longer delays the others.
 - **Ingest:** `ingest` turns raw bodies into the compact form above, so raw documents (up to ~360 KB of ESPN JSON per team) never stay in memory. Empty bodies, error pages and unparseable data give `invalid`, and the previous good value is kept.

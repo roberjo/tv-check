@@ -18,12 +18,12 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 | Tonight | After 5 PM | Tonight's game or a quiet night, weather, curbside, evening apps |
 | Week ("Sunday Reset") | Weekend evenings | 7-day forecast, calendar, games, curbside, heads-up |
 | Recap | Mornings or evenings after games | Finals (pro, SEC, LaGrange College), a house-divided hero card, records |
-| Game day | A tracked team plays within 6 hours | Team panels with a countdown; Georgia vs Auburn splits the screen |
+| Game day | A tracked team plays within 6 hours, or is playing now | Team panels with a countdown, or the live score and period during the game. The rivalry pair splits the screen |
 | Radar | Rain likely within 2 hours, or any NWS warning | NOAA MRMS frames over a USGS base map, Troup County alerts |
 | Lake | Weekends or dry days | West Point Lake level vs summer and winter pool, best lake day, sunset, moon |
 | Sky | Clear nights or a meteor shower within 2 weeks | Moon phase, shower, viewing conditions |
 | School | School mornings and evenings | School-related calendar items, a card per student |
-| Board | When there are notes | "TV: …" calendar events as notes, "Buy: …" as groceries |
+| Board | When there are notes, groceries or countdowns | "TV: …" calendar events as notes, "Buy: …" as groceries, "Countdown: …" as days to go |
 | Season | Midday | Monthly nature and garden notes for West Georgia, frost watch |
 | Night | Screensaver, 11 PM to 5 AM | A dim clock that drifts every 5 minutes, plus the coming day's forecast and first event. Radar joins it during a warning |
 | Loading | Before the first data arrives | The real date and clock with placeholder cards. If the TV is offline, a note says when the saved data is from |
@@ -36,8 +36,10 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 4. Overlapping evening events.
 5. Rain of 60% or more, or a low of 34°F or below.
 6. Birthdays within 2 weeks.
-7. A meteor shower peaking within 4 days.
+7. A meteor shower peaking within 4 days, and Atlantic storms (within 500 miles is raised to priority 3).
 8. West Point Lake well below winter pool.
+
+Also at priority 5, air quality reaching "unhealthy for sensitive groups" (US AQI 101 or higher) in the next 24 hours. At priority 6, countdowns within 2 weeks.
 
 ## City of LaGrange curbside rules
 - **Every week:** household garbage on your day.

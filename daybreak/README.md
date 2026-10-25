@@ -25,12 +25,17 @@ daybreak/channel/
 | Google News RSS | LaGrange and Troup County headlines (no obituaries or violent crime) | 30 min | 12 h |
 | Family Google Calendar (secret iCal) | Events, deadlines, board notes, groceries | 10 min | 24 h |
 | NOAA MRMS WMS | Radar: 8 frames over about 2 hours, at 960×540 | 10 min | 30 min |
+| Open-Meteo air quality | US AQI now and for the next day | 30 min | 6 h |
+| National Hurricane Center | Active Atlantic storms (June to November only) | 30 min | 6 h |
+
+Team schedules refresh every 2 minutes while a tracked game is in progress, for live scores. Open-Meteo's pollen data only covers Europe, so Daybreak shows air quality but not pollen.
 
 All due sources are fetched in parallel. Screens show "as of" when a source is older than twice its refresh interval. The last good data is saved on the TV (`cachefs:`), so the screensaver starts with it immediately. How it all fits together is in [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 **Family board through the calendar:**
 - **Notes:** add an event called **"TV: Dinner at 6:30"**. It shows from 12 hours before the event until it ends.
 - **Groceries:** add **"Buy: milk, eggs"**.
+- **Countdowns:** add an event called **"Countdown: Beach trip"** on the day. The Board counts down to it (up to a year out), and Heads up mentions it in the last two weeks.
 - **Privacy:** health appointments show as "Appointment".
 
 ## Build and test (Mac)
