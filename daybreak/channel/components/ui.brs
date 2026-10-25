@@ -51,9 +51,28 @@ end function
 
 function uiTextWidth(p as object, text as string, size as integer, weight = 400 as integer, fam = "Manrope" as string) as float
     l = uiText(p, -4000, -4000, text, size, weight, fam)
-    w = l.boundingRect().width
+    w = uiWidth(l, size)
     p.removeChild(l)
     return w
+end function
+
+' Rendered size of a label. Off-device runners report 0, so fall back to an
+' estimate there (0.56 em per character, wrapped to the label width).
+function uiWidth(l as object, size as integer) as float
+    w = l.boundingRect().width
+    if w = 0 and l.text <> "" then w = Len(l.text) * size * 0.56
+    return w
+end function
+
+function uiHeight(l as object, size as integer) as float
+    h = l.boundingRect().height
+    if h = 0 and l.text <> ""
+        lines = 1
+        if l.wrap and l.width > 0 then lines = Int(Len(l.text) * size * 0.56 / l.width) + 1
+        if l.maxLines > 0 and lines > l.maxLines then lines = l.maxLines
+        h = lines * size * 1.3
+    end if
+    return h
 end function
 
 function uiCard(p as object, x as float, y as float, w as float, h as float, fill = "#131B2E" as string, border = "#1F2A44" as string, r = 28 as integer, opacity = 1.0 as float) as object

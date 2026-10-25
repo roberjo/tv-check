@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Python tools
+        run: pip install pillow fonttools pyflakes
+      - name: Fixtures are up to date
+        run: |
+          python3 daybreak/tests/make_fixtures.py
+          git diff --exit-code daybreak/tests/fixtures/feeds
+      - name: Library tests
+        run: sh daybreak/tests/run.sh
+      - name: Data and screen tests
+        run: sh daybreak/tests/run_data.sh
+      - name: BrighterScript
+        run: python3 daybreak/build_channel.py --check
+      - name: pyflakes
+        run: pyflakes scripts daybreak/build_channel.py daybreak/tests daybreak/service

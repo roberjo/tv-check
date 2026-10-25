@@ -20,7 +20,7 @@ import sys
 # Shaded (yard waste) weeks on the flyer alternate strictly, starting with the
 # week of Sunday 2025-12-28. Verified against all 53 weeks of the 2026 flyer.
 YARD_WEEK_ANCHOR = dt.date(2025, 12, 28)
-SCHEDULE_YEAR = 2026
+VERIFIED_YEARS = {2026}  # years checked against the city's flyer
 
 CITY_HOLIDAYS = {  # red dates on the 2026 flyer
     dt.date(2026, 1, 1): "New Year's Day",
@@ -33,6 +33,19 @@ CITY_HOLIDAYS = {  # red dates on the 2026 flyer
     dt.date(2026, 11, 27): "Day after Thanksgiving",
     dt.date(2026, 12, 24): "Christmas Eve",
     dt.date(2026, 12, 25): "Christmas Day",
+    # 2027: provisional (usual city holidays with federal observance rules)
+    # until the city publishes its 2027 flyer.
+    dt.date(2027, 1, 1): "New Year's Day",
+    dt.date(2027, 1, 18): "Martin Luther King Jr. Day",
+    dt.date(2027, 5, 31): "Memorial Day",
+    dt.date(2027, 6, 18): "Juneteenth (observed)",
+    dt.date(2027, 7, 5): "Independence Day (observed)",
+    dt.date(2027, 9, 6): "Labor Day",
+    dt.date(2027, 11, 25): "Thanksgiving",
+    dt.date(2027, 11, 26): "Day after Thanksgiving",
+    dt.date(2027, 12, 23): "Christmas Eve (observed)",
+    dt.date(2027, 12, 24): "Christmas Day (observed)",
+    dt.date(2027, 12, 31): "New Year's Day (observed)",
 }
 
 YARD = {"kind": "yard", "label": "Yard waste week",
@@ -70,7 +83,7 @@ def next_pickup(today, weekday="Monday"):
         "extra": extra,
         "holiday": holiday,
         "confirm_with_city": pickup.weekday() >= 5,
-        "schedule_known": scheduled.year == SCHEDULE_YEAR,
+        "schedule_known": scheduled.year in VERIFIED_YEARS,
         "reminder": reminder(pickup, scheduled, today, extra, holiday),
     }
 

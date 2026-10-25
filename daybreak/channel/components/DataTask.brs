@@ -182,7 +182,8 @@ function derive(cfg as object) as object
     d.radarTimes = []
     if m.cache.radar <> invalid then d.radarTimes = m.cache.radar
     d.rainSoon = rainSoon(d.weather, now)
-    d.headsUp = headsUp(d)
+    d.tips = headsUp(d)
+    d.headsUp = tipTexts(d.tips, {}, 3)
     return d
 end function
 
@@ -385,8 +386,8 @@ function deriveCalendar(events as dynamic, cfg as object, now as integer) as obj
             for each start in icsOccurrences(ev, today - 7 * 86400, today + 21 * 86400)
                 title = ev.summary.Trim()
                 finish = start + 3600
-                if ev.finish <> invalid then finish = start + (ev.finish - ev.start)
                 if ev.allDay then finish = start + 86400
+                if ev.finish <> invalid and ev.finish > ev.start then finish = start + (ev.finish - ev.start)
                 who = []
                 for each mem in cfg.members
                     if CreateObject("roRegex", "\b" + mem.name + "\b", "").IsMatch(title) then who.Push(mem.name)
@@ -470,14 +471,16 @@ function rainSoon(w as dynamic, now as integer) as boolean
     return false
 end function
 
-' Rule-based insights, most important first (replaces the Claude summaries).
+' Rule-based insights, most important first. Each tip has a priority p, a
+' kind (alert, curb, deadline, overlap, rain, frost, birthday, shower, lake)
+' and a ref naming what it's about, so a screen can skip tips it already shows.
 function headsUp(d as object) as object
     tips = []
     today = d.today
     for each a in d.alerts
         p = 1
         if a.level = "warning" then p = 0
-        tips.Push({p: p, t: a.event + " for Troup County."})
+        tips.Push({p: p, kind: "alert", ref: a.event, t: a.event + " for Troup County."})
     end for
     c = d.curb
     n = (c.pickup - today) \ 86400
@@ -486,7 +489,10 @@ function headsUp(d as object) as object
         if c.holiday <> invalid then moved = " (moved for " + c.holiday + ")"
         extra = "bulky trash"
         if c.yard then extra = "yard waste (no grass clippings)"
-        tips.Push({p: 2, t: tDayWord(c.pickup, today) + moved + ": garbage plus " + extra + ". Curb by 7 AM."})
+        t = tDayWord(c.pickup, today) + moved + ": garbage plus " + extra + ". Curb by 7 AM."
+        caveat = curbCaveat(c)
+        if caveat <> "" then t = t + " " + caveat + "."
+        tips.Push({p: 2, kind: "curb", ref: "curb", t: t})
     end if
     for each e in d.calendar
         dn = (tDay(e.start) - today) \ 86400
@@ -495,7 +501,7 @@ function headsUp(d as object) as object
             if dn >= 2 then t = e.title + " is " + tDayWord(e.start, today)
             if e.subtitle <> "" then t = t + " (" + e.subtitle + ")"
             if e.who.Count() > 0 then t = t + " for " + e.who.Join(" and ")
-            tips.Push({p: 3, t: t + "."})
+            tips.Push({p: 3, kind: "deadline", ref: e.title, t: t + "."})
         end if
     end for
     for i = 0 to d.calendar.Count() - 1
@@ -503,30 +509,30 @@ function headsUp(d as object) as object
         for j = i + 1 to d.calendar.Count() - 1
             b = d.calendar[j]
             if not a.allDay and not b.allDay and tDay(a.start) = tDay(b.start) and Abs(a.start - b.start) < 5400 and (tDay(a.start) - today) \ 86400 <= 7
-                tips.Push({p: 4, t: tDayWord(a.start, today) + ": " + a.title + " and " + b.title + " overlap."})
+                tips.Push({p: 4, kind: "overlap", ref: a.title, t: tDayWord(a.start, today) + ": " + a.title + " and " + b.title + " overlap."})
             end if
         end for
     end for
     if d.weather <> invalid
         for i = 1 to 3
             day = d.weather.days[i]
-            if day.rain >= 60 then tips.Push({p: 5, t: "Rain likely " + tDayWord(day.day, today) + " (" + day.rain.ToStr() + "%)."})
-            if day.lo <= 34 then tips.Push({p: 5, t: "Frost possible " + tDayWord(day.day, today) + " morning (" + day.lo.ToStr() + "°). Cover tender plants."})
+            if day.rain >= 60 then tips.Push({p: 5, kind: "rain", ref: tKey(day.day), t: "Rain likely " + tDayWord(day.day, today) + " (" + day.rain.ToStr() + "%)."})
+            if day.lo <= 34 then tips.Push({p: 5, kind: "frost", ref: tKey(day.day), t: "Frost possible " + tDayWord(day.day, today) + " morning (" + day.lo.ToStr() + "°). Cover tender plants."})
         end for
     end if
     for each b in d.birthdays
-        if b.days <= 14 then tips.Push({p: 6, t: b.name + "'s birthday is " + tDayWord(b.day, today) + "."})
+        if b.days <= 14 then tips.Push({p: 6, kind: "birthday", ref: b.name + "'s birthday", t: b.name + "'s birthday is " + tDayWord(b.day, today) + "."})
     end for
     if d.shower <> invalid and (d.shower.peak - today) \ 86400 <= 4
-        tips.Push({p: 7, t: "The " + d.shower.name + " meteor shower peaks " + tDayWord(d.shower.peak, today) + " night. Best before dawn."})
+        tips.Push({p: 7, kind: "shower", ref: d.shower.name, t: "The " + d.shower.name + " meteor shower peaks " + tDayWord(d.shower.peak, today) + " night. Best before dawn."})
     end if
     if d.lake <> invalid and d.lake.level < 626
-        tips.Push({p: 8, t: "West Point Lake is low at " + fmt1(d.lake.level) + " ft. Check ramps before launching."})
+        tips.Push({p: 8, kind: "lake", ref: "lake", t: "West Point Lake is low at " + fmt1(d.lake.level) + " ft. Check ramps before launching."})
     end if
-    tips.SortBy("p")
-    out = []
-    for each tip in tips
-        if out.Count() < 3 then out.Push(tip.t)
+    ' SortBy doesn't promise a stable order; sort on priority, then insertion order.
+    for i = 0 to tips.Count() - 1
+        tips[i].order = tips[i].p * 1000 + i
     end for
-    return out
+    tips.SortBy("order")
+    return tips
 end function
