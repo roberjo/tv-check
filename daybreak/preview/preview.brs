@@ -2,6 +2,7 @@
 ' prints each scene tree as JSON for preview/render.py. Run via preview.sh.
 sub Main()
     cfg = fixtureConfig()
+    m.fontMetrics = ParseJson(ReadAsciiFile("pkg:/font_metrics.json")) ' real advance widths (preview.sh)
     base = {utc: m.testNowUtc, wall: m.testNowWall}
     scenarios = [
         {name: "morning", hours: 0, screens: ["briefing", "ambient", "gameday", "recap", "lake", "season", "board", "school"]},

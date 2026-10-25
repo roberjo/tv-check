@@ -11,6 +11,7 @@ FIXTURES=$DIR/tests/fixtures
 cp "$DIR/../config/family.example.json" "$FIXTURES/family.example.json"
 L=$DIR/channel/source/lib
 C=$DIR/channel/components
+"$DIR/../.venv/bin/python" "$DIR/preview/font_metrics.py" "$FIXTURES/font_metrics.json"
 DUMP=$(mktemp)
 sh "$DIR/tests/brs.sh" "$FIXTURES" "$L/time.brs" "$L/ics.brs" "$L/rules.brs" \
   "$C/DataTask.brs" "$C/ui.brs" "$C/screens.brs" "$C/overlays.brs" \

@@ -81,18 +81,36 @@ function uiTextWidth(p as object, text as string, size as integer, weight = 400 
 end function
 
 ' Rendered size of a label. Off-device runners report 0, so fall back to an
-' estimate there (0.56 em per character, wrapped to the label width).
+' estimate there: the real fonts' advance widths when the preview loaded them
+' (m.fontMetrics), else 0.56 em per character.
 function uiWidth(l as object, size as integer) as float
     w = l.boundingRect().width
-    if w = 0 and l.text <> "" then w = Len(l.text) * size * 0.56
+    if w = 0 and l.text <> "" then w = uiEstimate(l, size)
     return w
+end function
+
+function uiEstimate(l as object, size as integer) as float
+    if m.fontMetrics <> invalid and l.font <> invalid
+        parts = l.font.uri.Split("/")
+        fm = m.fontMetrics[parts[parts.Count() - 1]]
+        if fm <> invalid
+            w = 0
+            for i = 1 to Len(l.text)
+                a = fm[Asc(Mid(l.text, i, 1)).ToStr()]
+                if a = invalid then a = fm.avg
+                w = w + a
+            end for
+            return w * size / 1000.0
+        end if
+    end if
+    return Len(l.text) * size * 0.56
 end function
 
 function uiHeight(l as object, size as integer) as float
     h = l.boundingRect().height
     if h = 0 and l.text <> ""
         lines = 1
-        if l.wrap and l.width > 0 then lines = Int(Len(l.text) * size * 0.56 / l.width) + 1
+        if l.wrap and l.width > 0 then lines = Int(uiEstimate(l, size) / l.width) + 1
         if l.maxLines > 0 and lines > l.maxLines then lines = l.maxLines
         h = lines * size * 1.3
     end if
