@@ -49,7 +49,7 @@ class Console:
                 if out.rstrip().endswith(b">"):
                     break
         except socket.timeout:
-            pass
+            pass  # no prompt in time: return what arrived
         return out.decode(errors="replace")
 
     def run(self, cmd):
@@ -146,7 +146,7 @@ def main():
                 break
             time.sleep(args.every)
     except KeyboardInterrupt:
-        pass
+        pass  # Ctrl-C is how the monitor stops
     finally:
         con.close()
 
