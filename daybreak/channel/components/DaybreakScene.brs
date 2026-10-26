@@ -31,6 +31,7 @@ sub init()
     m.serial = 0
     m.paused = false
     m.lowMemory = false
+    m.plannedHour = -1 ' the hour the playlist was chosen for (replan sets it)
     m.readyMs = 0 ' ms from launch to the first real screen; 0 until then
     m.samples = {mem: [], limit: [], lag: [], traffic: []} ' the last 6 minutes, every 10 s (live graphs)
     m.tickClock = CreateObject("roTimespan")
@@ -86,6 +87,8 @@ sub replan(forceRebuild as boolean)
     currentId = invalid
     if m.items.Count() > 0 and m.index < m.items.Count() then currentId = m.items[m.index]
     m.items = chooseScreens(m.data, m.top.mode, m.settings.hidden)
+    now = tNowWall()
+    m.plannedHour = now - now mod 3600
     found = -1
     for i = 0 to m.items.Count() - 1
         if m.items[i] = currentId then found = i
@@ -227,6 +230,10 @@ end sub
 
 sub onClockTick()
     updateClock()
+    ' the playlist depends on the hour and the weekday, so replan when the hour
+    ' turns even if no feed changed (DataTask only publishes new data)
+    now = tNowWall()
+    if m.plannedHour >= 0 and now - now mod 3600 <> m.plannedHour then replan(false)
     checkMemory()
     sampleStats()
 end sub
