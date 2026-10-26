@@ -375,6 +375,9 @@ sub drawMenu()
     if m.data <> invalid and m.data.wallpapers <> invalid and m.items.Count() > m.index and m.lowMemory <> true
         m.menu.photo = m.data.wallpapers[m.items[m.index]]
     end if
+    ' a page can lose an entry while open ("Show hidden photos"): keep the focus on one
+    n = menuEntries(m.menu).Count()
+    if m.menu.index >= n then m.menu.index = n - 1
     setOverlay("menu", buildMenu(m.menu))
 end sub
 
@@ -420,8 +423,9 @@ sub menuSelect()
     end if
 end sub
 
-' Hides a wallpaper for good: the screens using it today go back to their plain
-' color now, and the next data refresh picks (and downloads) a replacement.
+' Hides a wallpaper for good: the screens using it today fall back to their
+' packaged photo or plain color now, and the next data refresh picks (and
+' downloads) a replacement.
 sub hidePhoto(id as string)
     m.settings.hiddenPhotos[id] = true
     saveSettings()
