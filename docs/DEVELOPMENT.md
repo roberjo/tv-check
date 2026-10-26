@@ -32,7 +32,7 @@ Each runner exits non-zero on a failed check, a BrightScript runtime error, or a
 1. Change the builders in `channel/components/screens.brs`, using the grid (`gx`, `gw`) and the type scale in `ui.brs`.
 2. Run `daybreak/preview/preview.sh daybreak/out/preview --audit` and look at the PNGs. The audit must report 0 issues.
 3. If a screen in the README changed, refresh the screenshots with `--docs docs/images`.
-4. If the change touches a photo screen (Ambient, Briefing, Season, Tonight, Week, Recap, Lake, School, Board), re-audit the wallpapers: `.venv/bin/python daybreak/wallpapers/build.py --audit-only`. It rebuilds each screen behind each photo (about a minute) and rewrites which screens each photo may appear on in `catalog.json`; commit the result.
+4. If the change touches a photo screen (Ambient, Briefing, Season, Tonight, Week, Weekend, Recap, Lake, School, Board), re-audit the wallpapers: `.venv/bin/python daybreak/wallpapers/build.py --audit-only`. It rebuilds each screen behind each photo (about a minute) and rewrites which screens each photo may appear on in `catalog.json`; commit the result.
 
 ## Wallpapers
 - **Add a photo:** add it to `daybreak/wallpapers/sources.json` (the Commons file name, the place, tags, and a crop `focus` from 0 at the top to 1 at the bottom), then run `.venv/bin/python daybreak/wallpapers/build.py --audit`. The script:

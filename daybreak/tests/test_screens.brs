@@ -5,7 +5,7 @@ sub Main()
     d = derive(cfg)
     check("app playlist", chooseScreens(d, "app").Join(", "), "gameday, briefing, recap, board, week, radar, lake, sky, season, ambient")
     check("screensaver playlist", chooseScreens(d, "screensaver").Join(", "), "ambient, gameday, briefing, recap")
-    for each id in ["ambient", "briefing", "tonight", "week", "lake", "sky", "recap", "gameday", "school", "board", "season", "radar", "night"]
+    for each id in ["ambient", "briefing", "tonight", "week", "weekend", "lake", "sky", "recap", "gameday", "school", "board", "season", "radar", "night"]
         g = buildScreen(id, d)
         check("builds " + id, g.getChildCount() > 4, true)
         check(id + ": no text under 24 px", smallest(g, 999) >= 24, true)
@@ -26,6 +26,28 @@ sub Main()
     late.today = d.today + 86400
     texts = labelTexts(buildScreen("night", late))
     check("after midnight, the coming day's forecast", texts.DoesExist("Today 70° / 48°, partly cloudy"), true)
+    ' the weekend outlook: Fridays and Saturdays, the better day outside highlighted
+    check("weekend start (Sunday, Friday, Saturday)", tShortDate(weekendStart(d.today)) + ", " + tShortDate(weekendStart(d.today + 5 * 86400)) + ", " + tShortDate(weekendStart(d.today + 6 * 86400)), "Oct 24, Oct 24, Oct 24")
+    check("no weekend screen on Sunday", availableScreens(d).DoesExist("weekend"), false)
+    texts = labelTexts(buildScreen("weekend", d))
+    check("weekend verdict", texts.DoesExist("Sunday is the better day to be outside: 71°, partly cloudy.") and texts.DoesExist("Best day outside"), true)
+    check("weekend lake line", texts.DoesExist("West Point Lake is at 625.5 ft, 9.5 ft below full summer pool."), true)
+    wet = {rain: 70, hi: 60, wind: 5, code: 61}
+    rules = []
+    for each v in [bestOutdoorDay(wet, wet), bestOutdoorDay({rain: 10, hi: 70, wind: 5}, {rain: 15, hi: 72, wind: 8}), bestOutdoorDay(invalid, wet), bestOutdoorDay({rain: 10, hi: 70, wind: 30}, {rain: 20, hi: 70, wind: 5})]
+        rules.Push(v.ToStr())
+    end for
+    check("best day: wet, same, no forecast, windy Saturday", rules.Join(" "), "-2 -1 -3 1")
+    fri = {}
+    fri.Append(d)
+    fri.now = d.today + 5 * 86400 + 12 * 3600
+    fri.today = d.today + 5 * 86400
+    check("friday midday playlist", chooseScreens(fri, "app").Join(", "), "gameday, recap, weekend, ambient, lake, season, board, week, radar, sky, briefing")
+    fri.now = fri.today + 19 * 3600
+    check("friday evening: the weekend after tonight", chooseScreens(fri, "app").Join(", "), "gameday, tonight, weekend, sky, board, week, radar, lake, recap, season, ambient, briefing")
+    fri.now = fri.today + 86400 + 19 * 3600
+    fri.today = fri.today + 86400
+    check("saturday evening: the week instead", chooseScreens(fri, "app").Join(",").Instr("weekend") < 0, true)
     ' loading skeleton
     check("loading screen", labelTexts(buildLoading(d.now, "Getting ready...")).DoesExist("Getting ready..."), true)
     ' Briefing: calendar rows in time order, heads-up skips what the calendar shows
@@ -120,6 +142,9 @@ sub Main()
         labels.Push(e.label)
     end for
     check("main menu", labels.Join(", "), "Pause rotation, Go to screen, Settings, Diagnostics, Close")
+    menu.photo = {id: "park-one", place: "Test Park"}
+    check("hide this photo", menuEntries(menu)[2].label + " " + menuEntries(menu)[2].action, "Hide this photo hidephoto")
+    menu.photo = invalid
     menu.page = "settings"
     menu.settings.hidden = {week: true}
     vals = []
@@ -127,6 +152,10 @@ sub Main()
         vals.Push(e.label + "=" + e.value)
     end for
     check("settings page", vals.Join(", "), "Gentle news=On, Rotation speed=Normal, Briefing=On, Radar=On, Week ahead=Off")
+    menu.settings.hiddenPhotos = {"park-one": true, "lake-two": true}
+    last = menuEntries(menu).Peek()
+    check("show hidden photos", last.label + "=" + last.value + " " + last.action, "Show hidden photos=2 hidden unhidephotos")
+    menu.settings.hiddenPhotos = {}
     check("menu text >= 24 px", smallest(buildMenu(menu), 999) >= 24, true)
     info = sampleDiagnostics()
     g = buildDiagnostics(info)

@@ -79,11 +79,12 @@ During a game (an event `in` progress, or one that should have started in the la
 ## Wallpapers
 - **Catalog:** `daybreak/wallpapers/catalog.json`, served from this repo (`place.wallpapers`). Each photo has an id, a file, a place, a credit, tags and `screens`: the screens where every label passed the contrast audit, recorded by `build.py --audit`.
 - **Fetching:** DataTask fetches the catalog daily (`normWallpapers` keeps only safe ids and `img/<id>.jpg` paths, at most 100 entries).
-- **Picks:** `wallpaperPicks(photos, day)` chooses a photo for each of the nine photo screens.
+- **Picks:** `wallpaperPicks(photos, day)` chooses a photo for each of the ten photo screens.
   - **Where photos may go:** only on screens where they passed the audit. Lake photos go on the Lake screen, and night photos (tag `night`) only behind Tonight, which prefers them.
+  - **Hidden photos:** photos the family hid from the OK menu ("Hide this photo", saved in the registry as `hiddenPhotos`) are never picked. The screen goes to its plain fill at once, and the next refresh picks a replacement. Settings → "Show hidden photos" brings them all back.
   - **Seasons:** photos suited to the season (`seasons` in `sources.json`) come first.
   - **No repeats:** a screen never shows yesterday's photo, and that needs no history. Even days pick from the even positions of a screen's candidate list and odd days from the odd ones. A year's simulation with the real catalog: one repeat (at a season change), no day with two screens sharing a photo, and all 36 photos used.
-- **Downloads:** `syncWallpapers()` downloads today's and tomorrow's picks into `cachefs:/wp-<id>.jpg`, three per refresh. A download goes to a `.part` file and is kept only if it arrived whole (HTTP 200, over 20 KB; stalled transfers are dropped). Every other `wp-*` file is deleted, so the TV holds at most about 18 photos (about 7 MB).
+- **Downloads:** `syncWallpapers()` downloads today's and tomorrow's picks into `cachefs:/wp-<id>.jpg`, three per refresh. A download goes to a `.part` file and is kept only if it arrived whole (HTTP 200, over 20 KB; stalled transfers are dropped). Every other `wp-*` file is deleted, so the TV holds at most about 20 photos (about 8 MB).
 - **Screens:** `derive` puts only downloaded picks in `d.wallpapers`. `uiWallpaper` draws the photo under the screen's own fill color at `wallpaperDim()`: 0.55 on Ambient, 0.70 on Season, 0.78 on Briefing, 0.82 on card screens.
 - **Credit:** `buildScreen` adds the credit at bottom right, on a translucent pill so it reads on any photo. The scene hides it while its status line uses the corner.
 - **Fallbacks:** with no download yet, screens use the packaged pre-dimmed photos or plain fills. Low-memory mode uses plain fills.

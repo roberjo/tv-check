@@ -301,6 +301,7 @@ function loadSettings(cfg as object) as object
             if saved.gentleNews <> invalid then s.gentleNews = saved.gentleNews
             if saved.speed <> invalid then s.speed = saved.speed
             if saved.hidden <> invalid then s.hidden = saved.hidden
+            if saved.hiddenPhotos <> invalid then s.hiddenPhotos = saved.hiddenPhotos
         end if
     end if
     return s
@@ -356,13 +357,17 @@ end sub
 
 sub drawMenu()
     all = []
-    for each id in ["briefing", "ambient", "tonight", "week", "recap", "gameday", "radar", "lake", "sky", "school", "board", "season"]
+    for each id in ["briefing", "ambient", "tonight", "week", "weekend", "recap", "gameday", "radar", "lake", "sky", "school", "board", "season"]
         all.Push(id)
     end for
     m.menu.settings = m.settings
     m.menu.paused = m.paused
     m.menu.items = m.items
     m.menu.all = all
+    m.menu.photo = invalid
+    if m.data <> invalid and m.data.wallpapers <> invalid and m.items.Count() > m.index and m.lowMemory <> true
+        m.menu.photo = m.data.wallpapers[m.items[m.index]]
+    end if
     setOverlay("menu", buildMenu(m.menu))
 end sub
 
@@ -393,6 +398,12 @@ sub menuSelect()
         m.settings.speed = nextSpeed(m.settings.speed)
         saveSettings()
         drawMenu()
+    else if action = "hidephoto"
+        hidePhoto(m.menu.photo.id)
+    else if action = "unhidephotos"
+        m.settings.hiddenPhotos = {}
+        saveSettings()
+        drawMenu()
     else if Left(action, 7) = "screen:"
         id = Mid(action, 8)
         if m.settings.hidden.DoesExist(id) then m.settings.hidden.Delete(id) else m.settings.hidden[id] = true
@@ -400,6 +411,22 @@ sub menuSelect()
         replan(false)
         drawMenu()
     end if
+end sub
+
+' Hides a wallpaper for good: the screens using it today go back to their plain
+' color now, and the next data refresh picks (and downloads) a replacement.
+sub hidePhoto(id as string)
+    m.settings.hiddenPhotos[id] = true
+    saveSettings()
+    using = []
+    for each sc in m.data.wallpapers
+        if m.data.wallpapers[sc].id = id then using.Push(sc)
+    end for
+    for each sc in using
+        m.data.wallpapers.Delete(sc)
+    end for
+    setOverlay("", invalid)
+    if m.paused then show(m.index, false) ' unpaused, closing the menu already rebuilt the screen
 end sub
 
 sub openDiagnostics()

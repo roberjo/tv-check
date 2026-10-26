@@ -11,6 +11,7 @@ Built in one evening, pair-programming with [Claude Code](https://claude.com/cla
 | ![Morning briefing](docs/images/briefing.jpg) | ![Game recap](docs/images/recap.jpg) |
 | ![Week ahead](docs/images/week.jpg) | ![Live radar](docs/images/radar.jpg) |
 | ![Ambient screensaver](docs/images/ambient.jpg) | ![Tonight's sky](docs/images/sky.jpg) |
+| ![Weekend outlook](docs/images/weekend.jpg) | ![West Point Lake](docs/images/lake.jpg) |
 
 *Screenshots are rendered from the TV's own screen code (`daybreak/preview/`) with a fictional family (`config/family.example.json`), a synthetic calendar and synthetic feeds.*
 

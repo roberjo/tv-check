@@ -43,7 +43,7 @@ UA = {"User-Agent": "DaybreakWallpaperBuilder/1.0 (https://github.com/roberjo/tv
 API = "https://commons.wikimedia.org/w/api.php?"
 FREE = re.compile(r"^(CC0|Public domain|PD.*|CC BY(-SA)? \d\.\d)$")
 # Screens a photo may sit behind (preview/wallpapers.brs builds each one).
-SCREENS = ["ambient", "briefing", "season", "tonight", "week", "recap", "lake", "school", "board"]
+SCREENS = ["ambient", "briefing", "season", "tonight", "week", "weekend", "recap", "lake", "school", "board"]
 
 
 def get(url, tries=4):

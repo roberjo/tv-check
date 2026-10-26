@@ -11,7 +11,7 @@ sub Main()
         m.testWallpapers[p.id] = true
     end for
     scenarios = [
-        {name: "morning", hours: 0, screens: ["briefing", "ambient", "gameday", "recap", "lake", "season", "board", "school"]},
+        {name: "morning", hours: 0, screens: ["briefing", "ambient", "gameday", "recap", "lake", "season", "board", "school", "weekend"]},
         {name: "evening", hours: 9, screens: ["tonight", "week", "sky"]},
         {name: "night", hours: 14, screens: ["night"]},
         {name: "warning", hours: 0, alerts: "alerts_warning.json", screens: ["alert", "radar"]}
@@ -43,8 +43,10 @@ sub Main()
     d = derive(cfg)
     ' overlays: menu, settings, diagnostics, remote hint
     menu = {page: "main", index: 1, settings: defaultSettings(cfg), paused: false, items: chooseScreens(d, "app"),
-            all: ["briefing", "ambient", "tonight", "week", "recap", "gameday", "radar", "lake", "sky", "school", "board", "season"]}
+            all: ["briefing", "ambient", "tonight", "week", "weekend", "recap", "gameday", "radar", "lake", "sky", "school", "board", "season"]}
+    menu.photo = d.wallpapers.briefing ' on a screen with a photo the menu offers to hide it
     print "SCENE|overlay|menu|"; FormatJson(dumpNode(buildMenu(menu)))
+    menu.photo = invalid
     menu.page = "settings"
     menu.index = 1
     menu.settings.hidden = {school: true}
