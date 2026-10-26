@@ -516,10 +516,10 @@ function derive(cfg as object) as object
     d.countdowns = cal.countdowns
     d.chores = choreTurns(cfg.chores, cfg.members, today)
     d.wallpapers = {}
-    picks = wallpaperPicks(fresh("wallpapers"), today)
+    picks = wallpaperPicks(fresh("wallpapers"), today, hiddenPhotos())
     for each sc in picks
         wp = picks[sc]
-        if haveWallpaper(wp.id) then d.wallpapers[sc] = {uri: wallpaperPath(wp.id), place: wp.place, credit: wp.credit}
+        if haveWallpaper(wp.id) then d.wallpapers[sc] = {id: wp.id, uri: wallpaperPath(wp.id), place: wp.place, credit: wp.credit}
     end for
     d.asOf = asOfTimes()
     d.tips = headsUp(d)
@@ -532,6 +532,13 @@ function currentSettings() as object
     if m.top <> invalid and m.top.settings <> invalid then return m.top.settings
     if m.testSettings <> invalid then return m.testSettings
     return {gentleNews: true}
+end function
+
+' Photos the family hid from the OK menu (ids), so the picks skip them.
+function hiddenPhotos() as object
+    h = currentSettings().hiddenPhotos
+    if type(h) <> "roAssociativeArray" then return {}
+    return h
 end function
 
 ' Wall-clock fetch times of sources older than twice their refresh interval
@@ -1196,7 +1203,7 @@ end function
 
 ' Screens that can show a wallpaper, in pick order.
 function wallpaperScreens() as object
-    return ["ambient", "briefing", "season", "tonight", "week", "recap", "lake", "school", "board"]
+    return ["ambient", "briefing", "season", "tonight", "week", "weekend", "recap", "lake", "school", "board"]
 end function
 
 ' A photo for each screen on this day: different photos on different screens
@@ -1208,8 +1215,8 @@ end function
 ' Candidates for a screen passed the contrast audit there (screens); lake
 ' photos alone go on the Lake screen, night photos only on Tonight (which
 ' prefers them), and photos suited to the season (seasons; none = any) come
-' first.
-function wallpaperPicks(photos as dynamic, day as integer) as object
+' first. Photos in hidden (ids the family hid) are never picked.
+function wallpaperPicks(photos as dynamic, day as integer, hidden = {} as object) as object
     picks = {}
     if photos = invalid then return picks
     season = seasonOf(tParts(day).m)
@@ -1224,6 +1231,7 @@ function wallpaperPicks(photos as dynamic, day as integer) as object
         for each p in photos
             ok = hasItem(p.screens, sc) and (sc <> "lake" or hasItem(p.tags, "lake"))
             if hasItem(p.tags, "night") and sc <> "tonight" then ok = false
+            if hidden.DoesExist(p.id) then ok = false
             if ok
                 all.Push(p)
                 if arrOf(p.seasons).Count() = 0 or hasItem(p.seasons, season) then fit.Push(p) ' saved catalogs before 1.10 have no seasons
@@ -1277,7 +1285,7 @@ sub syncWallpapers()
     today = tDay(tNowWall())
     keep = {}
     for each day in [today, today + 86400]
-        picks = wallpaperPicks(photos, day)
+        picks = wallpaperPicks(photos, day, hiddenPhotos())
         for each sc in picks
             keep[picks[sc].id] = picks[sc]
         end for

@@ -62,7 +62,7 @@ The install replaces any other dev app. Then choose **Settings → Theme → Scr
 |---|---|
 | Left / Right | Previous or next screen |
 | Play | Pause or resume the rotation |
-| OK | Menu: pause, go to a screen, settings, diagnostics |
+| OK | Menu: pause, go to a screen, hide this photo, settings, diagnostics |
 | * (Options) | Diagnostics; Left/Right switch to live graphs |
 | Back | Close the menu or diagnostics, or exit |
 

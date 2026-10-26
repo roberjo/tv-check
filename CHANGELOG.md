@@ -4,6 +4,15 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-26
+
+### Added
+- **Weekend outlook** (#71): on Fridays and Saturdays, Saturday and Sunday side by side, each with the forecast, sunrise and sunset, and the day's calendar and games. The better day to be outside is marked, scored on rain chance, distance from 72° and wind over 15 mph. When the days are close it says so, and it calls a wet weekend when rain is 60% or more both days. West Point Lake's level is shown against full summer pool. All 36 wallpapers passed the contrast audit behind it.
+- **Hide this photo** (#72): on a screen with a wallpaper, the OK menu offers "Hide this photo". The photo leaves the screen at once and is never picked again, and the next refresh downloads a replacement. Settings → "Show hidden photos" brings them all back. Hidden photos are kept in the registry with the other settings.
+
+### Fixed
+- **The playlist now follows the clock when no data changes.** Which screens rotate depends on the hour and the weekday, but the playlist was only re-picked when a feed brought new data. Now the scene re-picks it when the hour turns, so the morning, midday and evening sets, and the Weekend screen, start and stop on time (found by the Codex review of #73).
+
 ## [1.10.0] - 2026-10-25
 
 ### Added
@@ -227,7 +236,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/roberjo/tv-check/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/roberjo/tv-check/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/roberjo/tv-check/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/roberjo/tv-check/compare/v1.7.2...v1.8.0

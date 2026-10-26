@@ -25,7 +25,7 @@ WALL = HERE.parent / "wallpapers" / "img"  # cachefs:/wp-<id>.jpg on the TV
 W, H = 1920, 1080
 DOCS = {("morning", "briefing"): "briefing", ("morning", "ambient"): "ambient", ("morning", "recap"): "recap",
         ("morning", "gameday"): "gameday", ("evening", "week"): "week", ("evening", "sky"): "sky",
-        ("evening", "tonight"): "tonight", ("morning", "lake"): "lake", ("warning", "radar"): "radar"}
+        ("evening", "tonight"): "tonight", ("morning", "lake"): "lake", ("morning", "weekend"): "weekend", ("warning", "radar"): "radar"}
 _fonts = {}
 _images = {}
 

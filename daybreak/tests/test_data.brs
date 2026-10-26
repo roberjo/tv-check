@@ -201,6 +201,21 @@ sub Main()
     end for
     check("wallpaper picks follow the audit, lake photos on the lake screen", rulesKept, true)
     check("ambient photo changes from day to day", ambient.Count() >= 2, true)
+    ' a photo hidden from the OK menu never comes back on any screen
+    day0 = m.testNowWall - m.testNowWall mod 86400
+    hid = {}
+    hid[wallpaperPicks(wp, day0).ambient.id] = true
+    m.testSettings = {gentleNews: true, hiddenPhotos: hid}
+    hiddenKept = true
+    for day = 0 to 13
+        picks = wallpaperPicks(wp, day0 + day * 86400, hiddenPhotos())
+        for each sc in picks
+            if hid.DoesExist(picks[sc].id) then hiddenKept = false
+        end for
+    end for
+    m.testSettings = invalid
+    check("a hidden photo is never picked", hiddenKept, true)
+    check("no hidden photos by default", hiddenPhotos().Count(), 0)
     ' seasons, night photos, no repeats (Oct 18 is fall: spring-one never shows, fall-one does)
     seen = {}
     repeats = 0

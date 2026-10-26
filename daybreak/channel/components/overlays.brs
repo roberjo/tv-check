@@ -8,7 +8,7 @@
 ' Defaults come from family.json via the generated config; the menu saves
 ' changes to the registry (see DaybreakScene).
 function defaultSettings(cfg as dynamic) as object
-    s = {gentleNews: true, speed: "normal", hidden: {}}
+    s = {gentleNews: true, speed: "normal", hidden: {}, hiddenPhotos: {}}
     if cfg <> invalid and cfg.gentleNews <> invalid then s.gentleNews = cfg.gentleNews
     return s
 end function
@@ -87,7 +87,8 @@ end function
 ' --- OK menu -----------------------------------------------------------------------
 
 ' Menu pages as lists of {label, value, action}. state = {page, index, settings,
-' paused, items (playlist), all (every screen id)}.
+' paused, items (playlist), all (every screen id), photo (the current screen's
+' wallpaper, or invalid)}.
 function menuEntries(state as object) as object
     st = state.settings
     if state.page = "screens"
@@ -104,13 +105,18 @@ function menuEntries(state as object) as object
             shown = not st.hidden.DoesExist(id)
             out.Push({label: screenTitles()[id], value: onOff(shown), action: "screen:" + id})
         end for
+        if st.hiddenPhotos <> invalid and st.hiddenPhotos.Count() > 0
+            out.Push({label: "Show hidden photos", value: st.hiddenPhotos.Count().ToStr() + " hidden", action: "unhidephotos"})
+        end if
         return out
     end if
     pause = "Pause rotation"
     if state.paused then pause = "Resume rotation"
-    return [{label: pause, value: "", action: "pause"}, {label: "Go to screen", value: "", action: "page:screens"},
-            {label: "Settings", value: "", action: "page:settings"}, {label: "Diagnostics", value: "", action: "diagnostics"},
-            {label: "Close", value: "", action: "close"}]
+    out = [{label: pause, value: "", action: "pause"}, {label: "Go to screen", value: "", action: "page:screens"}]
+    if state.photo <> invalid then out.Push({label: "Hide this photo", value: "", action: "hidephoto"})
+    out.Append([{label: "Settings", value: "", action: "page:settings"}, {label: "Diagnostics", value: "", action: "diagnostics"},
+                {label: "Close", value: "", action: "close"}])
+    return out
 end function
 
 function onOff(v as boolean) as string
