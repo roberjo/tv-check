@@ -115,6 +115,7 @@ def build():
         out = IMG / f"{pid}.jpg"
         crop(cached, src.get("focus", 0.5)).save(out, quality=75, optimize=True)
         photo = {"id": pid, "file": f"img/{pid}.jpg", "place": src["place"], "area": src["area"], "tags": src["tags"],
+                 "seasons": src.get("seasons", ["spring", "summer", "fall", "winter"]),
                  "credit": f"{author} · {lic}", "author": author, "license": lic, "source": info["descriptionurl"],
                  "screens": old.get(pid, {}).get("screens", [])}
         photos.append(photo)

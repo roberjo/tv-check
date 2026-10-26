@@ -43,6 +43,17 @@ sub Main()
         print "  crash: "; c
     end for
     check("no parser crashes on bad responses", crashes.Count(), 0)
+    ' warm-start data saved by an older version: a 1.8 catalog entry has no seasons
+    old = [{id: "old-one", file: "img/old-one.jpg", place: "Old", credit: "x · CC0", tags: ["lake"], screens: ["week", "lake"]}]
+    try
+        picks = wallpaperPicks(old, m.testNowWall - m.testNowWall mod 86400)
+        oldOk = picks.week.id = "old-one"
+    catch e
+        oldOk = false
+        print "  old catalog crash: "; e.message
+    end try
+    check("a catalog saved by an older version still works", oldOk, true)
+    store("wallpapers", old)
     ' derive must survive whatever the parsers kept
     try
         derive(cfg)
