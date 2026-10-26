@@ -4,6 +4,27 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-25
+
+### Added
+- **Clocks-change heads-up** (#61): "Clocks fall back 1 hour Sunday at 2 AM. Sunset moves to 5:44 PM."
+  - **When:** from three days before a daylight saving change, plus a reminder on the day to check the oven and car clocks.
+  - **Where not:** time zones without daylight saving.
+- **Rain timing** (#62): rain tips now say when, from the hourly forecast.
+  - "Rain likely from about 3 PM (70%)"
+  - "Rain likely until about 8 PM (85%)" when it's already raining
+  - "Rain likely Tuesday from about noon (65%)"
+  - Today is now included too.
+- **Live graphs in diagnostics** (#60): press Right in diagnostics for the last 6 minutes of:
+  - the app's free memory and memory-limit use
+  - Daybreak's network traffic, with the last speed test (or Roku's own once-a-minute measure, which arrives only while video plays)
+  - how late the app's timer fires, as a stand-in for CPU load (Roku gives apps no CPU reading)
+
+### Fixed
+- **Feed robustness** (#63): a new test feeds every parser malformed, partial and wrongly typed responses. It found 19 ways to crash, including the weather parser failing when a forecast came without its hourly or current part.
+  - **The fix:** parsers now read through type-checked accessors and return "unreadable" instead of throwing.
+  - **Rejected up front:** cut-off JSON, and forecasts with less than a week.
+
 ## [1.8.0] - 2026-10-25
 
 ### Added
@@ -191,7 +212,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/roberjo/tv-check/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/roberjo/tv-check/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/roberjo/tv-check/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/roberjo/tv-check/compare/v1.7.0...v1.7.1

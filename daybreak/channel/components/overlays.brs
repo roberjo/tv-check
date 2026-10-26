@@ -165,7 +165,7 @@ function buildDiagnostics(info as object) as object
     uiRect(g, 0, 0, 1920, 1080, "#070B14", 0.98)
     uiLabel(g, 112, 62, "Diagnostics · Daybreak " + strOr(info.version), 24, "#F4A259")
     uiText(g, 112, 100, "How Daybreak is doing", 76, 500, "Outfit", "#F4F1EA", 1300)
-    uiText(g, 1808, 140, "Back to close", 24, 400, "Manrope", "#A9B1C4", 400, "right")
+    uiText(g, 1808, 140, "Right: live graphs · Back to close", 24, 400, "Manrope", "#A9B1C4", 600, "right")
     ' data sources
     top = 246
     uiCard(g, gx(1), top, gw(8), 770)
@@ -263,6 +263,91 @@ end sub
 
 ' Green when fresh, amber when failing once or past twice the refresh
 ' interval, red when failing repeatedly or past its maximum age.
+' Diagnostics' second page: rolling graphs of the last 6 minutes (one sample
+' every 10 s, from the scene's sampleStats()). info: {samples: {mem, limit,
+' lag, traffic}, bandwidthKbps, speed}.
+function buildLiveGraphs(info as object) as object
+    g = CreateObject("roSGNode", "Group")
+    uiRect(g, 0, 0, 1920, 1080, "#070B14", 0.98)
+    uiLabel(g, 112, 62, "Diagnostics · Live", 24, "#F4A259")
+    uiText(g, 112, 100, "The last 6 minutes", 76, 500, "Outfit", "#F4F1EA", 1300)
+    uiText(g, 1808, 140, "Left: status · Back to close", 24, 400, "Manrope", "#A9B1C4", 600, "right")
+    sm = info.samples
+    if sm = invalid then sm = {}
+    mem = numList(sm.mem)
+    memMb = []
+    for each v in mem
+        memMb.Push(v / 1024)
+    end for
+    limit = numList(sm.limit)
+    lag = numList(sm.lag)
+    traffic = numList(sm.traffic)
+    kb = []
+    for each v in traffic
+        kb.Push(v / 1024)
+    end for
+    ' Roku's own per-minute measurement only comes while video plays; else the speed test
+    bw = "Speed test: press OK on the status page"
+    sp = info.speed
+    if sp <> invalid and sp.state = "done" then bw = "Speed test: " + fmt1(sp.mbps) + " Mbps down · " + sp.latencyMs.ToStr() + " ms"
+    if info.bandwidthKbps <> invalid and info.bandwidthKbps > 0 then bw = "TV network speed (Roku, last minute): " + fmt1(info.bandwidthKbps / 1000) + " Mbps"
+    top = 246
+    w = gw(6)
+    graphCard(g, gx(1), top, w, "App memory free", lastText(memMb, " MB"), "Memory the TV lets Daybreak use", memMb, 0, "#9EC79B")
+    graphCard(g, gx(7), top, w, "App memory limit used", lastText(limit, "%"), "Over 80% turns on low-memory mode", limit, 100, "#F4A259")
+    minute = 0.0 ' the last 6 samples
+    for i = kb.Count() - 6 to kb.Count() - 1
+        if i >= 0 then minute = minute + kb[i]
+    end for
+    perMin = "—"
+    if kb.Count() > 0 then perMin = lastText([minute], " KB/min")
+    graphCard(g, gx(1), top + 400, w, "Daybreak network traffic", perMin, bw, kb, 0, "#7FB7E8")
+    graphCard(g, gx(7), top + 400, w, "Timer delay", lastText(lag, " ms"), "Rises when the TV is busy. Roku apps can't read CPU use", lag, 0, "#B3A6F2")
+    return g
+end function
+
+' A card with a title, the latest value, a caption and a bar per sample
+' (oldest left). scaleMax 0 scales to the largest sample.
+sub graphCard(g as object, x as integer, y as integer, w as integer, title as string, value as string, caption as string, values as object, scaleMax as float, color as string)
+    uiCard(g, x, y, w, 370)
+    uiLabel(g, x + 36, y + 30, title)
+    uiText(g, x + w - 36, y + 18, value, 44, 600, "Outfit", "#F4F1EA", 300, "right")
+    uiText(g, x + 36, y + 304, caption, 24, 400, "Manrope", "#A9B1C4", w - 72)
+    chartTop = y + 90
+    chartH = 190
+    uiRect(g, x + 36, chartTop + chartH, w - 72, 2, "#1F2A44")
+    if values.Count() = 0
+        uiText(g, x + 36, chartTop + 70, "Collecting: the first sample arrives within 10 seconds", 24, 400, "Manrope", "#A9B1C4", w - 72)
+        return
+    end if
+    top = scaleMax
+    if top <= 0
+        for each v in values
+            if v > top then top = v
+        end for
+    end if
+    if top <= 0 then top = 1
+    slot = (w - 72) / 36
+    for i = 0 to values.Count() - 1
+        bh = Int(values[i] / top * chartH + 0.5)
+        if bh < 2 then bh = 2
+        if bh > chartH then bh = chartH
+        uiRect(g, x + 36 + (36 - values.Count() + i) * slot, chartTop + chartH - bh, slot - 4, bh, color, 0.85)
+    end for
+end sub
+
+function numList(v as dynamic) as object
+    if type(v) = "roArray" then return v
+    return []
+end function
+
+function lastText(values as object, unit as string) as string
+    if values.Count() = 0 then return "—"
+    v = values[values.Count() - 1]
+    if v >= 10 then return Int(v + 0.5).ToStr() + unit
+    return fmt1(v) + unit
+end function
+
 function sourceColor(s as object, limits as dynamic, name as string, nowUtc as integer) as string
     age = 0
     if s.lastOk <> invalid then age = nowUtc - s.lastOk

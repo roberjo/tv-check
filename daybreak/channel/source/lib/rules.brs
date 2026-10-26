@@ -229,3 +229,44 @@ function currentPlace() as object
     if m.place = invalid then m.place = placeDefaults()
     return m.place
 end function
+
+' --- clock changes -------------------------------------------------------------------
+' US daylight saving: clocks spring forward at 2 AM on the second Sunday of
+' March and fall back at 2 AM on the first Sunday of November.
+
+' The next change within `within` days of today (0 = today): {day, back, days}.
+function dstChange(today as integer, within as integer) as dynamic
+    yr = tParts(today).y
+    for each c in [{mo: 3, nth: 2, back: false}, {mo: 11, nth: 1, back: true}]
+        first = tYmd(yr, c.mo, 1)
+        sun = first + ((7 - tWeekday(first)) mod 7) * 86400 + (c.nth - 1) * 7 * 86400
+        n = (sun - today) \ 86400
+        if n >= 0 and n <= within then return {day: sun, back: c.back, days: n}
+    end for
+    return invalid
+end function
+
+' Most US time zones change clocks; these don't.
+function observesDst(timezone as dynamic) as boolean
+    if timezone = invalid then return true
+    noDst = {"America/Phoenix": true, "Pacific/Honolulu": true, "America/Puerto_Rico": true, "Pacific/Guam": true,
+             "America/St_Thomas": true, "Pacific/Pago_Pago": true}
+    return not noDst.DoesExist(timezone)
+end function
+
+' "Clocks fall back 1 hour Sunday at 2 AM. Sunset moves to 5:44 PM." (sunset: the
+' day's local sunset, already on the new time, or 0 if unknown)
+function dstTip(c as object, today as integer, sunset as integer) as string
+    if c.days = 0
+        t = "Clocks sprang forward 1 hour at 2 AM"
+        if c.back then t = "Clocks fell back 1 hour at 2 AM"
+        return t + ". Check the oven, microwave and car clocks."
+    end if
+    word = tDayWord(c.day, today)
+    if c.days = 1 then word = "tomorrow"
+    t = "Clocks spring forward 1 hour " + word + " at 2 AM."
+    if c.back then t = "Clocks fall back 1 hour " + word + " at 2 AM."
+    if sunset > 0 then t = t + " Sunset moves to " + tClock(sunset) + "."
+    return t
+end function
+
