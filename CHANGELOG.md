@@ -4,6 +4,20 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-25
+
+### Added
+- **Local wallpapers, loaded live** (#64): 36 free-licensed Wikimedia Commons photos from around LaGrange, Troup County, West Point Lake, Newnan, Columbus, Pine Mountain and Callaway Gardens, Peachtree City and Atlanta.
+  - **On screen:** nine screens use them (Ambient, Briefing, Season, Tonight, Week, Recap, Lake, School and Board), a different photo on each, changing daily. Each photo is dimmed in the screen's own color and credited bottom right.
+  - **Delivery:** the TV reads a catalog from this repo and downloads photos into its cache in the background. New photos need no reinstall, and the packaged photos remain the fallback.
+  - **Readability:** `daybreak/wallpapers/build.py --audit` renders every photo behind every screen with the TV's own code and allows a photo only where every label passes the contrast audit.
+- **Diagnostics:** a Wallpapers row.
+
+### Fixed
+- **Sky screen** said "The moon is full moon". It now says "The moon is full" (or "It's a new moon", "…a waxing crescent"), with a viewing tip.
+- **Diagnostics** shows wallpaper downloads ("17 of 17 photos") and the last download error.
+- **`place.radar`** in `family.json` was documented but rejected by the build.
+
 ## [1.7.2] - 2026-10-25
 
 Daybreak's first install since 1.0 (#44), with fixes found on the TV. Start-up and memory were measured on the TV for the first time (see `docs/ARCHITECTURE.md`).
@@ -177,7 +191,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.7.2...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/roberjo/tv-check/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/roberjo/tv-check/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/roberjo/tv-check/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/roberjo/tv-check/compare/v1.6.0...v1.7.0

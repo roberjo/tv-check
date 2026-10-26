@@ -177,7 +177,9 @@ function placeDefaults() as object
                          {name: "Pine Mountain", lat: 32.865, lon: -84.854}, {name: "Newnan", lat: 33.381, lon: -84.800},
                          {name: "Carrollton", lat: 33.580, lon: -85.077}, {name: "Auburn", lat: 32.610, lon: -85.481},
                          {name: "Atlanta", lat: 33.749, lon: -84.388}],
-                water: [{name: "West Point Lake", lat: 33.032, lon: -85.232}]}
+                water: [{name: "West Point Lake", lat: 33.032, lon: -85.232}]},
+        ' photo backgrounds: the catalog the TV downloads wallpapers from (daybreak/wallpapers in this repo)
+        wallpapers: "https://raw.githubusercontent.com/roberjo/tv-check/main/daybreak/wallpapers/"
     }
 end function
 

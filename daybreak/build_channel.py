@@ -16,6 +16,7 @@ Usage:
   .venv/bin/python daybreak/build_channel.py --demo     # public demo package: example family, no .env (release CI)
 """
 import json
+import os
 import math
 import pathlib
 import subprocess
@@ -67,10 +68,12 @@ def place_json():
     drops nulls), news queries are URL-encoded, and only known keys pass."""
     import urllib.parse
     place = dict(family.get("place") or {})
-    known = {"town", "region", "area", "seasonRegion", "timezone", "teams", "rivalry", "lake", "college", "news", "curbside"}
+    known = {"town", "region", "area", "seasonRegion", "timezone", "teams", "rivalry", "lake", "college", "news", "curbside", "radar", "wallpapers"}
     unknown = set(place) - known
     if unknown:
         sys.exit(f"family.json place: unknown keys {sorted(unknown)} (known: {sorted(known)})")
+    if os.environ.get("DAYBREAK_WALLPAPERS"):  # another catalog, e.g. a branch's, for testing
+        place["wallpapers"] = os.environ["DAYBREAK_WALLPAPERS"]
     if "news" in place and place["news"] is not None:
         news = dict(place["news"])
         news["queries"] = [urllib.parse.quote_plus(q) for q in news.get("queries", [])]

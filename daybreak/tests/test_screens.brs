@@ -134,6 +134,7 @@ sub Main()
     check("diagnostics: source rows", texts.DoesExist("Family calendar") and texts.DoesExist("timed out (3x)"), true)
     check("diagnostics: memory", texts.DoesExist("142 MB") and texts.DoesExist("38%"), true)
     check("diagnostics: speed", texts.DoesExist("87.4 Mbps down · 23 ms"), true)
+    check("diagnostics: wallpaper downloads", texts.DoesExist("12 of 16 photos · HTTP 404"), true)
     check("diagnostics: start-up time", texts.DoesExist("2 h 15 min · 2.4 s"), true)
     check("up text before the first screen", upText(3, 0) + " / " + upText(invalid, 900), "3 min / —")
     check("diagnostics: no text under 24 px", smallest(g, 999) >= 24, true)
@@ -172,6 +173,28 @@ sub Main()
     end for
     check("no lake screen", availableScreens(d).DoesExist("lake"), false)
     m.place = invalid
+    check("moon sentences", moonWords("Full moon").line + " / " + moonWords("New moon").line + " / " + moonWords("First quarter").line + " / " + moonWords("Waxing crescent").line, "The moon is full / It's a new moon / The moon is at first quarter / The moon is a waxing crescent")
+    ' wallpapers: the photo, a dimming fill in the screen's color, and the credit
+    d = derive(cfg)
+    d.wallpapers = {week: {uri: "cachefs:/wp-park-one.jpg", place: "Test Park", credit: "Test Photographer · CC0"}}
+    g = buildScreen("week", d)
+    credit = g.findNode("photoCredit")
+    check("week wallpaper", g.getChild(0).uri + " " + g.getChild(1).subtype() + " " + fmt1(g.getChild(1).opacity), "cachefs:/wp-park-one.jpg Rectangle 0.8")
+    check("photo credit", labelTexts(credit).DoesExist("Photo: Test Park · Test Photographer · CC0"), true)
+    d.wallpapers.week.place = "Dowdell's Knob at dawn"
+    check("label drops before the place", labelTexts(buildScreen("week", d).findNode("photoCredit")).DoesExist("Dowdell's Knob at dawn · Test Photographer · CC0"), true)
+    d.wallpapers.week.place = "Test Park"
+    d.wallpapers.week.place = "A Very Long Place Name, Somewhere Far Away In Georgia"
+    check("long place drops first, license stays", labelTexts(buildScreen("week", d).findNode("photoCredit")).DoesExist("Photo: Test Photographer · CC0"), true)
+    d.wallpapers = {ambient: {uri: "cachefs:/wp-park-one.jpg", place: "Test Park", credit: "Test Photographer · CC0"}}
+    texts = labelTexts(buildScreen("ambient", d))
+    check("ambient caption names the photo", texts.DoesExist("Test Park") and texts.DoesExist("Photo: Test Photographer · CC0"), true)
+    d.wallpapers = {week: {uri: "cachefs:/wp-park-one.jpg", place: "Test Park", credit: "Test Photographer · CC0"}}
+    check("no photo, no credit", buildScreen("board", d).findNode("photoCredit") = invalid and buildScreen("ambient", d).getChild(0).uri = "pkg:/images/bg_ambient.jpg", true)
+    m.lowMemory = true
+    g = buildScreen("week", d)
+    check("low memory: no wallpaper", g.getChild(0).subtype() + " " + (g.findNode("photoCredit") = invalid).ToStr(), "Rectangle true")
+    m.lowMemory = false
     testSummary("screens")
 end sub
 

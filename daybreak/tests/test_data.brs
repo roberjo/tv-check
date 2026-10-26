@@ -155,5 +155,32 @@ sub Main()
     check("warm start rows show saved data", m.health.weather.lastOk = m.fetched.weather and texts.DoesExist("saved data"), true)
     noteHealth("weather", true, {code: 200, ms: 150, bytes: 900, error: "", parts: 1, okParts: 1})
     check("a fetch replaces the saved row", isTrue(m.health.weather.saved), false)
+    ' wallpapers: unsafe catalog entries are dropped, picks follow the audit and change daily
+    wp = fresh("wallpapers")
+    ids = []
+    for each ph in wp
+        ids.Push(ph.id)
+    end for
+    check("wallpaper catalog keeps safe entries", ids.Join(","), "lake-one,town-one,park-one,lake-two,dim-only")
+    rulesKept = true
+    ambient = {}
+    for day = 0 to 13
+        picks = wallpaperPicks(wp, m.testNowWall - m.testNowWall mod 86400 + day * 86400)
+        if picks.Count() <> 9 or picks.ambient.id = picks.briefing.id then rulesKept = false
+        for each sc in picks
+            if not hasItem(picks[sc].screens, sc) then rulesKept = false
+            if sc = "lake" and not hasItem(picks[sc].tags, "lake") then rulesKept = false
+        end for
+        ambient[picks.ambient.id] = true
+    end for
+    check("wallpaper picks follow the audit, lake photos on the lake screen", rulesKept, true)
+    check("ambient photo changes from day to day", ambient.Count() >= 2, true)
+    d7 = derive(cfg)
+    check("no wallpaper before it's downloaded", d7.wallpapers.Count(), 0)
+    m.testWallpapers = {"lake-one": true, "town-one": true, "park-one": true, "lake-two": true, "dim-only": true}
+    d7 = derive(cfg)
+    lk = d7.wallpapers.lake
+    check("downloaded wallpapers reach the screens", d7.wallpapers.Count().ToStr() + " " + Left(lk.uri, 12) + " " + lk.credit, "9 cachefs:/wp- Test Photographer · CC0")
+    m.testWallpapers = invalid
     testSummary("data")
 end sub

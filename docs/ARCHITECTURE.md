@@ -60,6 +60,16 @@ During a game (an event `in` progress, or one that should have started in the la
 - **Settings** live in the `daybreak` registry section as JSON. The data task gets them through its `settings` field. Gentle news is applied in `derive()`, so a change takes effect within a minute, without refetching.
 - **Speed test:** `SpeedTask` runs only on request: three empty requests for latency, then a 25 MB download to `tmp:`, deleted afterwards.
 
+## Wallpapers
+- **Catalog:** `daybreak/wallpapers/catalog.json`, served from this repo (`place.wallpapers`). Each photo has an id, a file, a place, a credit, tags and `screens`: the screens where every label passed the contrast audit, recorded by `build.py --audit`.
+- **Fetching:** DataTask fetches the catalog daily (`normWallpapers` keeps only safe ids and `img/<id>.jpg` paths, at most 100 entries).
+- **Picks:** `wallpaperPicks(photos, day)` chooses a photo for each of the nine photo screens: different photos on different screens, changing daily, only on audited screens, and lake photos on the Lake screen.
+- **Downloads:** `syncWallpapers()` downloads today's and tomorrow's picks into `cachefs:/wp-<id>.jpg`, three per refresh. A download goes to a `.part` file and is kept only if it arrived whole (HTTP 200, over 20 KB; stalled transfers are dropped). Every other `wp-*` file is deleted, so the TV holds at most about 18 photos (about 7 MB).
+- **Screens:** `derive` puts only downloaded picks in `d.wallpapers`. `uiWallpaper` draws the photo under the screen's own fill color at `wallpaperDim()`: 0.55 on Ambient, 0.70 on Season, 0.78 on Briefing, 0.82 on card screens.
+- **Credit:** `buildScreen` adds the credit at bottom right, on a translucent pill so it reads on any photo. The scene hides it while its status line uses the corner.
+- **Fallbacks:** with no download yet, screens use the packaged pre-dimmed photos or plain fills. Low-memory mode uses plain fills.
+- **Memory:** a wallpaper decodes to 8.3 MB, the same as the packaged photos, and at most two are decoded during a crossfade.
+
 ## Radar geometry
 - **The window:** `radarView(lat, lon)` (`rules.brs`) computes the Web Mercator window around home, 300 km across on the ground and 1920×1080. It's the same window `scripts/radar_map.py` uses for the base map, so the radar frames, the base map and the labels line up. `radarPx()` places labels.
 - **Precision:** the math is single precision, as BrightScript floats are. Tests check it against the Python projection: the bounding box agrees to within 10 m (under 0.1 px), and the label pixels match exactly.

@@ -30,6 +30,11 @@ sub runLoop()
             print "Daybreak refresh error: "; e.message
         end try
         try
+            syncWallpapers()
+        catch e
+            print "Daybreak wallpaper error: "; e.message
+        end try
+        try
             publish(cfg)
         catch e
             print "Daybreak derive error: "; e.message
@@ -47,7 +52,7 @@ sub publish(cfg as object)
         m.lastSig = sig
         m.top.data = d
     end if
-    m.top.health = {sources: m.health, savedAt: m.lastSave, warm: m.warm, cacheBytes: m.cacheBytes}
+    m.top.health = {sources: m.health, savedAt: m.lastSave, warm: m.warm, cacheBytes: m.cacheBytes, wallpapers: m.wallpaperFiles}
 end sub
 
 ' Everything in the data except the clock fields, as JSON.
@@ -67,7 +72,8 @@ function sourceLimits() as object
         weather: {ttl: 600, maxAge: 3 * 3600}, alerts: {ttl: 120, maxAge: 1800}, lake: {ttl: 1800, maxAge: 12 * 3600},
         sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
         calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
-        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600}
+        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600},
+        wallpapers: {ttl: 86400, maxAge: 30 * 86400}
     }
 end function
 
@@ -98,6 +104,8 @@ function sourceUrls(cfg as object) as object
     tropics = []
     month = tParts(tNowWall()).m
     if month >= 6 and month <= 11 then tropics.Push("https://www.nhc.noaa.gov/CurrentStorms.json")
+    wallpapers = []
+    if place.wallpapers <> invalid then wallpapers.Push(place.wallpapers + "catalog.json")
     return {
         weather: [wx],
         alerts: ["https://api.weather.gov/alerts/active?point=" + lat + "," + lon],
@@ -108,7 +116,8 @@ function sourceUrls(cfg as object) as object
         calendar: calendar,
         radar: ["https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&request=GetCapabilities"],
         air: ["https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + lat + "&longitude=" + lon + "&current=us_aqi,pm2_5&hourly=us_aqi&forecast_days=2&timezone=" + currentPlace().timezone.Replace("/", "%2F")],
-        tropics: tropics
+        tropics: tropics,
+        wallpapers: wallpapers
     }
 end function
 
@@ -222,6 +231,7 @@ function ingest(name as string, bodies as object) as dynamic
     if name = "weather" then return normWeather(parseJsonSafe(bodies[0]))
     if name = "alerts" then return normAlerts(parseJsonSafe(bodies[0]))
     if name = "lake" then return normLake(parseJsonSafe(bodies[0]))
+    if name = "wallpapers" then return normWallpapers(parseJsonSafe(bodies[0]))
     if name = "sports"
         out = []
         teams = espnTeams()
@@ -496,6 +506,12 @@ function derive(cfg as object) as object
     d.storms = deriveStorms(fresh("tropics"), cfg)
     d.countdowns = cal.countdowns
     d.chores = choreTurns(cfg.chores, cfg.members, today)
+    d.wallpapers = {}
+    picks = wallpaperPicks(fresh("wallpapers"), today)
+    for each sc in picks
+        wp = picks[sc]
+        if haveWallpaper(wp.id) then d.wallpapers[sc] = {uri: wallpaperPath(wp.id), place: wp.place, credit: wp.credit}
+    end for
     d.asOf = asOfTimes()
     d.tips = headsUp(d)
     d.headsUp = tipTexts(d.tips, {}, 3)
@@ -1020,4 +1036,143 @@ function milesBetween(lat1 as float, lon1 as float, lat2 as float, lon2 as float
     a = Sin(dLat / 2) * Sin(dLat / 2) + Cos(lat1 * k) * Cos(lat2 * k) * Sin(dLon / 2) * Sin(dLon / 2)
     c = 2 * Atn(Sqr(a) / Sqr(1 - a))
     return Int(r * c + 0.5)
+end function
+
+' --- wallpapers ------------------------------------------------------------------------
+' Photo backgrounds come from a catalog (daybreak/wallpapers, served from the
+' repo): the TV fetches it daily, picks a photo per screen per day, and
+' downloads today's and tomorrow's picks into cachefs: in the background.
+
+' Catalog -> [{id, file, place, credit, tags, screens}]. Ids become file names
+' on the TV, so only lowercase letters, digits and dashes pass.
+function normWallpapers(j as dynamic) as dynamic
+    if j = invalid or type(j.photos) <> "roArray" then return invalid
+    safeId = CreateObject("roRegex", "^[a-z0-9-]{1,40}$", "")
+    safeFile = CreateObject("roRegex", "^img/[a-z0-9-]{1,40}\.jpg$", "")
+    out = []
+    for each p in j.photos
+        if out.Count() < 100 and type(p) = "roAssociativeArray" and isText(p.id) and isText(p.file)
+            if safeId.IsMatch(p.id) and safeFile.IsMatch(p.file) and type(p.screens) = "roArray"
+                out.Push({id: p.id, file: p.file, place: Left(strOrEmpty(p.place), 60), credit: Left(strOrEmpty(p.credit), 80),
+                          tags: textList(p.tags), screens: textList(p.screens)})
+            end if
+        end if
+    end for
+    return out
+end function
+
+function isText(v as dynamic) as boolean
+    return v <> invalid and GetInterface(v, "ifString") <> invalid
+end function
+
+function textList(v as dynamic) as object
+    out = []
+    if type(v) = "roArray"
+        for each x in v
+            if isText(x) then out.Push(x)
+        end for
+    end if
+    return out
+end function
+
+function hasItem(list as object, v as string) as boolean
+    for each x in list
+        if x = v then return true
+    end for
+    return false
+end function
+
+' Screens that can show a wallpaper, in pick order.
+function wallpaperScreens() as object
+    return ["ambient", "briefing", "season", "tonight", "week", "recap", "lake", "school", "board"]
+end function
+
+' A photo for each screen on this day: different photos on different screens,
+' changing daily. A photo only goes behind screens it passed the contrast
+' audit on (its screens list), and the lake screen takes lake photos.
+function wallpaperPicks(photos as dynamic, day as integer) as object
+    picks = {}
+    if photos = invalid then return picks
+    used = {}
+    n = day \ 86400
+    screens = wallpaperScreens()
+    for si = 0 to screens.Count() - 1
+        sc = screens[si]
+        cands = []
+        for each p in photos
+            if hasItem(p.screens, sc) and (sc <> "lake" or hasItem(p.tags, "lake")) then cands.Push(p)
+        end for
+        if cands.Count() > 0
+            start = (n * 7 + si * 5) mod cands.Count()
+            pick = invalid
+            for k = 0 to cands.Count() - 1
+                c = cands[(start + k) mod cands.Count()]
+                if pick = invalid and not used.DoesExist(c.id) then pick = c
+            end for
+            if pick = invalid then pick = cands[start] ' fewer photos than screens: repeat one
+            used[pick.id] = true
+            picks[sc] = pick
+        end if
+    end for
+    return picks
+end function
+
+function wallpaperPath(id as string) as string
+    return "cachefs:/wp-" + id + ".jpg"
+end function
+
+function haveWallpaper(id as string) as boolean
+    if m.offDevice = true then return m.testWallpapers <> invalid and m.testWallpapers.DoesExist(id)
+    return CreateObject("roFileSystem").Exists(wallpaperPath(id))
+end function
+
+' Downloads today's and tomorrow's photos, at most 3 per refresh so a slow
+' connection never holds up the data, and deletes any other saved photos.
+sub syncWallpapers()
+    photos = fresh("wallpapers")
+    base = currentPlace().wallpapers
+    if photos = invalid or base = invalid or m.offDevice = true then return
+    today = tDay(tNowWall())
+    keep = {}
+    for each day in [today, today + 86400]
+        picks = wallpaperPicks(photos, day)
+        for each sc in picks
+            keep[picks[sc].id] = picks[sc]
+        end for
+    end for
+    fs = CreateObject("roFileSystem")
+    for each f in fs.GetDirectoryListing("cachefs:/")
+        if Left(f, 3) = "wp-" and (Right(f, 4) <> ".jpg" or not keep.DoesExist(Mid(f, 4, Len(f) - 7))) then fs.Delete("cachefs:/" + f)
+    end for
+    budget = 3
+    have = 0
+    for each id in keep
+        if budget > 0 and not fs.Exists(wallpaperPath(id))
+            budget = budget - 1
+            err = downloadWallpaper(base + keep[id].file, wallpaperPath(id))
+            if err <> "" then m.wallpaperError = err
+        end if
+        if fs.Exists(wallpaperPath(id)) then have = have + 1
+    end for
+    m.wallpaperFiles = {have: have, want: keep.Count(), error: m.wallpaperError}
+end sub
+
+' Saves under a temporary name and keeps the file only if it arrived whole.
+' Returns "" or what went wrong.
+function downloadWallpaper(url as string, path as string) as string
+    tmp = path + ".part"
+    ut = CreateObject("roUrlTransfer")
+    ut.SetUrl(url)
+    ut.SetCertificatesFile("common:/certs/ca-bundle.crt")
+    ut.InitClientCertificates()
+    ut.SetMinimumTransferRate(4096, 20) ' give up on a stalled transfer
+    code = ut.GetToFile(tmp)
+    fs = CreateObject("roFileSystem")
+    st = fs.Stat(tmp)
+    if code = 200 and st <> invalid and st.size > 20000 and fs.Rename(tmp, path) then return ""
+    fs.Delete(tmp)
+    err = "HTTP " + code.ToStr()
+    if code = 200 then err = "incomplete photo"
+    print "Daybreak wallpaper download failed: "; err; " "; url
+    return err
 end function

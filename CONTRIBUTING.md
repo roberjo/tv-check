@@ -15,7 +15,7 @@ cp config/family.example.json config/family.json
 daybreak/tests/run.sh && daybreak/tests/run_data.sh        # off-device tests (no network)
 .venv/bin/python daybreak/build_channel.py --check          # BrighterScript
 .venv/bin/python daybreak/build_channel.py --assets && daybreak/preview/preview.sh daybreak/out/preview --audit
-.venv/bin/pyflakes scripts daybreak/build_channel.py daybreak/tests daybreak/art daybreak/preview
+.venv/bin/pyflakes scripts daybreak/build_channel.py daybreak/tests daybreak/art daybreak/preview daybreak/wallpapers
 ```
 CI runs all of these, plus the dependency audit, the secret scan and CodeQL. `main` is protected, so changes land through PRs with green checks.
 
