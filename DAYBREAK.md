@@ -33,9 +33,9 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 "Heads up" items, most important first:
 1. NWS warnings and watches, and school closings, early releases or delayed openings (from the calendar) today or tomorrow.
 2. Curbside pickup tomorrow or today.
-3. Calendar deadlines within 7 days.
+3. Calendar deadlines within 7 days, and clock changes for daylight saving ("Clocks fall back 1 hour Sunday at 2 AM. Sunset moves to 5:44 PM.") from 3 days ahead.
 4. Overlapping evening events.
-5. Rain of 60% or more, or a low of 34°F or below.
+5. Rain of 60% or more, timed from the hourly forecast ("Rain likely from about 3 PM (70%)", "Rain likely Tuesday from about noon (65%)"), or a low of 34°F or below.
 6. Birthdays within 2 weeks.
 7. A meteor shower peaking within 4 days, and Atlantic storms (within 500 miles is raised to priority 3).
 8. West Point Lake well below winter pool.

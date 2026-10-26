@@ -63,7 +63,7 @@ The install replaces any other dev app. Then choose **Settings → Theme → Scr
 | Left / Right | Previous or next screen |
 | Play | Pause or resume the rotation |
 | OK | Menu: pause, go to a screen, settings, diagnostics |
-| * (Options) | Diagnostics |
+| * (Options) | Diagnostics; Left/Right switch to live graphs |
 | Back | Close the menu or diagnostics, or exit |
 
 Page dots at the bottom show where you are in the playlist, and a thin line along the bottom edge fills up until the next screen. A remote hint shows on the first three launches. In the screensaver, any button ends it, as on every Roku screensaver. Launching other apps was left out on purpose.
@@ -79,6 +79,7 @@ Page dots at the bottom show where you are in the playlist, and a thin line alon
 - the device, display and network
 - the warm-start cache
 - a speed test, run only when you press OK (a 25 MB download)
+- **Live graphs** (press Right): the last 6 minutes of app memory, memory-limit use, Daybreak's network traffic with the TV's measured network speed, and timer delay, a stand-in for CPU load, which Roku doesn't let apps read
 
 ## Previews and the design audit
 `daybreak/preview/` renders every screen **from the TV's own code**. The BrightScript builders run off-device against the synthetic feeds and dump the SceneGraph tree. `render.py` then draws it with the package's fonts and 9-patch images.

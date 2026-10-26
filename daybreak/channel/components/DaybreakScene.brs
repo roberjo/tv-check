@@ -6,7 +6,7 @@
 '
 ' Remote (app only; any key ends the screensaver): Left/Right browse, Play
 ' pauses, OK opens the menu (pause, go to a screen, settings, diagnostics),
-' * (Options) opens diagnostics, Back closes an overlay or exits.
+' * (Options) opens diagnostics (Left/Right: live graphs), Back closes an overlay or exits.
 
 sub init()
     m.stage = m.top.findNode("stage")
@@ -32,6 +32,10 @@ sub init()
     m.paused = false
     m.lowMemory = false
     m.readyMs = 0 ' ms from launch to the first real screen; 0 until then
+    m.samples = {mem: [], limit: [], lag: [], traffic: []} ' the last 6 minutes, every 10 s (live graphs)
+    m.tickClock = CreateObject("roTimespan")
+    m.lastBytes = invalid
+    m.diagPage = "status"
     m.overlayKind = ""
     m.memMonitor = CreateObject("roAppMemoryMonitor")
     m.deviceInfo = CreateObject("roDeviceInfo")
@@ -224,6 +228,33 @@ end sub
 sub onClockTick()
     updateClock()
     checkMemory()
+    sampleStats()
+end sub
+
+' One sample for each live graph (the clock timer fires every 10 s). Roku
+' gives apps no CPU reading, so the graph of how late this timer fires stands
+' in for how busy the TV is.
+sub sampleStats()
+    lag = m.tickClock.TotalMilliseconds() - 10000
+    m.tickClock.Mark()
+    if lag < 0 then lag = 0
+    pushSample("lag", lag)
+    if m.memMonitor <> invalid
+        pushSample("mem", m.memMonitor.GetChannelAvailableMemory())
+        pushSample("limit", m.memMonitor.GetMemoryLimitPercent())
+    end if
+    h = m.dataTask.health
+    if h <> invalid and h.bytesTotal <> invalid
+        if m.lastBytes <> invalid then pushSample("traffic", h.bytesTotal - m.lastBytes)
+        m.lastBytes = h.bytesTotal
+    end if
+    if m.overlayKind = "diagnostics" and m.diagPage = "live" then refreshDiagnostics()
+end sub
+
+sub pushSample(name as string, v as dynamic)
+    list = m.samples[name]
+    list.Push(v)
+    if list.Count() > 36 then list.Shift()
 end sub
 
 ' "low" or "critical" general memory, or the app past 80% of its limit, turns
@@ -372,13 +403,18 @@ sub menuSelect()
 end sub
 
 sub openDiagnostics()
+    m.diagPage = "status"
     setOverlay("diagnostics", invalid)
     refreshDiagnostics()
 end sub
 
 sub refreshDiagnostics()
     m.overlay.removeChildrenIndex(m.overlay.getChildCount(), 0)
-    m.overlay.appendChild(buildDiagnostics(gatherDiagnostics()))
+    if m.diagPage = "live"
+        m.overlay.appendChild(buildLiveGraphs({samples: m.samples, bandwidthKbps: m.top.bandwidthKbps, speed: m.speed}))
+    else
+        m.overlay.appendChild(buildDiagnostics(gatherDiagnostics()))
+    end if
 end sub
 
 ' Device-side values for the diagnostics screen (buildDiagnostics draws them).
@@ -479,7 +515,11 @@ function onKeyEvent(key as string, press as boolean) as boolean
         return true
     end if
     if m.overlayKind = "diagnostics"
-        if key = "OK" then startSpeedTest()
+        if key = "OK" and m.diagPage = "status" then startSpeedTest()
+        if key = "right" or key = "left"
+            if m.diagPage = "live" then m.diagPage = "status" else m.diagPage = "live"
+            refreshDiagnostics()
+        end if
         if key = "back" or key = "options" then setOverlay("", invalid)
         return true
     end if

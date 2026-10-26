@@ -2,6 +2,7 @@
 <component name="DaybreakScene" extends="Scene">
   <interface>
     <field id="mode" type="string" onChange="onStart" />
+    <field id="bandwidthKbps" type="integer" />
   </interface>
   <script type="text/brightscript" uri="pkg:/source/lib/time.brs" />
   <script type="text/brightscript" uri="pkg:/source/lib/rules.brs" />

@@ -60,6 +60,22 @@ During a game (an event `in` progress, or one that should have started in the la
 - **Settings** live in the `daybreak` registry section as JSON. The data task gets them through its `settings` field. Gentle news is applied in `derive()`, so a change takes effect within a minute, without refetching.
 - **Speed test:** `SpeedTask` runs only on request: three empty requests for latency, then a 25 MB download to `tmp:`, deleted afterwards.
 
+## Parsing untrusted feeds
+- **Return invalid, don't throw:** every parser in DataTask reads JSON through type-checked accessors (`aaOf`, `arrOf`, `arrAt`, `numOf`, `numAt`, `textTime`, `strOrEmpty`) and returns `invalid` when a response isn't usable. The previous good value is then kept.
+- **Rejected before parsing:** `parseJsonSafe` turns away error pages and cut-off downloads.
+- **Weather needs a full week:** a forecast with fewer than 7 complete days is rejected, because screens show a week ahead.
+- **Tests:** `tests/test_robust.brs` feeds every source junk, partial and wrongly typed bodies. RSS is the exception, because the emulator lacks the XML-list methods it needs.
+- **Belt and braces:** `refresh()` also wraps `ingest()` in try/catch.
+
+## Live graphs (diagnostics page 2)
+- **Samples:** every 10 seconds (the clock timer), `sampleStats()` in the scene records four values, and keeps 36 samples (6 minutes):
+  - the app's free memory and % of its limit (`roAppMemoryMonitor`)
+  - Daybreak's bytes downloaded (the data task's `bytesTotal`, published once a minute)
+  - how late the timer fired
+- **Why timer delay:** Roku gives apps no CPU reading, so timer delay stands in for load. On the TV, `chanperf` on the debug console has the real CPU figure.
+- **TV throughput:** the main thread listens for Roku's `bandwidth.minute` system-log events and sets the scene's `bandwidthKbps`. On this TV they didn't arrive while idle or during a 25 MB speed test (Roku measures during video playback), so the card shows the last speed test result until one arrives.
+- **Drawing:** `buildLiveGraphs()` draws the four bar graphs and redraws every 10 s while open.
+
 ## Wallpapers
 - **Catalog:** `daybreak/wallpapers/catalog.json`, served from this repo (`place.wallpapers`). Each photo has an id, a file, a place, a credit, tags and `screens`: the screens where every label passed the contrast audit, recorded by `build.py --audit`.
 - **Fetching:** DataTask fetches the catalog daily (`normWallpapers` keeps only safe ids and `img/<id>.jpg` paths, at most 100 entries).

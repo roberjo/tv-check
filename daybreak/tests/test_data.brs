@@ -46,8 +46,8 @@ sub Main()
         kinds.Push(t.kind)
     end for
     check("tip order", kinds.Join(","), "curb,deadline,rain,frost,countdown,shower,tropics,lake")
-    check("heads up (top 3)", d.headsUp.Join(" / "), "Tomorrow: garbage plus yard waste (no grass clippings). Curb by 7 AM. / Science fair registration deadline is Friday (Nov 7 fair) for Riley and Casey. / Rain likely Tuesday (65%).")
-    check("tips skip what's shown", tipTexts(d.tips, {curb: true, "Science fair registration deadline": true}, 2).Join(" / "), "Rain likely Tuesday (65%). / Frost possible Wednesday morning (33°). Cover tender plants.")
+    check("heads up (top 3)", d.headsUp.Join(" / "), "Tomorrow: garbage plus yard waste (no grass clippings). Curb by 7 AM. / Science fair registration deadline is Friday (Nov 7 fair) for Riley and Casey. / Rain likely Tuesday from about noon (65%).")
+    check("tips skip what's shown", tipTexts(d.tips, {curb: true, "Science fair registration deadline": true}, 2).Join(" / "), "Rain likely Tuesday from about noon (65%). / Frost possible Wednesday morning (33°). Cover tender plants.")
     ' air quality, countdowns, the tropics
     check("air now", d.air.aqi.ToStr() + " " + d.air.label + " peak " + d.air.peak.ToStr(), "58 Moderate peak 86")
     check("countdown", d.countdowns[0].title + " in " + d.countdowns[0].days.ToStr() + " days", "Beach trip in 12 days")
@@ -155,6 +155,32 @@ sub Main()
     check("warm start rows show saved data", m.health.weather.lastOk = m.fetched.weather and texts.DoesExist("saved data"), true)
     noteHealth("weather", true, {code: 200, ms: 150, bytes: 900, error: "", parts: 1, okParts: 1})
     check("a fetch replaces the saved row", isTrue(m.health.weather.saved), false)
+    ' rain timing from the hourly forecast
+    day0 = d.today
+    wx = {hours: [], days: []}
+    for hh = 0 to 47
+        r = 10
+        if hh >= 15 and hh <= 19 then r = 70 ' today 3-7 PM
+        if hh = 17 then r = 85
+        if hh >= 32 and hh <= 35 then r = 65 ' tomorrow 8-11 AM
+        wx.hours.Push({t: day0 + hh * 3600, rain: r})
+    end for
+    check("rain later today", rainTip(wx, {day: day0, rain: 85}, day0 + 10 * 3600, day0), "Rain likely from about 3 PM (85%).")
+    check("rain now", rainTip(wx, {day: day0, rain: 85}, day0 + 16 * 3600 + 600, day0), "Rain likely until about 8 PM (85%).")
+    check("rain tomorrow", rainTip(wx, {day: day0 + 86400, rain: 65}, day0 + 10 * 3600, day0), "Rain likely tomorrow from about 8 AM (65%).")
+    wx.hours[21].rain = 75 ' a second shower at 9 PM, after a dry 8 PM
+    check("a dry hour ends the window", rainTip(wx, {day: day0, rain: 85}, day0 + 16 * 3600 + 600, day0), "Rain likely until about 8 PM (85%).")
+    check("no hourly: the daily chance", rainTip({hours: []}, {day: day0 + 2 * 86400, rain: 60}, day0, day0), "Rain likely Tuesday (60%).")
+    ' clock change: Thursday Oct 29, three days before clocks fall back (the feeds are stale by then, so no sunset)
+    m.testNowUtc = m.testNowUtc + 11 * 86400
+    m.testNowWall = m.testNowWall + 11 * 86400
+    clockTip = ""
+    for each t in derive(cfg).tips
+        if t.kind = "clocks" then clockTip = t.p.ToStr() + " " + t.t
+    end for
+    check("clock change heads-up", clockTip, "3 Clocks fall back 1 hour Sunday at 2 AM.")
+    m.testNowUtc = m.testNowUtc - 11 * 86400
+    m.testNowWall = m.testNowWall - 11 * 86400
     ' wallpapers: unsafe catalog entries are dropped, picks follow the audit and change daily
     wp = fresh("wallpapers")
     ids = []

@@ -18,6 +18,7 @@ sub runLoop()
     m.health = {}
     m.lastSig = ""
     m.lastSave = 0
+    m.bytesTotal = 0 ' downloaded this session, for the network graph
     m.warm = loadCache()
     if m.warm then seedHealth()
     publish(cfg) ' warm start: show the saved data right away
@@ -52,7 +53,8 @@ sub publish(cfg as object)
         m.lastSig = sig
         m.top.data = d
     end if
-    m.top.health = {sources: m.health, savedAt: m.lastSave, warm: m.warm, cacheBytes: m.cacheBytes, wallpapers: m.wallpaperFiles}
+    m.top.health = {sources: m.health, savedAt: m.lastSave, warm: m.warm, cacheBytes: m.cacheBytes, wallpapers: m.wallpaperFiles,
+                     bytesTotal: m.bytesTotal}
 end sub
 
 ' Everything in the data except the clock fields, as JSON.
@@ -153,6 +155,7 @@ sub refresh(cfg as object)
         for each r in parts
             bodies.Push(r.body)
             h.bytes = h.bytes + Len(r.body)
+            m.bytesTotal = m.bytesTotal + Len(r.body)
             if r.ms > h.ms then h.ms = r.ms
             if r.code = 200 then h.okParts = h.okParts + 1
             if h.code <> 200 then h.code = r.code
@@ -264,7 +267,11 @@ end function
 ' invalid without a parser error.
 function parseJsonSafe(text as string) as dynamic
     t = text.Trim()
-    if t = "" or (Left(t, 1) <> "{" and Left(t, 1) <> "[") then return invalid
+    if t = "" then return invalid
+    ' error pages and cut-off downloads aren't JSON
+    first = Left(t, 1)
+    last = Right(t, 1)
+    if not ((first = "{" and last = "}") or (first = "[" and last = "]")) then return invalid
     return ParseJson(t)
 end function
 
@@ -361,39 +368,32 @@ end function
 
 ' ESPN schedule -> [{start, state, home, opp, network, tbd, won, my, their}]
 function normEspn(j as dynamic, team as object) as dynamic
-    if j = invalid or j.events = invalid then return invalid
+    if type(aaOf(j).events) <> "roArray" then return invalid
     out = []
     for each ev in j.events
-        comp = ev.competitions[0]
+        ev = aaOf(ev)
+        comp = aaOf(arrAt(ev.competitions, 0))
         mine = invalid
         other = invalid
-        for each c in comp.competitors
-            if c.team.id = team.id then mine = c else other = c
+        for each c in arrOf(comp.competitors)
+            c = aaOf(c)
+            if aaOf(c.team).id = team.id then mine = c else other = c
         end for
-        if mine <> invalid and other <> invalid
-            opp = other.team.shortDisplayName
-            if opp = invalid then opp = other.team.displayName
+        if mine <> invalid and other <> invalid and isText(ev.date)
+            opp = aaOf(other.team).shortDisplayName
+            if not isText(opp) then opp = strOrEmpty(aaOf(other.team).displayName)
             network = ""
-            if comp.broadcasts <> invalid
-                for each b in comp.broadcasts
-                    if b.media <> invalid and b.media.shortName <> invalid
-                        if network <> "" then network = network + ", "
-                        network = network + b.media.shortName
-                    end if
-                end for
-            end if
-            won = false
-            if mine.winner <> invalid
-                if mine.winner = true then won = true
-            end if
-            tbd = false
-            if comp.timeValid <> invalid
-                if comp.timeValid = false then tbd = true
-            end if
-            status = ""
-            if comp.status.type.shortDetail <> invalid then status = comp.status.type.shortDetail
-            out.Push({start: tUtcIsoToWall(ev.date), state: comp.status.type.state, home: (mine.homeAway = "home"),
-                      opp: opp, network: network, tbd: tbd, won: won, my: scoreOf(mine), their: scoreOf(other), status: status})
+            for each b in arrOf(comp.broadcasts)
+                name = aaOf(aaOf(b).media).shortName
+                if isText(name)
+                    if network <> "" then network = network + ", "
+                    network = network + name
+                end if
+            end for
+            st = aaOf(aaOf(comp.status).type)
+            out.Push({start: tUtcIsoToWall(ev.date), state: strOrEmpty(st.state), home: (mine.homeAway = "home"),
+                      opp: opp, network: network, tbd: isFalse(comp.timeValid), won: isTrue(mine.winner),
+                      my: scoreOf(mine), their: scoreOf(other), status: strOrEmpty(st.shortDetail)})
         end if
     end for
     return out
@@ -499,6 +499,8 @@ function derive(cfg as object) as object
     utc = tNowUtc()
     d.moon = moonPhase(utc - utc mod 3600) ' hourly, so the data doesn't change every minute
     d.shower = nextShower(today, 14)
+    d.dst = invalid
+    if observesDst(d.place.timezone) then d.dst = dstChange(today, 3)
     d.radarTimes = fresh("radar")
     if d.radarTimes = invalid then d.radarTimes = []
     d.rainSoon = rainSoon(d.weather, now)
@@ -541,46 +543,55 @@ function asOfTimes() as object
     return out
 end function
 
-function normWeather(j as dynamic) as object
-    if j = invalid or j.daily = invalid then return invalid
+function normWeather(j as dynamic) as dynamic
+    dl = aaOf(aaOf(j).daily)
     days = []
-    for i = 0 to j.daily.time.Count() - 1
-        days.Push({day: tLocalIsoToWall(j.daily.time[i]), code: j.daily.weather_code[i],
-                   hi: Int(j.daily.temperature_2m_max[i] + 0.5), lo: Int(j.daily.temperature_2m_min[i] + 0.5),
-                   sunrise: tLocalIsoToWall(j.daily.sunrise[i]), sunset: tLocalIsoToWall(j.daily.sunset[i]),
-                   rain: numOr(j.daily.precipitation_probability_max[i], 0), wind: Int(j.daily.wind_speed_10m_max[i] + 0.5)})
+    times = arrOf(dl.time)
+    for i = 0 to times.Count() - 1
+        hi = numAt(dl.temperature_2m_max, i, invalid)
+        lo = numAt(dl.temperature_2m_min, i, invalid)
+        if isText(times[i]) and hi <> invalid and lo <> invalid
+            days.Push({day: tLocalIsoToWall(times[i]), code: numAt(dl.weather_code, i, 0), hi: Int(hi + 0.5), lo: Int(lo + 0.5),
+                       sunrise: textTime(arrAt(dl.sunrise, i)), sunset: textTime(arrAt(dl.sunset, i)),
+                       rain: numAt(dl.precipitation_probability_max, i, 0), wind: Int(numAt(dl.wind_speed_10m_max, i, 0) + 0.5)})
+        end if
     end for
+    if days.Count() < 7 then return invalid ' screens show a week ahead
+    hl = aaOf(j.hourly)
     hours = []
-    for i = 0 to j.hourly.time.Count() - 1
-        hours.Push({t: tLocalIsoToWall(j.hourly.time[i]), temp: Int(j.hourly.temperature_2m[i] + 0.5),
-                    code: j.hourly.weather_code[i], rain: numOr(j.hourly.precipitation_probability[i], 0),
-                    cloud: numOr(j.hourly.cloud_cover[i], 0)})
+    times = arrOf(hl.time)
+    for i = 0 to times.Count() - 1
+        temp = numAt(hl.temperature_2m, i, invalid)
+        if isText(times[i]) and temp <> invalid
+            hours.Push({t: tLocalIsoToWall(times[i]), temp: Int(temp + 0.5), code: numAt(hl.weather_code, i, 0),
+                        rain: numAt(hl.precipitation_probability, i, 0), cloud: numAt(hl.cloud_cover, i, 0)})
+        end if
     end for
-    return {temp: Int(j.current.temperature_2m + 0.5), code: j.current.weather_code, wind: Int(j.current.wind_speed_10m + 0.5),
+    cur = aaOf(j.current)
+    temp = numOf(cur.temperature_2m, invalid)
+    if temp = invalid and hours.Count() > 0 then temp = hours[0].temp
+    if temp = invalid then temp = days[0].hi
+    return {temp: Int(temp + 0.5), code: numOf(cur.weather_code, days[0].code), wind: Int(numOf(cur.wind_speed_10m, 0) + 0.5),
             days: days, hours: hours}
 end function
 
-function numOr(v as dynamic, fallback as dynamic) as dynamic
-    if v = invalid then return fallback
-    return v
-end function
-
 function normAlerts(j as dynamic) as dynamic
-    if j = invalid or j.features = invalid then return invalid
+    if type(aaOf(j).features) <> "roArray" then return invalid
     out = []
     for each f in j.features
-        ev = f.properties.event
-        level = "advisory"
-        if Instr(1, ev, "Warning") > 0
-            level = "warning"
-        else if Instr(1, ev, "Watch") > 0
-            level = "watch"
+        p = aaOf(aaOf(f).properties)
+        ev = strOrEmpty(p.event)
+        if ev <> ""
+            level = "advisory"
+            if Instr(1, ev, "Warning") > 0
+                level = "warning"
+            else if Instr(1, ev, "Watch") > 0
+                level = "watch"
+            end if
+            expires = textTime(p.expires) ' NWS gives local time with its offset
+            if isText(p.ends) then expires = textTime(p.ends)
+            out.Push({event: ev, level: level, headline: strOrEmpty(p.headline), instruction: Left(strOrEmpty(p.instruction).Replace(Chr(10), " "), 420), expires: expires})
         end if
-        p = f.properties
-        expires = 0
-        if p.expires <> invalid then expires = tLocalIsoToWall(p.expires) ' NWS gives local time with its offset
-        if p.ends <> invalid then expires = tLocalIsoToWall(p.ends)
-        out.Push({event: ev, level: level, headline: strOrEmpty(p.headline), instruction: Left(strOrEmpty(p.instruction).Replace(Chr(10), " "), 420), expires: expires})
     end for
     return out
 end function
@@ -600,11 +611,12 @@ function takeoverAlert(alerts as object, now as integer) as dynamic
 end function
 
 function normLake(j as dynamic) as dynamic
-    if j = invalid then return invalid
-    ts = j.value.timeSeries
-    if ts = invalid or ts.Count() = 0 then return invalid
-    vals = ts[0].values[0].value
-    v = vals[vals.Count() - 1]
+    ts = arrOf(aaOf(aaOf(j).value).timeSeries)
+    if ts.Count() = 0 then return invalid
+    vals = arrOf(aaOf(arrAt(aaOf(ts[0]).values, 0)).value)
+    if vals.Count() = 0 then return invalid
+    v = aaOf(vals[vals.Count() - 1])
+    if not isText(v.value) or not isText(v.dateTime) then return invalid
     return {level: Val(v.value), time: tLocalIsoToWall(v.dateTime)}
 end function
 
@@ -852,6 +864,53 @@ function birthdays(members as object, today as integer, within as integer) as ob
     return out
 end function
 
+' When rain is likely on a day, from the hourly forecast: the first run of
+' hours at 60% or more between 6 AM (or now, today) and midnight ->
+' {from, until, peak}, or invalid. A dry hour ends the run, so "until about"
+' never spans a break in the rain.
+function rainWindow(w as object, day as integer, now as integer) as dynamic
+    start = day + 6 * 3600
+    if day = tDay(now) and now - now mod 3600 > start then start = now - now mod 3600
+    out = invalid
+    for each h in w.hours
+        if h.t >= start and h.t < day + 86400
+            if h.rain >= 60
+                if out = invalid then out = {from: h.t, until: h.t + 3600, peak: h.rain, open: true}
+                if out.open
+                    out.until = h.t + 3600
+                    if h.rain > out.peak then out.peak = h.rain
+                end if
+            else if out <> invalid
+                out.open = false
+            end if
+        end if
+    end for
+    return out
+end function
+
+' "Rain likely Tuesday from about noon (65%)." Today, when it's already raining:
+' "Rain likely until about 8 PM (80%)." Without hourly data, the daily chance.
+function rainTip(w as object, day as object, now as integer, today as integer) as string
+    word = tDayWord(day.day, today)
+    if word = "Today" or word = "Tomorrow" then word = LCase(word)
+    win = rainWindow(w, tDay(day.day), now)
+    if win = invalid then return "Rain likely " + word + " (" + day.rain.ToStr() + "%)."
+    pct = " (" + win.peak.ToStr() + "%)."
+    if tDay(day.day) = today
+        if win.from <= now then return "Rain likely until about " + hourWord(win.until) + pct
+        return "Rain likely from about " + hourWord(win.from) + pct
+    end if
+    return "Rain likely " + word + " from about " + hourWord(win.from) + pct
+end function
+
+' 3 PM, noon, midnight
+function hourWord(t as integer) as string
+    h = tHour(t)
+    if h = 12 then return "noon"
+    if h = 0 then return "midnight"
+    return tClock(t).Replace(":00", "")
+end function
+
 function rainSoon(w as dynamic, now as integer) as boolean
     if w = invalid then return false
     for each h in w.hours
@@ -861,7 +920,7 @@ function rainSoon(w as dynamic, now as integer) as boolean
 end function
 
 ' Rule-based insights, most important first. Each tip has a priority p, a
-' kind (alert, curb, deadline, overlap, rain, frost, birthday, shower, lake)
+' kind (alert, curb, deadline, clocks, overlap, rain, frost, birthday, shower, lake, ...)
 ' and a ref naming what it's about, so a screen can skip tips it already shows.
 function headsUp(d as object) as object
     tips = []
@@ -914,15 +973,24 @@ function headsUp(d as object) as object
         end for
     end for
     if d.weather <> invalid
-        for i = 1 to 3
+        for i = 0 to 3
             day = d.weather.days[i]
-            if day.rain >= 60 then tips.Push({p: 5, kind: "rain", ref: tKey(day.day), t: "Rain likely " + tDayWord(day.day, today) + " (" + day.rain.ToStr() + "%)."})
-            if day.lo <= 34 then tips.Push({p: 5, kind: "frost", ref: tKey(day.day), t: "Frost possible " + tDayWord(day.day, today) + " morning (" + day.lo.ToStr() + "°). Cover tender plants."})
+            if day.rain >= 60 then tips.Push({p: 5, kind: "rain", ref: tKey(day.day), t: rainTip(d.weather, day, d.now, today)})
+            if i > 0 and day.lo <= 34 then tips.Push({p: 5, kind: "frost", ref: tKey(day.day), t: "Frost possible " + tDayWord(day.day, today) + " morning (" + day.lo.ToStr() + "°). Cover tender plants."})
         end for
     end if
     for each b in d.birthdays
         if b.days <= 14 then tips.Push({p: 6, kind: "birthday", ref: b.name + "'s birthday", t: b.name + "'s birthday is " + tDayWord(b.day, today) + "."})
     end for
+    if d.dst <> invalid
+        sunset = 0
+        if d.weather <> invalid
+            for each wd in d.weather.days
+                if tDay(wd.day) = tDay(d.dst.day) then sunset = wd.sunset
+            end for
+        end if
+        tips.Push({p: 3, kind: "clocks", ref: "clocks", t: dstTip(d.dst, today, sunset)})
+    end if
     if d.shower <> invalid and (d.shower.peak - today) \ 86400 <= 4
         tips.Push({p: 7, kind: "shower", ref: d.shower.name, t: "The " + d.shower.name + " meteor shower peaks " + tDayWord(d.shower.peak, today) + " night. Best before dawn."})
     end if
@@ -953,14 +1021,16 @@ end function
 
 ' Open-Meteo air quality -> {aqi (now), pm25, hours: [{t, aqi}]}
 function normAir(j as dynamic) as dynamic
-    if j = invalid or j.current = invalid or j.current.us_aqi = invalid then return invalid
+    aqi = numOf(aaOf(aaOf(j).current).us_aqi, invalid)
+    if aqi = invalid then return invalid
     hours = []
-    if j.hourly <> invalid and j.hourly.us_aqi <> invalid
-        for i = 0 to j.hourly.time.Count() - 1
-            if j.hourly.us_aqi[i] <> invalid then hours.Push({t: tLocalIsoToWall(j.hourly.time[i]), aqi: Int(j.hourly.us_aqi[i])})
-        end for
-    end if
-    return {aqi: Int(j.current.us_aqi), pm25: numOr(j.current.pm2_5, 0), hours: hours}
+    hl = aaOf(j.hourly)
+    times = arrOf(hl.time)
+    for i = 0 to times.Count() - 1
+        v = numAt(hl.us_aqi, i, invalid)
+        if v <> invalid and isText(times[i]) then hours.Push({t: tLocalIsoToWall(times[i]), aqi: Int(v)})
+    end for
+    return {aqi: Int(aqi), pm25: numOf(j.current.pm2_5, 0), hours: hours}
 end function
 
 ' Now, and the worst hour in the next 24 (for the heads-up).
@@ -989,27 +1059,62 @@ end function
 
 ' NHC CurrentStorms.json -> Atlantic storms [{name, kind, mph, lat, lon}]
 function normStorms(j as dynamic) as dynamic
-    if j = invalid or j.activeStorms = invalid then return invalid
+    if type(aaOf(j).activeStorms) <> "roArray" then return invalid
     kinds = {HU: "Hurricane", TS: "Tropical Storm", TD: "Tropical Depression", STS: "Subtropical Storm",
              STD: "Subtropical Depression", PTC: "Potential Tropical Cyclone", PC: "Post-tropical cyclone"}
     out = []
     for each s in j.activeStorms
-        bin = ""
-        if s.binNumber <> invalid then bin = s.binNumber
-        if Left(bin, 2) = "AT"
-            kind = kinds[s.classification]
+        s = aaOf(s)
+        lat = numOf(s.latitudeNumeric, invalid)
+        lon = numOf(s.longitudeNumeric, invalid)
+        if Left(strOrEmpty(s.binNumber), 2) = "AT" and lat <> invalid and lon <> invalid
+            kind = invalid
+            if isText(s.classification) then kind = kinds[s.classification]
             if kind = invalid then kind = "Storm"
             kt = Val(strOrEmpty(s.intensity))
-            out.Push({name: s.name, kind: kind, mph: Int(kt * 1.15078 + 0.5), lat: s.latitudeNumeric, lon: s.longitudeNumeric})
+            out.Push({name: strOrEmpty(s.name), kind: kind, mph: Int(kt * 1.15078 + 0.5), lat: lat, lon: lon})
         end if
     end for
     return out
 end function
 
 function strOrEmpty(v as dynamic) as string
-    if v = invalid then return ""
-    if type(v) = "roString" or type(v) = "String" then return v
-    return v.ToStr()
+    if isText(v) then return v
+    return ""
+end function
+
+' Type-checked access to parsed JSON: feeds can send anything, so parsers
+' read through these instead of trusting the shape.
+function aaOf(v as dynamic) as object
+    if type(v) = "roAssociativeArray" then return v
+    return {}
+end function
+
+function arrOf(v as dynamic) as object
+    if type(v) = "roArray" then return v
+    return []
+end function
+
+function arrAt(v as dynamic, i as integer) as dynamic
+    a = arrOf(v)
+    if i < a.Count() then return a[i]
+    return invalid
+end function
+
+function numOf(v as dynamic, fallback as dynamic) as dynamic
+    if v = invalid then return fallback
+    if GetInterface(v, "ifInt") <> invalid or GetInterface(v, "ifFloat") <> invalid or GetInterface(v, "ifDouble") <> invalid or GetInterface(v, "ifLongInt") <> invalid then return v
+    return fallback
+end function
+
+function numAt(v as dynamic, i as integer, fallback as dynamic) as dynamic
+    return numOf(arrAt(v, i), fallback)
+end function
+
+' A local ISO time as wall seconds, or 0 when it isn't one.
+function textTime(v as dynamic) as integer
+    if not isText(v) or Len(v) < 10 then return 0
+    return tLocalIsoToWall(v)
 end function
 
 ' Storms with their great-circle distance from home in miles, nearest first.
@@ -1169,6 +1274,7 @@ function downloadWallpaper(url as string, path as string) as string
     code = ut.GetToFile(tmp)
     fs = CreateObject("roFileSystem")
     st = fs.Stat(tmp)
+    if st <> invalid then m.bytesTotal = m.bytesTotal + st.size
     if code = 200 and st <> invalid and st.size > 20000 and fs.Rename(tmp, path) then return ""
     fs.Delete(tmp)
     err = "HTTP " + code.ToStr()

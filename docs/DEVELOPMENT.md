@@ -15,7 +15,7 @@ Node 20 or newer is required. The test runners and the build use `node_modules/.
 | Command | What it covers | Network |
 |---|---|---|
 | `daybreak/tests/run.sh` | Library: curbside rules (2026 verified, 2027 provisional), dates, moon and showers, iCal with RRULE and EXDATE | No |
-| `daybreak/tests/run_data.sh` | `derive()` and every screen against the synthetic feeds in `tests/fixtures/feeds/`, with the clock pinned to Sunday 2026-10-18 10:00 AM | No |
+| `daybreak/tests/run_data.sh` | `derive()` and every screen against the synthetic feeds in `tests/fixtures/feeds/`, with the clock pinned to Sunday 2026-10-18 10:00 AM, plus `test_robust`: every parser against malformed, partial and wrongly typed responses | No |
 | `daybreak/tests/run_live.sh` | Smoke run against today's real feeds. Fetch them first with `fetch_fixtures.sh` | Yes |
 | `.venv/bin/python daybreak/build_channel.py --check` | BrighterScript type and scope check | No |
 | `daybreak/preview/preview.sh <dir> --audit` | Renders every screen from the TV code, and flags text under 24 px or below WCAG contrast. Run `build_channel.py --assets` (or a full build) first | No (the radar base map is fetched once) |

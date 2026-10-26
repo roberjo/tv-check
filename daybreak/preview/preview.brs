@@ -51,6 +51,18 @@ sub Main()
     print "SCENE|overlay|settings|"; FormatJson(dumpNode(buildMenu(menu)))
     print "SCENE|overlay|diagnostics|"; FormatJson(dumpNode(buildDiagnostics(sampleDiagnostics())))
     print "SCENE|overlay|hint|"; FormatJson(dumpNode(buildHint()))
+    live = {samples: {mem: [], limit: [], lag: [], traffic: []}, bandwidthKbps: 87400}
+    for i = 0 to 35
+        live.samples.mem.Push(150000 - i * 120 - (i mod 5) * 300)
+        live.samples.limit.Push(36 + (i mod 7) \ 3)
+        lagMs = 6 + (i * 37) mod 40
+        if i = 20 then lagMs = lagMs + 180 ' a busy moment
+        live.samples.lag.Push(lagMs)
+        bytes = 0
+        if i mod 6 = 0 then bytes = 40000 + i * 900 ' the data task fetches once a minute
+        live.samples.traffic.Push(bytes)
+    end for
+    print "SCENE|overlay|live|"; FormatJson(dumpNode(buildLiveGraphs(live)))
     m.testNowWall = base.wall
     loading = buildLoading(base.wall, "Getting today's weather, calendar and games...")
     updateClock()
