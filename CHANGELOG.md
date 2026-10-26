@@ -4,6 +4,11 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-10-26
+
+### Fixed
+- **The Settings menu could lose its focus.** "Show hidden photos" removes itself from the page when chosen, which left the focus one past the last entry, and pressing OK again there could end the app. The focus now moves to the last entry. Found while testing 1.11.0 on the TV (#74).
+
 ## [1.11.0] - 2026-10-26
 
 ### Added
@@ -236,7 +241,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.11.1...HEAD
+[1.11.1]: https://github.com/roberjo/tv-check/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/roberjo/tv-check/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/roberjo/tv-check/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/roberjo/tv-check/compare/v1.8.0...v1.9.0
