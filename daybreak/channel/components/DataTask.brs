@@ -864,17 +864,25 @@ function birthdays(members as object, today as integer, within as integer) as ob
     return out
 end function
 
-' When rain is likely on a day, from the hourly forecast: hours from 6 AM to
-' midnight (from now, today) at 60% or more -> {from, until, peak}, or invalid.
+' When rain is likely on a day, from the hourly forecast: the first run of
+' hours at 60% or more between 6 AM (or now, today) and midnight ->
+' {from, until, peak}, or invalid. A dry hour ends the run, so "until about"
+' never spans a break in the rain.
 function rainWindow(w as object, day as integer, now as integer) as dynamic
     start = day + 6 * 3600
     if day = tDay(now) and now - now mod 3600 > start then start = now - now mod 3600
     out = invalid
     for each h in w.hours
-        if h.t >= start and h.t < day + 86400 and h.rain >= 60
-            if out = invalid then out = {from: h.t, until: h.t + 3600, peak: h.rain}
-            out.until = h.t + 3600
-            if h.rain > out.peak then out.peak = h.rain
+        if h.t >= start and h.t < day + 86400
+            if h.rain >= 60
+                if out = invalid then out = {from: h.t, until: h.t + 3600, peak: h.rain, open: true}
+                if out.open
+                    out.until = h.t + 3600
+                    if h.rain > out.peak then out.peak = h.rain
+                end if
+            else if out <> invalid
+                out.open = false
+            end if
         end if
     end for
     return out

@@ -168,6 +168,8 @@ sub Main()
     check("rain later today", rainTip(wx, {day: day0, rain: 85}, day0 + 10 * 3600, day0), "Rain likely from about 3 PM (85%).")
     check("rain now", rainTip(wx, {day: day0, rain: 85}, day0 + 16 * 3600 + 600, day0), "Rain likely until about 8 PM (85%).")
     check("rain tomorrow", rainTip(wx, {day: day0 + 86400, rain: 65}, day0 + 10 * 3600, day0), "Rain likely tomorrow from about 8 AM (65%).")
+    wx.hours[21].rain = 75 ' a second shower at 9 PM, after a dry 8 PM
+    check("a dry hour ends the window", rainTip(wx, {day: day0, rain: 85}, day0 + 16 * 3600 + 600, day0), "Rain likely until about 8 PM (85%).")
     check("no hourly: the daily chance", rainTip({hours: []}, {day: day0 + 2 * 86400, rain: 60}, day0, day0), "Rain likely Tuesday (60%).")
     ' clock change: Thursday Oct 29, three days before clocks fall back (the feeds are stale by then, so no sunset)
     m.testNowUtc = m.testNowUtc + 11 * 86400
