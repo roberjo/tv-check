@@ -15,7 +15,7 @@ C=$DIR/channel/components
 "$DIR/../.venv/bin/python" "$DIR/preview/font_metrics.py" "$FIXTURES/font_metrics.json"
 DRIVER=$DIR/preview/preview.brs
 cp "$DIR/wallpapers/catalog.json" "$FIXTURES/wallpaper_catalog.json"
-shift 2>/dev/null || true
+[ $# -gt 0 ] && shift  # drop out-dir; the rest goes to render.py
 if [ "$1" = "--wallpapers" ]; then
   # every catalog photo behind every screen it could appear on; $2 = JSON report
   DRIVER=$DIR/preview/wallpapers.brs
