@@ -4,6 +4,18 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-25
+
+### Added
+- **Seasonal, time-aware wallpapers** (#68):
+  - **Seasons:** photos are tagged with the seasons they suit, such as dogwoods in spring and autumn color in fall, and are preferred then.
+  - **Night:** night skylines appear only behind Tonight.
+  - **No repeats:** a screen never shows the same photo two days running. A year's simulation with the real catalog had one repeat, at a season change, and used all 36 photos.
+- **`scripts/tv_monitor.py`** (#69): live terminal graphs of Daybreak's real CPU and memory and the TV's free memory, from the read-only debug-console commands `chanperf` and `free`, with optional CSV. Roku gives apps no CPU reading, so this is where the true numbers are.
+
+### Fixed
+- **Wallpaper crops:** Bellevue, LaGrange City Hall and the Coweta County Courthouse are re-cropped with the crop focus set in 1.8.0, so their tops aren't clipped, and they pass the audit again.
+
 ## [1.9.0] - 2026-10-25
 
 ### Added
@@ -212,7 +224,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/roberjo/tv-check/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/roberjo/tv-check/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/roberjo/tv-check/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/roberjo/tv-check/compare/v1.7.1...v1.7.2

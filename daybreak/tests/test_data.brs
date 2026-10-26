@@ -187,7 +187,7 @@ sub Main()
     for each ph in wp
         ids.Push(ph.id)
     end for
-    check("wallpaper catalog keeps safe entries", ids.Join(","), "lake-one,town-one,park-one,lake-two,dim-only")
+    check("wallpaper catalog keeps safe entries", ids.Join(","), "lake-one,town-one,park-one,lake-two,dim-only,night-one,spring-one,fall-one")
     rulesKept = true
     ambient = {}
     for day = 0 to 13
@@ -201,9 +201,27 @@ sub Main()
     end for
     check("wallpaper picks follow the audit, lake photos on the lake screen", rulesKept, true)
     check("ambient photo changes from day to day", ambient.Count() >= 2, true)
+    ' seasons, night photos, no repeats (Oct 18 is fall: spring-one never shows, fall-one does)
+    seen = {}
+    repeats = 0
+    nightElsewhere = false
+    prev = invalid
+    for day = 0 to 59
+        picks = wallpaperPicks(wp, m.testNowWall - m.testNowWall mod 86400 + day * 86400)
+        for each sc in picks
+            if day < 30 then seen[picks[sc].id] = true ' October and November
+            if sc <> "tonight" and hasItem(picks[sc].tags, "night") then nightElsewhere = true
+            if prev <> invalid and prev[sc] <> invalid and prev[sc].id = picks[sc].id and sc <> "tonight" then repeats = repeats + 1
+        end for
+        prev = picks
+    end for
+    check("fall photos in the fall, not spring ones", seen.DoesExist("fall-one") and not seen.DoesExist("spring-one"), true)
+    check("night photos only behind Tonight", nightElsewhere, false)
+    check("no screen repeats yesterday's photo", repeats, 0)
+    check("seasons by month", seasonOf(4) + " " + seasonOf(7) + " " + seasonOf(10) + " " + seasonOf(1), "spring summer fall winter")
     d7 = derive(cfg)
     check("no wallpaper before it's downloaded", d7.wallpapers.Count(), 0)
-    m.testWallpapers = {"lake-one": true, "town-one": true, "park-one": true, "lake-two": true, "dim-only": true}
+    m.testWallpapers = {"lake-one": true, "town-one": true, "park-one": true, "lake-two": true, "dim-only": true, "night-one": true, "spring-one": true, "fall-one": true}
     d7 = derive(cfg)
     lk = d7.wallpapers.lake
     check("downloaded wallpapers reach the screens", d7.wallpapers.Count().ToStr() + " " + Left(lk.uri, 12) + " " + lk.credit, "9 cachefs:/wp- Test Photographer · CC0")

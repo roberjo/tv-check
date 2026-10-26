@@ -40,7 +40,7 @@ Each runner exits non-zero on a failed check, a BrightScript runtime error, or a
   - fetches the author and license from Commons
   - crops to 1920×1080 and writes `img/`, `catalog.json` and `CREDITS.md`
   - records the screens where every label passes the contrast audit
-- **Tags:** `lake` photos can go on the Lake screen.
+- **Tags:** `lake` photos can go on the Lake screen; `night` photos go only behind Tonight. `seasons` (any of spring, summer, fall, winter; default all) says when a photo fits, so dogwoods show in spring and autumn color in the fall.
 - **On the TV:** the TV reads the catalog from `main`, so a merged photo reaches every TV within a day, with no reinstall. To try a branch first, build with `DAYBREAK_WALLPAPERS=https://raw.githubusercontent.com/roberjo/tv-check/<branch>/daybreak/wallpapers/`.
 
 ## Build
@@ -61,6 +61,7 @@ The script refuses while the media player is active or another app is open (the 
 ```sh
 python3 scripts/screenshot.py week     # captures/screens/week.jpg (gitignored: screens show family details)
 python3 scripts/console.py $ROKU_IP chanperf r2d2_bitmaps "sgnodes all"   # read-only memory readings
+python3 scripts/tv_monitor.py --csv tv.csv   # live CPU and memory graphs in the terminal (read-only)
 ```
 The screenshot comes from the dev installer and changes nothing on screen, but it only works while Daybreak is in front. Launch timing is on the dev console (port 8085, one connection at a time): look for `Daybreak: first screen after` and `AppLaunchComplete`.
 

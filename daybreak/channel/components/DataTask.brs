@@ -1148,7 +1148,7 @@ end function
 ' repo): the TV fetches it daily, picks a photo per screen per day, and
 ' downloads today's and tomorrow's picks into cachefs: in the background.
 
-' Catalog -> [{id, file, place, credit, tags, screens}]. Ids become file names
+' Catalog -> [{id, file, place, credit, tags, screens, seasons}]. Ids become file names
 ' on the TV, so only lowercase letters, digits and dashes pass.
 function normWallpapers(j as dynamic) as dynamic
     if j = invalid or type(j.photos) <> "roArray" then return invalid
@@ -1159,7 +1159,7 @@ function normWallpapers(j as dynamic) as dynamic
         if out.Count() < 100 and type(p) = "roAssociativeArray" and isText(p.id) and isText(p.file)
             if safeId.IsMatch(p.id) and safeFile.IsMatch(p.file) and type(p.screens) = "roArray"
                 out.Push({id: p.id, file: p.file, place: Left(strOrEmpty(p.place), 60), credit: Left(strOrEmpty(p.credit), 80),
-                          tags: textList(p.tags), screens: textList(p.screens)})
+                          tags: textList(p.tags), screens: textList(p.screens), seasons: textList(p.seasons)})
             end if
         end if
     end for
@@ -1192,34 +1192,64 @@ function wallpaperScreens() as object
     return ["ambient", "briefing", "season", "tonight", "week", "recap", "lake", "school", "board"]
 end function
 
-' A photo for each screen on this day: different photos on different screens,
-' changing daily. A photo only goes behind screens it passed the contrast
-' audit on (its screens list), and the lake screen takes lake photos.
+' A photo for each screen on this day: different photos on different screens
+' where there are enough, changing daily, and never yesterday's photo on the
+' same screen. That last needs no history: even days pick from the even
+' positions of a screen's candidate list and odd days from the odd ones, so
+' consecutive days draw from different photos.
+'
+' Candidates for a screen passed the contrast audit there (screens); lake
+' photos alone go on the Lake screen, night photos only on Tonight (which
+' prefers them), and photos suited to the season (seasons; none = any) come
+' first.
 function wallpaperPicks(photos as dynamic, day as integer) as object
     picks = {}
     if photos = invalid then return picks
+    season = seasonOf(tParts(day).m)
     used = {}
     n = day \ 86400
     screens = wallpaperScreens()
     for si = 0 to screens.Count() - 1
         sc = screens[si]
-        cands = []
+        all = []
+        fit = []
+        night = []
         for each p in photos
-            if hasItem(p.screens, sc) and (sc <> "lake" or hasItem(p.tags, "lake")) then cands.Push(p)
+            ok = hasItem(p.screens, sc) and (sc <> "lake" or hasItem(p.tags, "lake"))
+            if hasItem(p.tags, "night") and sc <> "tonight" then ok = false
+            if ok
+                all.Push(p)
+                if p.seasons.Count() = 0 or hasItem(p.seasons, season) then fit.Push(p)
+                if hasItem(p.tags, "night") then night.Push(p)
+            end if
         end for
-        if cands.Count() > 0
-            start = (n * 7 + si * 5) mod cands.Count()
+        cands = fit
+        if night.Count() > 0 then cands = night
+        if cands.Count() = 0 then cands = all
+        half = []
+        for k = 0 to cands.Count() - 1
+            if k mod 2 = n mod 2 or cands.Count() = 1 then half.Push(cands[k])
+        end for
+        if half.Count() > 0
+            start = ((n \ 2) * 7 + si * 5) mod half.Count()
             pick = invalid
-            for k = 0 to cands.Count() - 1
-                c = cands[(start + k) mod cands.Count()]
+            for k = 0 to half.Count() - 1
+                c = half[(start + k) mod half.Count()]
                 if pick = invalid and not used.DoesExist(c.id) then pick = c
             end for
-            if pick = invalid then pick = cands[start] ' fewer photos than screens: repeat one
+            if pick = invalid then pick = half[start] ' all taken today: share one rather than repeat yesterday's
             used[pick.id] = true
             picks[sc] = pick
         end if
     end for
     return picks
+end function
+
+function seasonOf(month as integer) as string
+    if month >= 3 and month <= 5 then return "spring"
+    if month >= 6 and month <= 8 then return "summer"
+    if month >= 9 and month <= 11 then return "fall"
+    return "winter"
 end function
 
 function wallpaperPath(id as string) as string

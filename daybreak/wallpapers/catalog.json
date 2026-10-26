@@ -10,6 +10,12 @@
    "tags": [
     "town"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Rivers Langley; SaveRivers · CC BY-SA 3.0",
    "author": "Rivers Langley; SaveRivers",
    "license": "CC BY-SA 3.0",
@@ -32,6 +38,12 @@
    "area": "LaGrange",
    "tags": [
     "town"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
    ],
    "credit": "Rivers Langley; SaveRivers · CC BY-SA 3.0",
    "author": "Rivers Langley; SaveRivers",
@@ -56,6 +68,12 @@
    "tags": [
     "town"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Rivers Langley; SaveRivers · CC BY-SA 3.0",
    "author": "Rivers Langley; SaveRivers",
    "license": "CC BY-SA 3.0",
@@ -78,6 +96,10 @@
    "area": "LaGrange",
    "tags": [
     "town"
+   ],
+   "seasons": [
+    "spring",
+    "summer"
    ],
    "credit": "Rivers Langley; SaveRivers · CC BY-SA 3.0",
    "author": "Rivers Langley; SaveRivers",
@@ -103,6 +125,12 @@
     "lake",
     "nature"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Phil Horton · CC BY 2.0",
    "author": "Phil Horton",
    "license": "CC BY 2.0",
@@ -126,6 +154,12 @@
    "area": "West Point Lake",
    "tags": [
     "lake"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
    ],
    "credit": "Mccunicano · CC BY-SA 4.0",
    "author": "Mccunicano",
@@ -152,6 +186,10 @@
     "lake",
     "nature"
    ],
+   "seasons": [
+    "spring",
+    "summer"
+   ],
    "credit": "Rivers Langley; SaveRivers · CC BY-SA 3.0",
    "author": "Rivers Langley; SaveRivers",
    "license": "CC BY-SA 3.0",
@@ -176,6 +214,12 @@
    "tags": [
     "town"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Perry Jennings · CC BY-SA 4.0",
    "author": "Perry Jennings",
    "license": "CC BY-SA 4.0",
@@ -198,6 +242,11 @@
    "area": "Columbus",
    "tags": [
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
    ],
    "credit": "Mccunicano · CC BY-SA 4.0",
    "author": "Mccunicano",
@@ -222,6 +271,12 @@
    "tags": [
     "nature"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Mccunicano · CC BY-SA 4.0",
    "author": "Mccunicano",
    "license": "CC BY-SA 4.0",
@@ -244,6 +299,12 @@
    "area": "Columbus",
    "tags": [
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
    ],
    "credit": "Grant Gould · CC BY 3.0",
    "author": "Grant Gould",
@@ -269,6 +330,9 @@
     "town",
     "nature"
    ],
+   "seasons": [
+    "spring"
+   ],
    "credit": "PTCdude · CC BY-SA 4.0",
    "author": "PTCdude",
    "license": "CC BY-SA 4.0",
@@ -292,6 +356,12 @@
    "tags": [
     "lake",
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
    ],
    "credit": "Tksewell87 · CC BY-SA 4.0",
    "author": "Tksewell87",
@@ -317,6 +387,12 @@
    "tags": [
     "town"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Connor.carey · CC BY-SA 3.0",
    "author": "Connor.carey",
    "license": "CC BY-SA 3.0",
@@ -339,6 +415,10 @@
    "area": "Pine Mountain",
    "tags": [
     "nature"
+   ],
+   "seasons": [
+    "fall",
+    "winter"
    ],
    "credit": "Dsdugan · CC0",
    "author": "Dsdugan",
@@ -363,6 +443,10 @@
    "tags": [
     "nature"
    ],
+   "seasons": [
+    "fall",
+    "winter"
+   ],
    "credit": "Dsdugan · CC0",
    "author": "Dsdugan",
    "license": "CC0",
@@ -385,6 +469,10 @@
    "area": "Pine Mountain",
    "tags": [
     "nature"
+   ],
+   "seasons": [
+    "fall",
+    "winter"
    ],
    "credit": "Dsdugan · CC0",
    "author": "Dsdugan",
@@ -409,6 +497,10 @@
    "tags": [
     "nature"
    ],
+   "seasons": [
+    "fall",
+    "winter"
+   ],
    "credit": "Dsdugan · CC0",
    "author": "Dsdugan",
    "license": "CC0",
@@ -431,6 +523,10 @@
    "area": "Pine Mountain",
    "tags": [
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer"
    ],
    "credit": "Dsdugan · CC0",
    "author": "Dsdugan",
@@ -455,6 +551,10 @@
    "tags": [
     "nature"
    ],
+   "seasons": [
+    "fall",
+    "winter"
+   ],
    "credit": "Thomsonmg2000 · CC0",
    "author": "Thomsonmg2000",
    "license": "CC0",
@@ -477,6 +577,10 @@
    "area": "Pine Mountain",
    "tags": [
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer"
    ],
    "credit": "Dsdugan · CC BY-SA 4.0",
    "author": "Dsdugan",
@@ -501,6 +605,12 @@
    "tags": [
     "lake",
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
    ],
    "credit": "David Dugan · CC BY-SA 3.0",
    "author": "David Dugan",
@@ -527,6 +637,11 @@
     "lake",
     "nature"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
+   ],
    "credit": "David Dugan · CC BY-SA 3.0",
    "author": "David Dugan",
    "license": "CC BY-SA 3.0",
@@ -551,6 +666,11 @@
    "tags": [
     "lake",
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
    ],
    "credit": "David Dugan · CC BY-SA 3.0",
    "author": "David Dugan",
@@ -577,6 +697,9 @@
     "lake",
     "nature"
    ],
+   "seasons": [
+    "winter"
+   ],
    "credit": "David Dugan · CC BY-SA 3.0",
    "author": "David Dugan",
    "license": "CC BY-SA 3.0",
@@ -600,6 +723,10 @@
    "area": "Pine Mountain",
    "tags": [
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer"
    ],
    "credit": "Dsdugan · CC0",
    "author": "Dsdugan",
@@ -625,6 +752,11 @@
     "town",
     "nature"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
+   ],
    "credit": "Atlantacitizen · Public domain",
    "author": "Atlantacitizen",
    "license": "Public domain",
@@ -649,6 +781,9 @@
     "town",
     "nature"
    ],
+   "seasons": [
+    "spring"
+   ],
    "credit": "Goingstuckey · CC BY-SA 3.0",
    "author": "Goingstuckey",
    "license": "CC BY-SA 3.0",
@@ -671,6 +806,11 @@
    "area": "Atlanta",
    "tags": [
     "town"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
    ],
    "credit": "Jami430 · CC BY-SA 4.0",
    "author": "Jami430",
@@ -695,6 +835,9 @@
    "tags": [
     "nature"
    ],
+   "seasons": [
+    "fall"
+   ],
    "credit": "Mike Gonzalez (TheCoffee) · CC BY-SA 4.0",
    "author": "Mike Gonzalez (TheCoffee)",
    "license": "CC BY-SA 4.0",
@@ -717,6 +860,12 @@
    "area": "Atlanta",
    "tags": [
     "town"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
    ],
    "credit": "Atlantacitizen · CC BY-SA 3.0",
    "author": "Atlantacitizen",
@@ -741,6 +890,12 @@
    "tags": [
     "town"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Jud McCranie · CC BY-SA 4.0",
    "author": "Jud McCranie",
    "license": "CC BY-SA 4.0",
@@ -763,6 +918,12 @@
    "area": "Atlanta",
    "tags": [
     "town"
+   ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
    ],
    "credit": "AtlChampion · CC BY-SA 4.0",
    "author": "AtlChampion",
@@ -788,6 +949,12 @@
     "town",
     "night"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Evilarry · CC BY-SA 3.0",
    "author": "Evilarry",
    "license": "CC BY-SA 3.0",
@@ -812,6 +979,12 @@
     "town",
     "night"
    ],
+   "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+   ],
    "credit": "Joey Kyber jtkyber1 · CC0",
    "author": "Joey Kyber jtkyber1",
    "license": "CC0",
@@ -835,6 +1008,10 @@
    "tags": [
     "town",
     "nature"
+   ],
+   "seasons": [
+    "spring",
+    "summer"
    ],
    "credit": "AtlChampion · CC BY-SA 4.0",
    "author": "AtlChampion",

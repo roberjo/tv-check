@@ -1,5 +1,5 @@
 {
- "about": "Wallpaper sources: Wikimedia Commons files, chosen by hand. build.py fetches each one's license and author, crops it to 1920x1080 and writes img/, catalog.json and CREDITS.md. focus is where to crop vertically (0 top, 1 bottom).",
+ "about": "Wallpaper sources: Wikimedia Commons files, chosen by hand. build.py fetches each one's license and author, crops it to 1920x1080 and writes img/, catalog.json and CREDITS.md. focus is where to crop vertically (0 top, 1 bottom). seasons (optional) are the seasons a photo suits; tags: lake (Lake screen), night (Tonight only).",
  "photos": [
   {
    "id": "bellevue-lagrange",
@@ -39,7 +39,11 @@
    "tags": [
     "town"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer"
+   ]
   },
   {
    "id": "west-point-lake-egrets",
@@ -71,7 +75,11 @@
     "lake",
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer"
+   ]
   },
   {
    "id": "newnan-carnegie-library",
@@ -91,7 +99,12 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
+   ]
   },
   {
    "id": "columbus-oglethorpe-bridge",
@@ -122,7 +135,10 @@
     "town",
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring"
+   ]
   },
   {
    "id": "ptc-lake-kedron",
@@ -153,7 +169,11 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "fall",
+    "winter"
+   ]
   },
   {
    "id": "fdr-park-stone-house",
@@ -163,7 +183,11 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "fall",
+    "winter"
+   ]
   },
   {
    "id": "dowdells-knob-dawn",
@@ -173,7 +197,11 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "fall",
+    "winter"
+   ]
   },
   {
    "id": "fdr-park-sunset",
@@ -183,7 +211,11 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "fall",
+    "winter"
+   ]
   },
   {
    "id": "dowdells-knob-2",
@@ -193,7 +225,11 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer"
+   ]
   },
   {
    "id": "dowdells-knob-3",
@@ -203,7 +239,11 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "fall",
+    "winter"
+   ]
   },
   {
    "id": "callaway-gazebo",
@@ -213,7 +253,11 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer"
+   ]
   },
   {
    "id": "callaway-robin-lake",
@@ -235,7 +279,12 @@
     "lake",
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
+   ]
   },
   {
    "id": "callaway-mountain-creek-1",
@@ -246,7 +295,12 @@
     "lake",
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
+   ]
   },
   {
    "id": "callaway-mountain-creek-2",
@@ -257,7 +311,10 @@
     "lake",
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "winter"
+   ]
   },
   {
    "id": "callaway-pavilion",
@@ -267,7 +324,11 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer"
+   ]
   },
   {
    "id": "piedmont-park-midtown",
@@ -278,7 +339,12 @@
     "town",
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
+   ]
   },
   {
    "id": "piedmont-park-spring",
@@ -289,7 +355,10 @@
     "town",
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring"
+   ]
   },
   {
    "id": "piedmont-park-skyline",
@@ -299,7 +368,12 @@
    "tags": [
     "town"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer",
+    "fall"
+   ]
   },
   {
    "id": "piedmont-park-autumn",
@@ -309,7 +383,10 @@
    "tags": [
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "fall"
+   ]
   },
   {
    "id": "midtown-atlanta",
@@ -372,7 +449,11 @@
     "town",
     "nature"
    ],
-   "focus": 0.5
+   "focus": 0.5,
+   "seasons": [
+    "spring",
+    "summer"
+   ]
   }
  ]
 }

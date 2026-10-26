@@ -57,6 +57,9 @@ def wallpapers():
         photo("park-one", "Test Park", ["nature"], every),
         photo("lake-two", "Other Lake", ["lake"], ["lake", "week"]),
         photo("dim-only", "Bright Field", ["nature"], ["week"]),
+        photo("night-one", "Night Skyline", ["town", "night"], every),
+        dict(photo("spring-one", "Spring Blossoms", ["nature"], every), seasons=["spring"]),
+        dict(photo("fall-one", "Fall Color", ["nature"], every), seasons=["fall"]),
         {"id": "../escape", "file": "img/escape.jpg", "screens": every},
         {"id": "bad-file", "file": "../../etc/x.jpg", "screens": every},
         {"id": "no-screens", "file": "img/no-screens.jpg"}]}
