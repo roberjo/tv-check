@@ -21,7 +21,14 @@ sub runLoop()
     m.bytesTotal = 0 ' downloaded this session, for the network graph
     m.warm = loadCache()
     if m.warm then seedHealth()
-    publish(cfg) ' warm start: show the saved data right away
+    ' warm start: show the saved data right away. Saved data can come from an
+    ' older version, so this is guarded like the loop: a crash here would
+    ' otherwise end the task and leave the loading screen up for good.
+    try
+        publish(cfg)
+    catch e
+        print "Daybreak warm-start error: "; e.message
+    end try
     port = CreateObject("roMessagePort")
     while true
         ' One bad feed or parse must never stop the updates: log and carry on.
@@ -1180,8 +1187,8 @@ function textList(v as dynamic) as object
     return out
 end function
 
-function hasItem(list as object, v as string) as boolean
-    for each x in list
+function hasItem(list as dynamic, v as string) as boolean
+    for each x in arrOf(list)
         if x = v then return true
     end for
     return false
@@ -1219,7 +1226,7 @@ function wallpaperPicks(photos as dynamic, day as integer) as object
             if hasItem(p.tags, "night") and sc <> "tonight" then ok = false
             if ok
                 all.Push(p)
-                if p.seasons.Count() = 0 or hasItem(p.seasons, season) then fit.Push(p)
+                if arrOf(p.seasons).Count() = 0 or hasItem(p.seasons, season) then fit.Push(p) ' saved catalogs before 1.10 have no seasons
                 if hasItem(p.tags, "night") then night.Push(p)
             end if
         end for

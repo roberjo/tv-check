@@ -14,6 +14,9 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 - **`scripts/tv_monitor.py`** (#69): live terminal graphs of Daybreak's real CPU and memory and the TV's free memory, from the read-only debug-console commands `chanperf` and `free`, with optional CSV. Roku gives apps no CPU reading, so this is where the true numbers are.
 
 ### Fixed
+- **A crash at start-up could leave the loading screen up for good.**
+  - **Cause:** the warm-start publish was the one data-task call outside try/catch, and saved data from an older version (a wallpaper catalog without `seasons`) crashed it.
+  - **Fix:** it's now guarded, and the pickers accept catalogs without `seasons`. Found while testing this release on the TV; it never shipped.
 - **Wallpaper crops:** Bellevue, LaGrange City Hall and the Coweta County Courthouse are re-cropped with the crop focus set in 1.8.0, so their tops aren't clipped, and they pass the audit again.
 
 ## [1.9.0] - 2026-10-25
