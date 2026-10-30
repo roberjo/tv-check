@@ -4,6 +4,18 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-30
+
+### Added
+- **Weather at outdoor games** (#76):
+  - **Where it shows:** Game day shows the stadium's forecast at game time ("Game time: 53°, light rain, 70% chance of rain"). Weekend adds the temperature and rain chance to the game's row. A heads-up tip warns of a 60% or higher chance of rain at game time within 2 days.
+  - **How:** ESPN's schedule gives the venue and its ZIP code. Each new ZIP is geocoded once with Open-Meteo, and each outdoor venue with a game in the next 7 days gets an hourly forecast.
+  - **Which games:** football, baseball and soccer only. Stadiums with a roof, such as Mercedes-Benz Stadium, get no forecast.
+  - **Diagnostics:** a new "Game weather" row, which says "no outdoor games this week" when nothing needs a forecast.
+
+### Fixed
+- **`fmt1` with negative numbers** (#77): -87.65 became "-88.3", because `Int` rounds down. Nothing on screen used negative values yet, but the venue coordinates are negative.
+
 ## [1.11.1] - 2026-10-26
 
 ### Fixed
@@ -241,7 +253,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.11.1...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/roberjo/tv-check/compare/v1.11.1...v1.12.0
 [1.11.1]: https://github.com/roberjo/tv-check/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/roberjo/tv-check/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/roberjo/tv-check/compare/v1.9.0...v1.10.0

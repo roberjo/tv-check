@@ -48,6 +48,10 @@ sub Main()
     fri.now = fri.today + 86400 + 19 * 3600
     fri.today = fri.today + 86400
     check("saturday evening: the week instead", chooseScreens(fri, "app").Join(",").Instr("weekend") < 0, true)
+    ' weather at outdoor games
+    check("game day: weather at game time", labelTexts(buildScreen("gameday", d)).DoesExist("Game time: 53°, light rain, 70% chance of rain"), true)
+    texts = labelTexts(buildScreen("weekend", d))
+    check("weekend: no forecast under a roof", texts.DoesExist("Falcons vs Seahawks"), true)
     ' loading skeleton
     check("loading screen", labelTexts(buildLoading(d.now, "Getting ready...")).DoesExist("Getting ready..."), true)
     ' Briefing: calendar rows in time order, heads-up skips what the calendar shows
@@ -161,6 +165,7 @@ sub Main()
     g = buildDiagnostics(info)
     texts = labelTexts(g)
     check("diagnostics: source rows", texts.DoesExist("Family calendar") and texts.DoesExist("timed out (3x)"), true)
+    check("diagnostics: game weather row", texts.DoesExist("Game weather") and texts.DoesExist("no outdoor games this week"), true)
     check("diagnostics: memory", texts.DoesExist("142 MB") and texts.DoesExist("38%"), true)
     check("diagnostics: speed", texts.DoesExist("87.4 Mbps down · 23 ms"), true)
     check("diagnostics: wallpaper downloads", texts.DoesExist("12 of 16 photos · HTTP 404"), true)

@@ -69,7 +69,7 @@ def team(tid, name):
     return {"id": tid, "displayName": name, "shortDisplayName": name}
 
 
-def event(date_z, me, other, home, state, mine=None, theirs=None, network="", time_valid=True):
+def event(date_z, me, other, home, state, mine=None, theirs=None, network="", time_valid=True, venue=None):
     def comp(t, side, score, won):
         c = {"team": t, "homeAway": side}
         if score is not None:
@@ -84,6 +84,8 @@ def event(date_z, me, other, home, state, mine=None, theirs=None, network="", ti
         "broadcasts": [{"media": {"shortName": network}}] if network else [],
         "timeValid": time_valid,
     }
+    if venue:  # (stadium, city, state, ZIP), as ESPN's schedule gives it
+        competition["venue"] = {"fullName": venue[0], "address": {"city": venue[1], "state": venue[2], "zipCode": venue[3], "country": "USA"}}
     return {"date": date_z, "competitions": [competition]}
 
 
@@ -98,11 +100,15 @@ def espn():
         "auburn": {"events": [
             event("2026-10-10T16:00Z", au, team("145", "Ole Miss"), True, "post", 31, 17, "SECN"),
             event("2026-10-17T19:30Z", au, uga, True, "post", 20, 27, "ESPN"),
-            event("2026-10-24T16:00Z", au, team("99", "LSU"), True, "pre", time_valid=False),
+            event("2026-10-24T16:00Z", au, team("99", "LSU"), True, "pre", time_valid=False,
+                  venue=("Jordan-Hare Stadium", "Auburn", "AL", "36849")),
         ]},
         "falcons": {"events": [
             event("2026-10-11T17:00Z", team("1", "Falcons"), team("29", "Panthers"), True, "post", 17, 23, "Fox"),
-            event("2026-10-18T17:00Z", team("1", "Falcons"), team("3", "Bears"), True, "pre", network="Fox"),
+            event("2026-10-18T17:00Z", team("1", "Falcons"), team("3", "Bears"), False, "pre", network="Fox",
+                  venue=("Soldier Field", "Chicago", "IL", "60605")),
+            event("2026-10-25T17:00Z", team("1", "Falcons"), team("26", "Seahawks"), True, "pre", network="CBS",
+                  venue=("Mercedes-Benz Stadium", "Atlanta", "GA", "30313-1591")),
         ]},
         "hawks": {"events": [
             event("2026-10-21T23:30Z", team("1", "Hawks"), team("19", "Magic"), False, "pre", network="FDSSE"),
@@ -157,6 +163,22 @@ def storms():
     ]}
 
 
+def geocode():
+    """Open-Meteo's geocoder answering a ZIP search (Soldier Field's)."""
+    return {"results": [{"id": 4887398, "name": "Chicago", "latitude": 41.85003, "longitude": -87.65005, "country_code": "US",
+                         "admin1": "Illinois", "postcodes": ["60601", "60605", "60607"]}], "generationtime_ms": 0.6}
+
+
+def game_weather():
+    """Hourly forecast at Soldier Field for 8 days: rain likely around the 1 PM kickoff today."""
+    hours = [(dt.datetime.combine(DAY0, dt.time()) + dt.timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M") for h in range(8 * 24)]
+    temp = [round(48 + 6 * math.sin((h % 24 - 9) / 24 * 2 * math.pi), 1) for h in range(8 * 24)]
+    rain = [70 if 11 <= h <= 16 else 10 for h in range(8 * 24)]
+    code = [61 if 11 <= h <= 16 else 3 for h in range(8 * 24)]
+    return {"latitude": 41.85, "longitude": -87.65, "timezone": "America/New_York",
+            "hourly": {"time": hours, "temperature_2m": temp, "precipitation_probability": rain, "weather_code": code}}
+
+
 def espn_live():
     """A Braves game in progress, for the live-score tests."""
     ev = event("2026-10-18T13:20Z", team("15", "Braves"), team("21", "Mets"), True, "in", 4, 2, "TBS")
@@ -176,7 +198,7 @@ def main():
                  {"properties": {"event": "Flood Watch", "expires": "2026-10-19T08:00:00-04:00"}},
                  {"properties": {"event": "Wind Advisory", "expires": "2026-10-18T09:00:00-04:00"}}]},
              "lake.json": lake(), "air.json": air(), "nhc.json": storms(), "espn_live.json": espn_live(),
-             "wallpapers.json": wallpapers()}
+             "wallpapers.json": wallpapers(), "geo_60605.json": geocode(), "gamewx_60605.json": game_weather()}
     for key, doc in espn().items():
         files[f"espn_{key}.json"] = doc
     for name, doc in files.items():

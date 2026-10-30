@@ -22,13 +22,21 @@ Daybreak is one sideloaded Roku package with two entry points: `Main` (the app) 
 | weather (Open-Meteo) | 10 min | 3 h | days and hours with wall-clock times |
 | alerts (NWS) | 2 min | 30 min | `[{event, level}]` |
 | lake (USGS) | 30 min | 12 h | `{level, time}` |
-| sports (ESPN, 5 teams) | 15 min | 6 h | per team: `[{start, state, home, opp, network, tbd, won, my, their}]` |
+| sports (ESPN, 5 teams) | 15 min | 6 h | per team: `[{start, state, home, opp, network, tbd, won, my, their, venue, zip}]` |
 | lc (college iCal) | 30 min | 24 h | `[{title, start, allDay, result, us, them}]` |
 | news (3 Google News RSS queries) | 30 min | 12 h | `[{headline, source}]`, already filtered |
 | calendar (family iCal) | 10 min | 24 h | parsed events without descriptions |
 | radar (MRMS capabilities) | 10 min | 30 min | the latest 8 frame times, about 16 min apart |
 | air (Open-Meteo air quality) | 30 min | 6 h | `{aqi, pm25, hours: [{t, aqi}]}` |
 | tropics (NHC CurrentStorms, June to November) | 30 min | 6 h | Atlantic storms `[{name, kind, mph, lat, lon}]` |
+| venues (Open-Meteo geocoding) | 10 min, only for new ZIPs | 1 year | ZIP → `{lat, lon}`, or `{none: true}` when nothing matched (not asked again) |
+| gamewx (Open-Meteo, one request per venue) | 3 h | 12 h | ZIP → `{start, temp[], rain[], code[]}`, hourly for 8 days |
+
+**Weather at games:**
+- **Which games:** ESPN's schedule gives each venue's name and ZIP code, but no coordinates and no roof. `outdoorVenue(path, venue)` (`rules.brs`) counts football, baseball and soccer games as outdoors unless the stadium has a fixed or retractable roof.
+- **Lookups:** `gameWxZips()` takes the outdoor games with a set time in the next 7 days, at most 6 venues. A ZIP the TV hasn't seen is geocoded once; after that, its forecast is fetched with the household's time zone, so forecast hours line up with game times.
+- **Matching responses:** both sources match each response to its request URL (`m.ingestUrls`, set by `refresh` for `ingest`).
+- **On screen:** `kickoffWeather()` reads the forecast hour nearest the start (`gm.wx`). Game day shows "Game time: 53°, light rain, 70% chance of rain", Weekend adds the temperature and rain chance to the game's row, and a heads-up tip warns of a 60% or higher chance of rain at game time within 2 days.
 
 During a game (an event `in` progress, or one that should have started in the last 4 hours), `sports` refreshes every 2 minutes instead of 15.
 

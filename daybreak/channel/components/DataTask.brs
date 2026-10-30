@@ -4,7 +4,8 @@
 ' The last good data is saved to cachefs: so the next launch starts warm.
 ' Sources (free, keyless): Open-Meteo, NWS alerts, USGS lake gauge, ESPN team
 ' schedules (unofficial), LaGrange College iCal, Google News RSS, the family
-' Google Calendar (secret iCal), NOAA MRMS radar times.
+' Google Calendar (secret iCal), NOAA MRMS radar times, Open-Meteo geocoding
+' (game venues by ZIP code) and forecasts at outdoor game venues.
 
 sub init()
     m.top.functionName = "runLoop"
@@ -82,7 +83,8 @@ function sourceLimits() as object
         sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
         calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
         air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600},
-        wallpapers: {ttl: 86400, maxAge: 30 * 86400}
+        wallpapers: {ttl: 86400, maxAge: 30 * 86400},
+        venues: {ttl: 600, maxAge: 365 * 86400}, gamewx: {ttl: 3 * 3600, maxAge: 12 * 3600}
     }
 end function
 
@@ -115,6 +117,17 @@ function sourceUrls(cfg as object) as object
     if month >= 6 and month <= 11 then tropics.Push("https://www.nhc.noaa.gov/CurrentStorms.json")
     wallpapers = []
     if place.wallpapers <> invalid then wallpapers.Push(place.wallpapers + "catalog.json")
+    ' outdoor games this week: look up each new venue's ZIP once, then its forecast
+    venues = []
+    gamewx = []
+    known = venueMap()
+    for each zip in gameWxZips(fresh("sports"), tNowWall())
+        if known.DoesExist(zip)
+            if not isTrue(known[zip].none) then gamewx.Push(gameWxUrl(known[zip]))
+        else
+            venues.Push("https://geocoding-api.open-meteo.com/v1/search?name=" + zip + "&count=1&countryCode=US&format=json")
+        end if
+    end for
     return {
         weather: [wx],
         alerts: ["https://api.weather.gov/alerts/active?point=" + lat + "," + lon],
@@ -126,7 +139,9 @@ function sourceUrls(cfg as object) as object
         radar: ["https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=WMS&request=GetCapabilities"],
         air: ["https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + lat + "&longitude=" + lon + "&current=us_aqi,pm2_5&hourly=us_aqi&forecast_days=2&timezone=" + currentPlace().timezone.Replace("/", "%2F")],
         tropics: tropics,
-        wallpapers: wallpapers
+        wallpapers: wallpapers,
+        venues: venues,
+        gamewx: gamewx
     }
 end function
 
@@ -169,6 +184,10 @@ sub refresh(cfg as object)
             if r.error <> "" then h.error = r.error
         end for
         value = invalid
+        m.ingestUrls = []
+        for each r in parts
+            m.ingestUrls.Push(r.url)
+        end for
         if h.okParts > 0
             try
                 value = ingest(name, bodies)
@@ -267,6 +286,8 @@ function ingest(name as string, bodies as object) as dynamic
     if name = "radar" then return radarTimes(bodies[0], 8)
     if name = "air" then return normAir(parseJsonSafe(bodies[0]))
     if name = "tropics" then return normStorms(parseJsonSafe(bodies[0]))
+    if name = "venues" then return normVenues(bodies, m.ingestUrls)
+    if name = "gamewx" then return normGameWx(bodies, m.ingestUrls)
     return invalid
 end function
 
@@ -398,7 +419,11 @@ function normEspn(j as dynamic, team as object) as dynamic
                 end if
             end for
             st = aaOf(aaOf(comp.status).type)
-            out.Push({start: tUtcIsoToWall(ev.date), state: strOrEmpty(st.state), home: (mine.homeAway = "home"),
+            venue = aaOf(comp.venue)
+            zip = Left(strOrEmpty(aaOf(venue.address).zipCode), 5)
+            if not CreateObject("roRegex", "^\d{5}$", "").IsMatch(zip) then zip = ""
+            out.Push({venue: strOrEmpty(venue.fullName), zip: zip,
+                      start: tUtcIsoToWall(ev.date), state: strOrEmpty(st.state), home: (mine.homeAway = "home"),
                       opp: opp, network: network, tbd: isFalse(comp.timeValid), won: isTrue(mine.winner),
                       my: scoreOf(mine), their: scoreOf(other), status: strOrEmpty(st.shortDetail)})
         end if
@@ -485,6 +510,10 @@ function derive(cfg as object) as object
     sports = deriveSports(fresh("sports"), now)
     lc = deriveLc(fresh("lc"), now)
     d.games = mergeGames(sports.games, lc.games)
+    gwx = fresh("gamewx")
+    for each gm in d.games
+        gm.wx = kickoffWeather(gm, gwx)
+    end for
     d.finals = mergeFinals(sports.finals, lc.finals)
     d.rivalry = sports.rivalry
     d.records = sports.records
@@ -681,7 +710,8 @@ function deriveSports(all as dynamic, now as integer) as object
             else if ev.start >= now - 4 * 3600 and ev.start <= now + 14 * 86400
                 out.games.Push({name: team.name, short: team.short, color: team.color, accent: team.accent,
                                 start: ev.start, state: ev.state, detail: detail, network: ev.network, tbd: ev.tbd,
-                                my: ev.my, their: ev.their, status: ev.status})
+                                my: ev.my, their: ev.their, status: ev.status, venue: strOrEmpty(ev.venue),
+                                zip: strOrEmpty(ev.zip), outdoor: outdoorVenue(team.path, strOrEmpty(ev.venue))})
             end if
         end for
         out.records[team.key] = w.ToStr() + "–" + l.ToStr()
@@ -993,6 +1023,11 @@ function headsUp(d as object) as object
             if i > 0 and day.lo <= 34 then tips.Push({p: 5, kind: "frost", ref: tKey(day.day), t: "Frost possible " + tDayWord(day.day, today) + " morning (" + day.lo.ToStr() + "°). Cover tender plants."})
         end for
     end if
+    for each gm in d.games
+        if gm.wx <> invalid and gm.wx.rain >= 60 and tDay(gm.start) - today <= 2 * 86400
+            tips.Push({p: 5, kind: "gamerain", ref: gm.name + tKey(gm.start), t: tDayWord(gm.start, today) + ": " + gm.wx.rain.ToStr() + "% chance of rain at game time for " + gm.name + " " + gm.detail + " (" + tClock(gm.start) + ")."})
+        end if
+    end for
     for each b in d.birthdays
         if b.days <= 14 then tips.Push({p: 6, kind: "birthday", ref: b.name + "'s birthday", t: b.name + "'s birthday is " + tDayWord(b.day, today) + "."})
     end for
@@ -1029,6 +1064,106 @@ function headsUp(d as object) as object
     end for
     tips.SortBy("order")
     return tips
+end function
+
+' --- weather at outdoor games -----------------------------------------------------------
+' ESPN schedules give each venue's name and ZIP code but no coordinates and no
+' roof. Football, baseball and soccer venues count as outdoors unless the
+' stadium has a roof (outdoorVenue). Each new ZIP is geocoded once with
+' Open-Meteo (kept for a year), then each venue with a game in the next week
+' gets an hourly forecast, read at the kickoff hour.
+
+' ZIP -> {lat, lon} (or {none: true} when the geocoder had no match).
+function venueMap() as object
+    v = fresh("venues")
+    if type(v) <> "roAssociativeArray" then return {}
+    return v
+end function
+
+' Distinct ZIPs of outdoor games with a set time in the next 7 days (at most 6).
+function gameWxZips(all as dynamic, now as integer) as object
+    out = []
+    seen = {}
+    if type(all) <> "roArray" then return out
+    for each entry in all
+        for each ev in arrOf(aaOf(entry).events)
+            zip = strOrEmpty(ev.zip)
+            ok = zip <> "" and ev.state = "pre" and not isTrue(ev.tbd) and ev.start >= now and ev.start <= now + 7 * 86400
+            if ok and outdoorVenue(strOrEmpty(aaOf(entry.team).path), strOrEmpty(ev.venue)) and not seen.DoesExist(zip) and out.Count() < 6
+                seen[zip] = true
+                out.Push(zip)
+            end if
+        end for
+    end for
+    return out
+end function
+
+function gameWxUrl(v as object) as string
+    u = "https://api.open-meteo.com/v1/forecast?latitude=" + v.lat.ToStr() + "&longitude=" + v.lon.ToStr()
+    u = u + "&hourly=temperature_2m,precipitation_probability,weather_code&temperature_unit=fahrenheit"
+    return u + "&timezone=" + currentPlace().timezone.Replace("/", "%2F") + "&forecast_days=8"
+end function
+
+' Geocoder answers (one per ZIP in urls) merged into the saved venues.
+function normVenues(bodies as object, urls as object) as dynamic
+    out = {}
+    old = venueMap()
+    if old.Count() < 80 then out.Append(old) ' a long-running TV starts over now and then
+    zipRe = CreateObject("roRegex", "name=(\d{5})&", "")
+    for i = 0 to bodies.Count() - 1
+        mt = zipRe.Match(strOrEmpty(arrAt(urls, i)))
+        if mt.Count() > 1 and bodies[i] <> ""
+            r = aaOf(arrAt(aaOf(parseJsonSafe(bodies[i])).results, 0))
+            lat = numOf(r.latitude, invalid)
+            lon = numOf(r.longitude, invalid)
+            if lat <> invalid and lon <> invalid and r.country_code = "US" and Abs(lat) <= 90 and Abs(lon) <= 180
+                out[mt[1]] = {lat: lat, lon: lon}
+            else if parseJsonSafe(bodies[i]) <> invalid
+                out[mt[1]] = {none: true} ' a real answer with no match: don't ask again
+            end if
+        end if
+    end for
+    if out.Count() = 0 then return invalid
+    return out
+end function
+
+' Forecasts (one per venue URL) -> ZIP -> {start (wall time of the first
+' hour), temp[], rain[], code[]}; missing hours are -999.
+function normGameWx(bodies as object, urls as object) as dynamic
+    byUrl = {}
+    known = venueMap()
+    for each zip in known
+        if not isTrue(known[zip].none) then byUrl[gameWxUrl(known[zip])] = zip
+    end for
+    out = {}
+    for i = 0 to bodies.Count() - 1
+        zip = byUrl[strOrEmpty(arrAt(urls, i))]
+        h = aaOf(aaOf(parseJsonSafe(bodies[i])).hourly)
+        times = arrOf(h.time)
+        if zip <> invalid and times.Count() > 0 and isText(times[0])
+            f = {start: tLocalIsoToWall(times[0]), temp: [], rain: [], code: []}
+            for k = 0 to times.Count() - 1
+                t = numAt(h.temperature_2m, k, invalid)
+                if t = invalid then f.temp.Push(-999) else f.temp.Push(Int(t + 0.5))
+                f.rain.Push(Int(numAt(h.precipitation_probability, k, 0)))
+                f.code.Push(Int(numAt(h.weather_code, k, 0)))
+            end for
+            out[zip] = f
+        end if
+    end for
+    if out.Count() = 0 then return invalid
+    return out
+end function
+
+' {temp, rain, code} at kickoff for an outdoor game with a set time, or invalid.
+function kickoffWeather(gm as object, wx as dynamic) as dynamic
+    if type(wx) <> "roAssociativeArray" or not isTrue(gm.outdoor) or isTrue(gm.tbd) or gm.state <> "pre" then return invalid
+    f = wx[strOrEmpty(gm.zip)]
+    if f = invalid then return invalid
+    k = (gm.start - f.start + 1800) \ 3600
+    if k < 0 or k >= f.temp.Count() then return invalid
+    if f.temp[k] = -999 then return invalid
+    return {temp: f.temp[k], rain: f.rain[k], code: f.code[k]}
 end function
 
 ' --- air quality and the tropics ------------------------------------------------------

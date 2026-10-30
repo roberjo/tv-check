@@ -148,6 +148,24 @@ function choreTurns(chores as dynamic, members as object, today as integer) as o
     return out
 end function
 
+' --- game venues ----------------------------------------------------------------------
+
+' Whether weather matters at a game: football, baseball and soccer, except in
+' stadiums with a fixed or retractable roof (a closed roof is the usual call
+' in bad weather). path is the team's ESPN path, venue ESPN's fullName.
+function outdoorVenue(path as string, venue as string) as boolean
+    sport = LCase(path)
+    if Instr(1, sport, "football") = 0 and Instr(1, sport, "baseball") = 0 and Instr(1, sport, "soccer") = 0 then return false
+    roofs = ["Mercedes-Benz Stadium", "Caesars Superdome", "Ford Field", "U.S. Bank Stadium", "Lucas Oil Stadium", "AT&T Stadium",
+             "SoFi Stadium", "Allegiant Stadium", "State Farm Stadium", "NRG Stadium", "Tropicana Field", "Rogers Centre", "Chase Field",
+             "Daikin Park", "Minute Maid Park", "American Family Field", "T-Mobile Park", "Globe Life Field", "loanDepot park",
+             "Alamodome", "Carrier Dome", "JMA Wireless Dome", "Kibbie Dome", "Syracuse Stadium"]
+    for each r in roofs
+        if LCase(venue) = LCase(r) then return false
+    end for
+    return true
+end function
+
 ' --- place --------------------------------------------------------------------------
 ' Everything town- and household-specific beyond family members. These are
 ' the LaGrange, Georgia defaults; config/family.json "place" overrides any

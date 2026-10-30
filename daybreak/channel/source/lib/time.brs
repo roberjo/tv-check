@@ -119,13 +119,19 @@ function tDayWord(w as integer, today as integer) as string
     return Left(tWeekdayNames()[tWeekday(w)], 3) + " " + tShortDate(w)
 end function
 
-' 625.21 -> "625.2"
+' 625.21 -> "625.2", -87.65 -> "-87.7" (Int rounds down, so the sign goes on after)
 function fmt1(x as dynamic) as string
+    sign = ""
+    if x < 0
+        sign = "-"
+        x = -x
+    end if
     whole = Int(x)
     tenth = Int((x - whole) * 10 + 0.5)
     if tenth = 10
         whole = whole + 1
         tenth = 0
     end if
-    return whole.ToStr() + "." + tenth.ToStr()
+    if whole = 0 and tenth = 0 then sign = ""
+    return sign + whole.ToStr() + "." + tenth.ToStr()
 end function
