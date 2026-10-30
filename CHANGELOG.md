@@ -4,6 +4,13 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-10-30
+
+### Added
+- **Team logos on Briefing and Tonight** (#81):
+  - **Briefing:** the game watch shows each team's logo at full strength on a dark tile edged in the team color, in place of the short-name chip. LaGrange College, and the TV in low-memory mode, keep the chip.
+  - **Tonight:** the game card gets the team's watermark, plus the forecast at game time for outdoor games.
+
 ## [1.13.0] - 2026-10-30
 
 ### Added
@@ -265,7 +272,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/roberjo/tv-check/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/roberjo/tv-check/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/roberjo/tv-check/compare/v1.11.1...v1.12.0
 [1.11.1]: https://github.com/roberjo/tv-check/compare/v1.11.0...v1.11.1

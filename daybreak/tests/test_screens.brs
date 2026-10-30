@@ -52,8 +52,17 @@ sub Main()
     logos = posterUris(buildScreen("gameday", d))
     check("game day logos", logos.DoesExist("https://a.espncdn.com/i/teamlogos/nfl/500-dark/atl.png") and logos.DoesExist("https://a.espncdn.com/i/teamlogos/nba/500-dark/atl.png"), true)
     check("recap logo", posterUris(buildScreen("recap", d)).Count() > 0, true)
+    g = buildScreen("briefing", d)
+    check("briefing game watch: logos at full strength", posterUris(g, true).DoesExist("https://a.espncdn.com/i/teamlogos/nfl/500-dark/atl.png") and posterUris(g).Count() = 0, true)
+    check("briefing: college game keeps its text chip", labelTexts(g).DoesExist("LC"), true)
+    eve = {}
+    eve.Append(d)
+    eve.now = d.today + 19 * 3600
+    texts = labelTexts(buildScreen("tonight", eve))
+    check("tonight: logo and game-time weather", posterUris(buildScreen("tonight", eve)).Count().ToStr() + " " + texts.DoesExist("Game time: 53°, light rain, 70% chance of rain").ToStr(), "1 true")
     m.lowMemory = true
     check("low memory: no logos", posterUris(buildScreen("gameday", d)).Count(), 0)
+    check("low memory: text chips", posterUris(buildScreen("briefing", d), true).Count(), 0)
     m.lowMemory = false
     ' weather at outdoor games
     check("game day: weather at game time", labelTexts(buildScreen("gameday", d)).DoesExist("Game time: 53°, light rain, 70% chance of rain"), true)

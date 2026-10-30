@@ -13,9 +13,9 @@ Daybreak is a family dashboard and screensaver for a Roku TV. It's built for a h
 
 | Screen | Shows when | Data |
 |---|---|---|
-| Briefing | 4–11 AM | Weather, family calendar, game watch, local headlines, heads-up |
+| Briefing | 4–11 AM | Weather, family calendar, game watch (with team logos), local headlines, heads-up |
 | Ambient | Midday; first in the screensaver | Big clock, weather, sun arc, "next up" chip, Callaway Gardens photo |
-| Tonight | After 5 PM | Tonight's game or a quiet night, weather, curbside, evening apps |
+| Tonight | After 5 PM | Tonight's game (with the team's logo and the forecast at game time) or a quiet night, weather, curbside, evening apps |
 | Week ("Sunday Reset") | Weekend evenings | 7-day forecast, calendar, games, curbside, heads-up |
 | Weekend | Friday midday and evening, Saturday until 5 PM | Saturday and Sunday side by side: forecast, sunrise and sunset, calendar and games. The better day outside is marked (rain chance, distance from 72°, wind over 15 mph), and the lake level is shown |
 | Recap | Mornings or evenings after games | Finals (pro, SEC, LaGrange College), a house-divided hero card with the winner's logo watermark, records |
