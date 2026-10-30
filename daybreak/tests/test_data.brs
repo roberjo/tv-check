@@ -17,6 +17,7 @@ sub Main()
     ' team logos: ESPN's own CDN only, as the dark-background variant
     q = Chr(34)
     check("logo from the schedule", espnLogo(ParseJson("{" + q + "team" + q + ":{" + q + "logo" + q + ":" + q + "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png" + q + "}}")), "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/61.png")
+    check("logo from a logos array", espnLogo(ParseJson("{" + q + "team" + q + ":{" + q + "logos" + q + ":[{" + q + "href" + q + ":" + q + "https://a.espncdn.com/i/teamlogos/nba/500/atl.png" + q + "}]}}")), "https://a.espncdn.com/i/teamlogos/nba/500-dark/atl.png")
     check("logo from anywhere else is refused", espnLogo(ParseJson("{" + q + "team" + q + ":{" + q + "logo" + q + ":" + q + "https://example.com/i/teamlogos/ncaa/500/61.png" + q + "}}")) + "|" + espnLogo(invalid), "|")
     check("games carry the logo", first.logo, "https://a.espncdn.com/i/teamlogos/nfl/500-dark/atl.png")
     lcLogo = "none"

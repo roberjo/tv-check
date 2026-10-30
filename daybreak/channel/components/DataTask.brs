@@ -404,7 +404,9 @@ end function
 ' (it reads on both the team-color and dark cards). Only ESPN's own logo CDN
 ' is accepted, since the URL comes from a feed; anything else gives "".
 function espnLogo(j as dynamic) as string
-    u = strOrEmpty(aaOf(aaOf(j).team).logo)
+    t = aaOf(aaOf(j).team)
+    u = strOrEmpty(t.logo) ' what schedules give; ESPN's team endpoint uses logos[].href instead
+    if u = "" then u = strOrEmpty(aaOf(arrAt(t.logos, 0)).href)
     if not CreateObject("roRegex", "^https://a\.espncdn\.com/i/teamlogos/[a-z]+/500/[a-z0-9]+\.png$", "").IsMatch(u) then return ""
     return u.Replace("/500/", "/500-dark/")
 end function
