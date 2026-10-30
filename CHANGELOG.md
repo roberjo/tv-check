@@ -4,6 +4,18 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-10-30
+
+### Added
+- **Team logos on the sports screens** (#79):
+  - **Where:** each tracked team's logo is a faint watermark behind its Game day panel (on the side away from the text), on its "coming up" cards, and on the Recap hero card. A house-divided final shows the winner's logo.
+  - **Where they come from:** the logo URL comes from ESPN's schedule, which Daybreak already reads. The TV loads the logo from ESPN's CDN, using the dark-background variant. Only that CDN is accepted.
+  - **Not stored here:** the logos belong to their teams, and none are committed to this repo.
+  - **When none show:** low-memory mode skips logos, and LaGrange College games have none.
+
+### Fixed
+- **`isText` was only in the data task's scope**, so scene code couldn't call it. Nothing in the scene used it before this release. It's now in `rules.brs`, which both load, and a scan found no other function missing from either side.
+
 ## [1.12.0] - 2026-10-30
 
 ### Added
@@ -253,7 +265,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/roberjo/tv-check/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/roberjo/tv-check/compare/v1.11.1...v1.12.0
 [1.11.1]: https://github.com/roberjo/tv-check/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/roberjo/tv-check/compare/v1.10.0...v1.11.0

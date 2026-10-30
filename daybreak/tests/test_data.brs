@@ -14,6 +14,16 @@ sub Main()
     ' sports
     first = d.games[0]
     check("next game", first.name + " " + first.detail + " " + tClock(first.start) + " " + first.network, "Falcons at Bears 1:00 PM Fox")
+    ' team logos: ESPN's own CDN only, as the dark-background variant
+    q = Chr(34)
+    check("logo from the schedule", espnLogo(ParseJson("{" + q + "team" + q + ":{" + q + "logo" + q + ":" + q + "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png" + q + "}}")), "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/61.png")
+    check("logo from anywhere else is refused", espnLogo(ParseJson("{" + q + "team" + q + ":{" + q + "logo" + q + ":" + q + "https://example.com/i/teamlogos/ncaa/500/61.png" + q + "}}")) + "|" + espnLogo(invalid), "|")
+    check("games carry the logo", first.logo, "https://a.espncdn.com/i/teamlogos/nfl/500-dark/atl.png")
+    lcLogo = "none"
+    for each g in d.games
+        if Left(g.name, 8) = "Panthers" then lcLogo = strOrEmpty(g.logo)
+    end for
+    check("college games have no logo", lcLogo, "")
     ' weather at outdoor games: venue ZIPs from ESPN, geocoded once, forecast at kickoff
     check("venue from ESPN", first.venue + " " + first.zip + " " + first.outdoor.ToStr(), "Soldier Field 60605 true")
     check("roofed and indoor venues", outdoorVenue("football/nfl/teams/1", "Mercedes-Benz Stadium").ToStr() + " " + outdoorVenue("basketball/nba/teams/1", "State Farm Arena").ToStr() + " " + outdoorVenue("baseball/mlb/teams/15", "Truist Park").ToStr(), "false false true")

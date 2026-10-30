@@ -83,6 +83,7 @@ Daybreak defaults to LaGrange, Georgia. Your town, teams, rivalry, lake, college
 - **Code:** MIT (see `LICENSE`).
 - **Fonts:** Outfit and Manrope, SIL Open Font License 1.1 (`daybreak/art/fonts/OFL-*.txt`).
 - **Photos:** Wikimedia Commons, under each photo's own license: CC0, public domain, CC BY or CC BY-SA. The list is in [`daybreak/wallpapers/CREDITS.md`](daybreak/wallpapers/CREDITS.md). The cropped copies keep their licenses, so the BY-SA ones stay BY-SA.
+- **Team logos:** trademarks of their teams. They aren't in this repo; the TV loads them from ESPN's CDN for display on a home TV, the same way it reads ESPN's schedules.
 - **Map and radar data:** USGS and NOAA, public domain.
 
 Not affiliated with Roku, TCL or any of the data providers.

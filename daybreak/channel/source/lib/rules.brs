@@ -98,6 +98,11 @@ end function
 
 ' Boolean checks that treat a missing (invalid) value as neither true nor
 ' false; comparing invalid to a boolean is a type mismatch in BrightScript.
+' Shared by the data task and the scene.
+function isText(v as dynamic) as boolean
+    return v <> invalid and GetInterface(v, "ifString") <> invalid
+end function
+
 function isTrue(v as dynamic) as boolean
     t = type(v)
     if t = "Boolean" or t = "roBoolean" then return v
