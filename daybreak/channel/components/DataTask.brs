@@ -453,6 +453,19 @@ function newsQueries() as object
     return currentPlace().news.queries
 end function
 
+' Livestream-scam posts that name a local team ("!+[𝐒𝐓ream]HERE'S*! Troup
+' County vs Howard 𝐋𝐈𝐕𝐄 HS Football ＯＮ Ｔｖ"): styled Unicode letters, full-width
+' forms and emoji (above U+2BFF; the TV's fonts can't draw them, and real local
+' headlines don't use them), or the scam's wording.
+function newsSpam(title as string) as boolean
+    spam = CreateObject("roRegex", "live\s*stream|stream(ing)?\s+free|watch\s+(it\s+)?live|on\s+tv\s+channel|\[\S*ream\]|here'?s\*", "i")
+    if spam.IsMatch(title) then return true
+    for i = 1 to Len(title)
+        if Asc(Mid(title, i, 1)) > &h2BFF then return true
+    end for
+    return false
+end function
+
 function parseNews(bodies as object) as dynamic
     skip = CreateObject("roRegex", "obituar|funeral|legacy\.com|in memory|passed away|\bobit", "i")
     social = CreateObject("roRegex", "instagram|facebook|tiktok|youtube|twitter|nfhs|reddit", "i")
@@ -474,7 +487,7 @@ function parseNews(bodies as object) as dynamic
                 headline = tail.Replace(title, "").Trim()
                 key = LCase(Left(headline, 60))
                 ok = not seen.DoesExist(key) and not skip.IsMatch(title + " " + source) and not social.IsMatch(source)
-                ok = ok and not noise.IsMatch(title) and localRe.IsMatch(title + " " + source)
+                ok = ok and not noise.IsMatch(title) and localRe.IsMatch(title + " " + source) and not newsSpam(title)
                 ' very short headlines from the town's own paper are section labels, not news
                 if ok and ownSource <> invalid and Instr(1, source, ownSource) > 0 and headline.Split(" ").Count() <= 4 then ok = false
                 if ok
@@ -543,7 +556,8 @@ function derive(cfg as object) as object
     news = fresh("news")
     if news <> invalid
         for each n in news
-            if not (gentleNews and isTrue(n.violent)) then d.news.Push(n)
+            ' (newsSpam again: headlines saved by an older version weren't checked)
+            if not (gentleNews and isTrue(n.violent)) and not newsSpam(strOrEmpty(n.headline)) then d.news.Push(n)
         end for
     end if
     d.curb = invalid

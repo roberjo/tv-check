@@ -14,6 +14,16 @@ sub Main()
     ' sports
     first = d.games[0]
     check("next game", first.name + " " + first.detail + " " + tClock(first.start) + " " + first.network, "Falcons at Bears 1:00 PM Fox")
+    ' livestream-scam headlines that name a local team are dropped
+    spamTitle = "!+[" + Chr(&h1D412) + Chr(&h1D413) + "ream]HERE'S*! Troup County vs Howard " + Chr(&h1D40B) + Chr(&h1D408) + Chr(&h1D415) + Chr(&h1D404) + " HS Football " + Chr(&hFF2F) + Chr(&hFF2E) + " TV"
+    check("news: styled-letter scam dropped", newsSpam(spamTitle), true)
+    check("news: plain scam wording dropped", newsSpam("Troup vs Callaway Live Stream: How to Watch High School Football"), true)
+    check("news: fullwidth only dropped", newsSpam("Troup County " + Chr(&hFF2F) + Chr(&hFF2E)), true)
+    saved = m.cache.news
+    m.cache.news = [{headline: spamTitle, source: "Port of Rotterdam"}, {headline: "City council approves new downtown park", source: "Local Daily News"}]
+    check("news: saved scam dropped too", derive(cfg).news.Count(), 1)
+    m.cache.news = saved
+    check("news: real headlines kept", newsSpam("Troup High football team to be featured on NBC" + Chr(&h2019) + "s The Today Show") or newsSpam("LaGrange council OKs $2.5M park plan — what's next") or newsSpam("Café opens downtown"), false)
     ' team logos: ESPN's own CDN only, as the dark-background variant
     q = Chr(34)
     check("logo from the schedule", espnLogo(ParseJson("{" + q + "team" + q + ":{" + q + "logo" + q + ":" + q + "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png" + q + "}}")), "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/61.png")

@@ -4,6 +4,15 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-10-30
+
+### Fixed
+- **Livestream-scam headlines are dropped** (#83):
+  - **What showed:** a Google News item from an unrelated site advertised a Troup County football livestream. It was written in styled Unicode letters, which the TV drew as boxes, and it got through because it names Troup County.
+  - **The rule:** `newsSpam()` drops headlines with characters above U+2BFF (styled letters, full-width forms, emoji), and headlines with the scam's wording ("live stream", "watch live", "on TV channel", "[STream]").
+  - **Checked on real feeds:** on that day's feeds it dropped only the scam and one stream listing. All 15 real headlines stayed.
+  - **Saved headlines:** checked again when read, so a scam saved by an older version disappears at once. Verified on the TV.
+
 ## [1.14.0] - 2026-10-30
 
 ### Added
@@ -272,7 +281,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.14.1...HEAD
+[1.14.1]: https://github.com/roberjo/tv-check/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/roberjo/tv-check/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/roberjo/tv-check/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/roberjo/tv-check/compare/v1.11.1...v1.12.0
