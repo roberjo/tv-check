@@ -45,7 +45,8 @@ Built in one evening, pair-programming with [Claude Code](https://claude.com/cla
   - **The family calendar:** Google Calendar secret iCal.
   - **Air quality:** Open-Meteo (US AQI).
   - **The tropics:** National Hurricane Center, June to November.
-- **Rule-based "heads up" insights:** deadlines, schedule overlaps, curbside pickup (including holiday shifts), rain and frost, air quality, countdowns, birthdays, meteor showers, Atlantic storms and low lake levels. No AI at runtime.
+  - **Weather at outdoor games:** Open-Meteo, at the stadium, for the game's start time.
+- **Rule-based "heads up" insights:** deadlines, schedule overlaps, curbside pickup (including holiday shifts), rain and frost, rain at game time, air quality, countdowns, birthdays, meteor showers, Atlantic storms and low lake levels. No AI at runtime.
 - **Live scores** during your teams' games, refreshed every 2 minutes.
 - **Family board through the calendar:** an event called `TV: Dinner at 6:30` shows as a note, `Buy: milk, eggs` adds to a grocery list, and `Countdown: Beach trip` counts down the days.
 - **On the remote:** OK opens a menu (settings, go to a screen, diagnostics), and * shows diagnostics: feed health, memory, network and a speed test.

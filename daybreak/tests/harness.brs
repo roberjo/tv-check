@@ -29,12 +29,17 @@ function fixtureConfig() as object
     feed("air", ["air.json"])
     feed("tropics", ["nhc.json"])
     feed("wallpapers", ["wallpapers.json"])
+    ' game venues and their forecasts are keyed by the request URLs (DataTask's refresh sets them)
+    m.ingestUrls = ["https://geocoding-api.open-meteo.com/v1/search?name=60605&count=1&countryCode=US&format=json"]
+    feed("venues", ["geo_60605.json"])
     sports = []
     for each team in espnTeams()
         sports.Push("espn_" + team.key + ".json")
     end for
     feed("sports", sports)
     store("calendar", ingest("calendar", [ReadAsciiFile("pkg:/sample.ics")]))
+    m.ingestUrls = [gameWxUrl(venueMap()["60605"])]
+    feed("gamewx", ["gamewx_60605.json"])
     store("news", [{headline: "Shriners blend fellowship with a mission of service", source: "Local Daily News"},
                    {headline: "City council approves new downtown park", source: "Local Daily News"}])
     return cfg

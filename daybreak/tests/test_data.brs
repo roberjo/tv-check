@@ -13,12 +13,42 @@ sub Main()
     check("lake level", fmt1(d.lake.level) + " at " + tClock(d.lake.time), "625.5 at 9:45 AM")
     ' sports
     first = d.games[0]
-    check("next game", first.name + " " + first.detail + " " + tClock(first.start) + " " + first.network, "Falcons vs Bears 1:00 PM Fox")
+    check("next game", first.name + " " + first.detail + " " + tClock(first.start) + " " + first.network, "Falcons at Bears 1:00 PM Fox")
+    ' weather at outdoor games: venue ZIPs from ESPN, geocoded once, forecast at kickoff
+    check("venue from ESPN", first.venue + " " + first.zip + " " + first.outdoor.ToStr(), "Soldier Field 60605 true")
+    check("roofed and indoor venues", outdoorVenue("football/nfl/teams/1", "Mercedes-Benz Stadium").ToStr() + " " + outdoorVenue("basketball/nba/teams/1", "State Farm Arena").ToStr() + " " + outdoorVenue("baseball/mlb/teams/15", "Truist Park").ToStr(), "false false true")
+    check("forecast only for outdoor games with a set time this week", gameWxZips(fresh("sports"), m.testNowWall).Join(","), "60605")
+    check("geocoded venue", fmt1(venueMap()["60605"].lat) + "," + fmt1(venueMap()["60605"].lon), "41.9,-87.7")
+    check("fmt1 with negatives", fmt1(-87.65005) + " " + fmt1(-0.04) + " " + fmt1(-2.96) + " " + fmt1(625.21), "-87.7 0.0 -3.0 625.2")
+    check("kickoff weather", first.wx.temp.ToStr() + "° " + first.wx.rain.ToStr() + "% " + wxLabel(first.wx.code), "53° 70% Light rain")
+    dome = invalid
+    for each g in d.games
+        if g.detail = "vs Seahawks" then dome = g
+    end for
+    check("no forecast under a roof", dome.zip + " " + (dome.wx = invalid).ToStr(), "30313 true")
+    kick = invalid
+    for each t in d.tips
+        if t.kind = "gamerain" then kick = t.t
+    end for
+    check("rain at kickoff tip", kick, "Today: 70% chance of rain at game time for Falcons at Bears (1:00 PM).")
+    ' a venue added after the last forecast fetch is due without waiting out the 3 hours
+    m.health.gamewx = {lastTry: m.testNowUtc - 60}
+    check("forecasts in hand: not due", gameWxMissing().ToStr() + " " + due("gamewx", 3 * 3600).ToStr(), "false false")
+    saved = m.cache.gamewx
+    m.cache.gamewx = {}
+    check("new venue, tried a minute ago: wait", gameWxMissing().ToStr() + " " + due("gamewx", 3 * 3600).ToStr(), "true false")
+    m.health.gamewx.lastTry = m.testNowUtc - 700
+    check("new venue: due after 10 minutes", due("gamewx", 3 * 3600), true)
+    m.cache.gamewx = saved
+    m.health.Delete("gamewx")
+    m.ingestUrls = ["https://geocoding-api.open-meteo.com/v1/search?name=99999&count=1&countryCode=US&format=json"]
+    nomatch = normVenues(["{" + Chr(34) + "generationtime_ms" + Chr(34) + ":0.4}"], m.ingestUrls)
+    check("an unknown ZIP is remembered, not retried", isTrue(nomatch["99999"].none).ToStr() + " " + nomatch.DoesExist("60605").ToStr(), "true true")
     names = []
     for each g in d.games
         names.Push(g.name)
     end for
-    check("games in time order", names.Join(", "), "Falcons, Panthers women's volleyball, Hawks, Auburn, Panthers football, Georgia")
+    check("games in time order", names.Join(", "), "Falcons, Panthers women's volleyball, Hawks, Auburn, Panthers football, Falcons, Georgia")
     check("TBA game", d.games[3].name + " tbd=" + d.games[3].tbd.ToStr(), "Auburn tbd=true")
     check("game day soon", soonGames(d).Count(), 1)
     check("rivalry", d.rivalry.winner + " " + d.rivalry.hi.ToStr() + "-" + d.rivalry.lo.ToStr() + " host " + d.rivalry.host, "Georgia 27-20 host Auburn")
@@ -45,7 +75,7 @@ sub Main()
     for each t in d.tips
         kinds.Push(t.kind)
     end for
-    check("tip order", kinds.Join(","), "curb,deadline,rain,frost,countdown,shower,tropics,lake")
+    check("tip order", kinds.Join(","), "curb,deadline,rain,frost,gamerain,countdown,shower,tropics,lake")
     check("heads up (top 3)", d.headsUp.Join(" / "), "Tomorrow: garbage plus yard waste (no grass clippings). Curb by 7 AM. / Science fair registration deadline is Friday (Nov 7 fair) for Riley and Casey. / Rain likely Tuesday from about noon (65%).")
     check("tips skip what's shown", tipTexts(d.tips, {curb: true, "Science fair registration deadline": true}, 2).Join(" / "), "Rain likely Tuesday from about noon (65%). / Frost possible Wednesday morning (33°). Cover tender plants.")
     ' air quality, countdowns, the tropics
@@ -75,14 +105,14 @@ sub Main()
     m.place = placeOf({place: {town: "Athens", region: "GA", area: "Clarke County", lake: "none", college: "none", curbside: "none", rivalry: ["Georgia", "Falcons"]}})
     d6 = derive(cfg)
     check("no curbside", d6.curb, invalid)
-    check("no college games", d6.games.Count(), 4)
+    check("no college games", d6.games.Count(), 5)
     check("place names", d6.place.town + " / " + d6.place.area, "Athens / Clarke County")
     check("other rivalry has no final", d6.rivalry, invalid)
     tipKinds = []
     for each t in d6.tips
         tipKinds.Push(t.kind)
     end for
-    check("no curb or lake tips", tipKinds.Join(","), "deadline,rain,frost,countdown,shower,tropics")
+    check("no curb or lake tips", tipKinds.Join(","), "deadline,rain,frost,gamerain,countdown,shower,tropics")
     m.place = invalid
     ' school closings from the calendar become a top tip for today or tomorrow
     extra = icsParse("BEGIN:VCALENDAR" + Chr(10) + "BEGIN:VEVENT" + Chr(10) + "DTSTART;VALUE=DATE:20261019" + Chr(10) + "DTEND;VALUE=DATE:20261020" + Chr(10) + "SUMMARY:No school — Troup County teacher workday" + Chr(10) + "END:VEVENT" + Chr(10) + "BEGIN:VEVENT" + Chr(10) + "DTSTART;VALUE=DATE:20261023" + Chr(10) + "SUMMARY:Early release 12:30" + Chr(10) + "END:VEVENT" + Chr(10) + "END:VCALENDAR")

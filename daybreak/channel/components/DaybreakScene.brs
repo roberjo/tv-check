@@ -500,7 +500,8 @@ function sourceLimitsForDiag() as object
         sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
         calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
         air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600},
-        wallpapers: {ttl: 86400, maxAge: 30 * 86400}
+        wallpapers: {ttl: 86400, maxAge: 30 * 86400},
+        venues: {ttl: 600, maxAge: 365 * 86400}, gamewx: {ttl: 3 * 3600, maxAge: 12 * 3600}
     }
 end function
 

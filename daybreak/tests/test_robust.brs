@@ -20,8 +20,12 @@ sub Main()
         radar: ["<WMS_Capabilities/>", "<a><Dimension name='time'></Dimension></a>", "<a><Dimension name='time'>x,y</Dimension></a>"],
         air: ["{'current':{}}", "{'current':{'us_aqi':null},'hourly':{'time':['x'],'us_aqi':[null]}}", "{'hourly':{'time':5}}"],
         tropics: ["{'activeStorms':5}", "{'activeStorms':[{}]}", "{'activeStorms':[{'latitudeNumeric':'x','intensity':null}]}"],
-        wallpapers: ["{'photos':5}", "{'photos':[5,{},{'id':['x']}]}", "{'photos':[{'id':'a','file':'img/a.jpg','screens':[5,'week'],'tags':'lake'}]}"]
+        wallpapers: ["{'photos':5}", "{'photos':[5,{},{'id':['x']}]}", "{'photos':[{'id':'a','file':'img/a.jpg','screens':[5,'week'],'tags':'lake'}]}"],
+        venues: ["{'results':5}", "{'results':[{}]}", "{'results':[{'latitude':'x','longitude':null,'country_code':5}]}", "{'results':[{'latitude':999,'longitude':5,'country_code':'US'}]}"],
+        gamewx: ["{'hourly':5}", "{'hourly':{'time':[5]}}", "{'hourly':{'time':['2026-10-18T00:00'],'temperature_2m':[null],'precipitation_probability':['x'],'weather_code':{}}}"]
     }
+    venueUrls = {venues: ["https://geocoding-api.open-meteo.com/v1/search?name=60605&count=1&countryCode=US&format=json"],
+                 gamewx: [gameWxUrl(venueMap()["60605"])]}
     crashes = []
     for each name in shapes
         bodies = []
@@ -32,6 +36,7 @@ sub Main()
         for each b in bodies
             parts = [b]
             if name = "sports" then parts = [b, b, b, b, b]
+            if venueUrls.DoesExist(name) then m.ingestUrls = venueUrls[name]
             try
                 ingest(name, parts)
             catch e

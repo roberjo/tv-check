@@ -778,6 +778,13 @@ sub buildWeek(g as object, d as object)
     end for
 end sub
 
+' The forecast at an outdoor game's kickoff ({temp, rain, code} from DataTask).
+function gameWxText(wx as object) as string
+    t = wx.temp.ToStr() + "°, " + LCase(wxLabel(wx.code))
+    if wx.rain >= 20 then t = t + ", " + wx.rain.ToStr() + "% chance of rain"
+    return t
+end function
+
 ' --- the weekend (Fridays and Saturdays) -----------------------------------------------
 
 ' The Saturday of the coming weekend: today on a Saturday, else the next one.
@@ -873,7 +880,9 @@ sub buildWeekend(g as object, d as object)
             if tDay(gm.start) = day
                 head = tClock(gm.start)
                 if gm.tbd then head = "Time TBA"
-                items.Push({head: head, body: gm.name + " " + gm.detail, sort: gm.start - day})
+                body = gm.name + " " + gm.detail
+                if gm.wx <> invalid then body = body + " · " + gm.wx.temp.ToStr() + "°, " + gm.wx.rain.ToStr() + "% rain"
+                items.Push({head: head, body: body, sort: gm.start - day})
             end if
         end for
         items = sortStable(items, "sort")
@@ -1198,6 +1207,7 @@ sub buildGameday(g as object, d as object)
             uiText(g, tx, 540, tClock(gm.start), 100, 300, "Outfit", "#F4F1EA", Int(pw) - 224, align)
         end if
         if gm.network <> "" then uiText(g, tx, 680, "on " + gm.network, 30, 600, "Manrope", "#F4F1EA", Int(pw) - 224, align)
+        if gm.wx <> invalid then uiText(g, tx, 728, "Game time: " + gameWxText(gm.wx), 30, 500, "Manrope", "#F4F1EA", Int(pw) - 224, align)
     end for
     if panels.Count() = 1
         delta = panels[0].start - d.now
