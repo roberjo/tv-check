@@ -271,8 +271,9 @@ function ingest(name as string, bodies as object) as dynamic
         teams = espnTeams()
         for i = 0 to teams.Count() - 1
             if i < bodies.Count() and bodies[i] <> ""
-                evs = normEspn(parseJsonSafe(bodies[i]), teams[i])
-                if evs <> invalid then out.Push({team: teams[i], events: evs})
+                j = parseJsonSafe(bodies[i])
+                evs = normEspn(j, teams[i])
+                if evs <> invalid then out.Push({team: teams[i], events: evs, logo: espnLogo(j)})
             end if
         end for
         if out.Count() = 0 then return invalid
@@ -397,6 +398,17 @@ end function
 
 function espnTeams() as object
     return currentPlace().teams
+end function
+
+' The team's logo from its ESPN schedule, as ESPN's dark-background variant
+' (it reads on both the team-color and dark cards). Only ESPN's own logo CDN
+' is accepted, since the URL comes from a feed; anything else gives "".
+function espnLogo(j as dynamic) as string
+    t = aaOf(aaOf(j).team)
+    u = strOrEmpty(t.logo) ' what schedules give; ESPN's team endpoint uses logos[].href instead
+    if u = "" then u = strOrEmpty(aaOf(arrAt(t.logos, 0)).href)
+    if not CreateObject("roRegex", "^https://a\.espncdn\.com/i/teamlogos/[a-z]+/500/[a-z0-9]+\.png$", "").IsMatch(u) then return ""
+    return u.Replace("/500/", "/500-dark/")
 end function
 
 ' ESPN schedule -> [{start, state, home, opp, network, tbd, won, my, their}]
@@ -692,7 +704,7 @@ function deriveSports(all as dynamic, now as integer) as object
                 if ev.start >= now - 36 * 3600
                     rivalry = rivA <> "" and (ev.opp = rivA or ev.opp = rivB) and (team.name = rivA or team.name = rivB)
                     out.finals.Push({team: team.name, color: team.color, won: ev.won, score: ev.my + "–" + ev.their, detail: detail,
-                                     start: ev.start, pro: true, rivalry: rivalry})
+                                     start: ev.start, pro: true, rivalry: rivalry, logo: strOrEmpty(entry.logo)})
                     if rivalry and team.name = rivB
                         hi = Val(ev.my)
                         lo = Val(ev.their)
@@ -713,7 +725,7 @@ function deriveSports(all as dynamic, now as integer) as object
                     end if
                 end if
             else if ev.start >= now - 4 * 3600 and ev.start <= now + 14 * 86400
-                out.games.Push({name: team.name, short: team.short, color: team.color, accent: team.accent,
+                out.games.Push({name: team.name, short: team.short, color: team.color, accent: team.accent, logo: strOrEmpty(entry.logo),
                                 start: ev.start, state: ev.state, detail: detail, network: ev.network, tbd: ev.tbd,
                                 my: ev.my, their: ev.their, status: ev.status, venue: strOrEmpty(ev.venue),
                                 zip: strOrEmpty(ev.zip), outdoor: outdoorVenue(team.path, strOrEmpty(ev.venue))})
@@ -1329,10 +1341,6 @@ function normWallpapers(j as dynamic) as dynamic
         end if
     end for
     return out
-end function
-
-function isText(v as dynamic) as boolean
-    return v <> invalid and GetInterface(v, "ifString") <> invalid
 end function
 
 function textList(v as dynamic) as object

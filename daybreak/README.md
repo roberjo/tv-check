@@ -20,7 +20,7 @@ daybreak/channel/
 | Open-Meteo | Weather, hourly, 8-day, sunrise and sunset | 10 min | 3 h |
 | NWS | Alerts for LaGrange (Troup County) | 2 min | 30 min (then shown as "Unavailable") |
 | USGS 02339400 (param 00062) | West Point Lake level | 30 min | 12 h |
-| ESPN (unofficial) | Braves, Falcons, Hawks, Georgia, Auburn | 15 min | 6 h |
+| ESPN (unofficial) | Braves, Falcons, Hawks, Georgia, Auburn, and each team's logo URL (the logos load from ESPN's CDN when shown) | 15 min | 6 h |
 | lagrangepanthers.com iCal | LaGrange College schedule and finals | 30 min | 24 h |
 | Google News RSS | LaGrange and Troup County headlines (no obituaries or violent crime) | 30 min | 12 h |
 | Family Google Calendar (secret iCal) | Events, deadlines, board notes, groceries | 10 min | 24 h |

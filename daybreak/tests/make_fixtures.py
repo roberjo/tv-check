@@ -185,7 +185,7 @@ def espn_live():
     ev["competitions"][0]["status"]["type"]["shortDetail"] = "Bot 6th"
     for c in ev["competitions"][0]["competitors"]:
         c.pop("winner", None)
-    return {"events": [ev]}
+    return {"team": {"logo": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png"}, "events": [ev]}
 
 
 def main():
@@ -199,7 +199,9 @@ def main():
                  {"properties": {"event": "Wind Advisory", "expires": "2026-10-18T09:00:00-04:00"}}]},
              "lake.json": lake(), "air.json": air(), "nhc.json": storms(), "espn_live.json": espn_live(),
              "wallpapers.json": wallpapers(), "geo_60605.json": geocode(), "gamewx_60605.json": game_weather()}
+    logos = {"georgia": "ncaa/500/61", "auburn": "ncaa/500/2", "falcons": "nfl/500/atl", "hawks": "nba/500/atl", "braves": "mlb/500/atl"}
     for key, doc in espn().items():
+        doc["team"] = {"logo": f"https://a.espncdn.com/i/teamlogos/{logos[key]}.png"}  # as ESPN's schedules give it
         files[f"espn_{key}.json"] = doc
     for name, doc in files.items():
         (OUT / name).write_text(json.dumps(doc, separators=(",", ":")) + "\n")

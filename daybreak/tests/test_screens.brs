@@ -48,6 +48,13 @@ sub Main()
     fri.now = fri.today + 86400 + 19 * 3600
     fri.today = fri.today + 86400
     check("saturday evening: the week instead", chooseScreens(fri, "app").Join(",").Instr("weekend") < 0, true)
+    ' team logos: faint watermarks behind the Game day panels and cards and the Recap hero
+    logos = posterUris(buildScreen("gameday", d))
+    check("game day logos", logos.DoesExist("https://a.espncdn.com/i/teamlogos/nfl/500-dark/atl.png") and logos.DoesExist("https://a.espncdn.com/i/teamlogos/nba/500-dark/atl.png"), true)
+    check("recap logo", posterUris(buildScreen("recap", d)).Count() > 0, true)
+    m.lowMemory = true
+    check("low memory: no logos", posterUris(buildScreen("gameday", d)).Count(), 0)
+    m.lowMemory = false
     ' weather at outdoor games
     check("game day: weather at game time", labelTexts(buildScreen("gameday", d)).DoesExist("Game time: 53°, light rain, 70% chance of rain"), true)
     texts = labelTexts(buildScreen("weekend", d))

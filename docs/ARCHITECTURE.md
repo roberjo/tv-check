@@ -22,7 +22,9 @@ Daybreak is one sideloaded Roku package with two entry points: `Main` (the app) 
 | weather (Open-Meteo) | 10 min | 3 h | days and hours with wall-clock times |
 | alerts (NWS) | 2 min | 30 min | `[{event, level}]` |
 | lake (USGS) | 30 min | 12 h | `{level, time}` |
-| sports (ESPN, 5 teams) | 15 min | 6 h | per team: `[{start, state, home, opp, network, tbd, won, my, their, venue, zip}]` |
+| sports (ESPN, 5 teams) | 15 min | 6 h | per team: `{events: [{start, state, home, opp, network, tbd, won, my, their, venue, zip}], logo}` |
+
+**Team logos:** `espnLogo()` takes the team's logo URL from its schedule, accepting only ESPN's logo CDN (`a.espncdn.com/i/teamlogos/…/500/…png`), and switches it to the `500-dark` variant. Games and finals carry it as `logo`. `teamLogo()` draws it as a faint watermark (12–18% opacity) behind the Game day panels and cards and the Recap hero card. The Poster decodes it at its drawn size; low-memory mode skips logos, and LaGrange College games (from iCal) have none. The logos are never stored in this repo: the TV loads them from ESPN, and `preview/render.py` caches them in `daybreak/cache/logos/` (gitignored).
 | lc (college iCal) | 30 min | 24 h | `[{title, start, allDay, result, us, them}]` |
 | news (3 Google News RSS queries) | 30 min | 12 h | `[{headline, source}]`, already filtered |
 | calendar (family iCal) | 10 min | 24 h | parsed events without descriptions |

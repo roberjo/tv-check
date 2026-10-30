@@ -264,6 +264,29 @@ function liveText(gm as object) as string
     return t
 end function
 
+' A team's logo as a faint watermark (drawn before the card's text, so behind
+' it). The TV loads it from ESPN's CDN and decodes it at the drawn size; none
+' for teams without one (LaGrange College) or in low-memory mode.
+sub teamLogo(g as object, uri as dynamic, x as float, y as float, size as integer, opacity = 0.16 as float)
+    if not isText(uri) or uri = "" or m.lowMemory = true then return
+    p = uiImage(g, uri, x, y, size, size, "", opacity)
+    p.loadWidth = size
+    p.loadHeight = size
+    p.loadDisplayMode = "scaleToFit"
+end sub
+
+' The logo of a tracked team from its games or finals, or "".
+function logoOf(d as object, name as string) as string
+    for each list in [d.finals, d.games]
+        for each x in list
+            nm = x.team ' finals name the team in team, games in name
+            if nm = invalid then nm = x.name
+            if isText(nm) and nm = name and isText(x.logo) and x.logo <> "" then return x.logo
+        end for
+    end for
+    return ""
+end function
+
 function gameWhen(gm as object, today as integer) as string
     if gm.state = "in" then return liveText(gm)
     if gm.tbd then return tDayWord(gm.start, today) + " · time TBA"
@@ -1070,6 +1093,7 @@ sub buildRecap(g as object, d as object)
             if win.accent <> invalid then accent = win.accent
         end if
         uiCard(g, gx(1), top, gw(6) + 40, 770, color, "", 32)
+        teamLogo(g, logoOf(d, r.winner), gx(1) + gw(6) + 40 - 500, top + 230, 460, 0.12)
         uiLabel(g, gx(1) + 56, top + 54, "House divided · final", 24, accent)
         uiText(g, gx(1) + 56, top + 120, r.winner + " " + r.hi.ToStr(), 120, 600, "Outfit")
         uiText(g, gx(1) + 56, top + 280, r.loser + " " + r.lo.ToStr(), 80, 400, "Outfit", "#C9CEDA")
@@ -1080,6 +1104,7 @@ sub buildRecap(g as object, d as object)
         uiText(g, gx(1) + 56, top + 690, r.host + " hosted · " + r.network, 26, 400, "Manrope", "#C9CEDA", gw(6) - 72)
     else if hero <> invalid
         uiCard(g, gx(1), top, gw(6) + 40, 770, hero.color, "", 32)
+        teamLogo(g, hero.logo, gx(1) + gw(6) + 40 - 500, top + 270, 460, 0.12)
         res = "Loss · "
         if hero.won then res = "Win · "
         uiLabel(g, gx(1) + 56, top + 54, res + hero.team, 24, "#F4F1EA")
@@ -1188,10 +1213,15 @@ sub buildGameday(g as object, d as object)
         uiRect(g, x, 0, pw, 790, gm.color)
         align = "left"
         tx = x + 112
+        ls = 640
+        if panels.Count() = 2 then ls = 460
+        lx = x + pw - ls - 80 ' the logo sits on the side away from the text
         if i = 1
             align = "right"
             tx = x + pw - 112
+            lx = x + 80
         end if
+        teamLogo(g, gm.logo, lx, (790 - ls) / 2, ls)
         lbl = "GAME DAY"
         if gm.state = "in" then lbl = "ON NOW"
         if divided then lbl = lbl + " · HOUSE DIVIDED"
@@ -1226,6 +1256,7 @@ sub buildGameday(g as object, d as object)
         x = gx(1 + i * 3)
         cw = gw(3)
         uiCard(g, x, 830, cw, 190)
+        teamLogo(g, gm.logo, x + cw - 140, 856, 120, 0.18)
         uiCard(g, x + 36, 866, 18, 18, gm.color, "", 10)
         uiText(g, x + 66, 856, gm.name, 26, 700, "Manrope", "#F4F1EA", cw - 100)
         uiText(g, x + 36, 900, gameWhenShort(gm, d.today), 34, 400, "Outfit", "#F4F1EA", cw - 72)

@@ -72,6 +72,20 @@ function sampleDiagnostics() as object
             network: {type: "Ethernet", ip: "192.168.1.20", link: true}}
 end function
 
+' Every team-logo Poster's uri in a built screen, as a set (opacity checked: watermarks only).
+function posterUris(node as object) as object
+    out = {}
+    collectLogos(node, out)
+    return out
+end function
+
+sub collectLogos(node as object, out as object)
+    if node.subtype() = "Poster" and Instr(1, node.uri, "/teamlogos/") > 0 and node.opacity <= 0.25 then out[node.uri] = true
+    for i = 0 to node.getChildCount() - 1
+        collectLogos(node.getChild(i), out)
+    end for
+end sub
+
 ' Every label's text in a built screen, as a set.
 function labelTexts(node as object) as object
     out = {}
