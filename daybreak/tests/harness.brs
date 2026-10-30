@@ -72,17 +72,20 @@ function sampleDiagnostics() as object
             network: {type: "Ethernet", ip: "192.168.1.20", link: true}}
 end function
 
-' Every team-logo Poster's uri in a built screen, as a set (opacity checked: watermarks only).
-function posterUris(node as object) as object
+' Every team-logo Poster's uri in a built screen, as a set: faint watermarks
+' (opacity 0.25 or less), or with solid = true, logos at full strength.
+function posterUris(node as object, solid = false as boolean) as object
     out = {}
-    collectLogos(node, out)
+    collectLogos(node, out, solid)
     return out
 end function
 
-sub collectLogos(node as object, out as object)
-    if node.subtype() = "Poster" and Instr(1, node.uri, "/teamlogos/") > 0 and node.opacity <= 0.25 then out[node.uri] = true
+sub collectLogos(node as object, out as object, solid as boolean)
+    if node.subtype() = "Poster" and Instr(1, node.uri, "/teamlogos/") > 0
+        if (solid and node.opacity = 1) or (not solid and node.opacity <= 0.25) then out[node.uri] = true
+    end if
     for i = 0 to node.getChildCount() - 1
-        collectLogos(node.getChild(i), out)
+        collectLogos(node.getChild(i), out, solid)
     end for
 end sub
 

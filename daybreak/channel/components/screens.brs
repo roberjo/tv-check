@@ -275,6 +275,18 @@ sub teamLogo(g as object, uri as dynamic, x as float, y as float, size as intege
     p.loadDisplayMode = "scaleToFit"
 end sub
 
+' A game's team as a small tile: the logo at full strength on a dark tile
+' edged in the team color, or the short-name chip when there's no logo
+' (LaGrange College) or memory is low.
+sub teamBadge(g as object, x as float, y as float, size as integer, gm as object)
+    if not isText(gm.logo) or gm.logo = "" or m.lowMemory = true
+        teamChip(g, x, y, size, gm.short, gm.color, gm.accent)
+        return
+    end if
+    uiCard(g, x, y, size, size, "#0B1120", gm.color, 14)
+    teamLogo(g, gm.logo, x + 6, y + 6, size - 12, 1.0)
+end sub
+
 ' The logo of a tracked team from its games or finals, or "".
 function logoOf(d as object, name as string) as string
     for each list in [d.finals, d.games]
@@ -520,7 +532,7 @@ sub buildBriefing(g as object, d as object)
     yy = top + 94
     games = briefingGames(d)
     for each gm in games
-        teamChip(g, x + 36, yy, 64, gm.short, gm.color, gm.accent)
+        teamBadge(g, x + 36, yy, 64, gm)
         uiText(g, x + 120, yy - 2, gm.name, 26, 600, "Manrope", "#F4F1EA", w - 156)
         tail = ""
         if gm.network <> "" then tail = " · " + gm.network
@@ -635,6 +647,7 @@ sub buildTonight(g as object, d as object)
     end for
     if hero <> invalid
         uiCard(g, gx(1), top, gw(7), 520, hero.color, "", 32)
+        teamLogo(g, hero.logo, gx(1) + gw(7) - 460, top + 60, 400)
         uiDot(g, gx(1) + 64, top + 66, 8, "#F4A259")
         lbl = "Starting soon"
         if hero.state = "in" then lbl = "On now"
@@ -644,6 +657,7 @@ sub buildTonight(g as object, d as object)
         if hero.state = "in" then t = hero.detail + " · " + liveText(hero)
         if hero.network <> "" then t = t + " on " + hero.network
         uiText(g, gx(1) + 56, top + 290, t, 34, 500, "Manrope", "#F4F1EA", gw(7) - 112)
+        if hero.wx <> invalid then uiText(g, gx(1) + 56, top + 350, "Game time: " + gameWxText(hero.wx), 30, 500, "Manrope", "#F4F1EA", gw(7) - 112)
     else
         uiCard(g, gx(1), top, gw(7), 520, "#131729", "#222842", 32)
         uiLabel(g, gx(1) + 56, top + 54, "Tonight", 24, "#B3A6F2")
