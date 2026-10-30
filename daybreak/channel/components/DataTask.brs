@@ -147,6 +147,11 @@ end function
 
 function due(name as string, ttl as integer) as boolean
     if name = "sports" and liveGame() then ttl = 120 ' scores every 2 minutes during a game
+    ' a venue that just appeared needn't wait out the 3 hours (at most every 10 minutes)
+    if name = "gamewx" and gameWxMissing()
+        h = m.health.gamewx
+        return h = invalid or tNowUtc() - h.lastTry >= 600
+    end if
     last = m.fetched[name]
     return last = invalid or tNowUtc() - last >= ttl
 end function
@@ -1096,6 +1101,17 @@ function gameWxZips(all as dynamic, now as integer) as object
         end for
     end for
     return out
+end function
+
+' Whether a geocoded venue with a game this week has no forecast yet.
+function gameWxMissing() as boolean
+    wx = fresh("gamewx")
+    known = venueMap()
+    for each zip in gameWxZips(fresh("sports"), tNowWall())
+        v = known[zip]
+        if v <> invalid and not isTrue(v.none) and (type(wx) <> "roAssociativeArray" or not wx.DoesExist(zip)) then return true
+    end for
+    return false
 end function
 
 function gameWxUrl(v as object) as string

@@ -31,6 +31,16 @@ sub Main()
         if t.kind = "gamerain" then kick = t.t
     end for
     check("rain at kickoff tip", kick, "Today: 70% chance of rain at game time for Falcons at Bears (1:00 PM).")
+    ' a venue added after the last forecast fetch is due without waiting out the 3 hours
+    m.health.gamewx = {lastTry: m.testNowUtc - 60}
+    check("forecasts in hand: not due", gameWxMissing().ToStr() + " " + due("gamewx", 3 * 3600).ToStr(), "false false")
+    saved = m.cache.gamewx
+    m.cache.gamewx = {}
+    check("new venue, tried a minute ago: wait", gameWxMissing().ToStr() + " " + due("gamewx", 3 * 3600).ToStr(), "true false")
+    m.health.gamewx.lastTry = m.testNowUtc - 700
+    check("new venue: due after 10 minutes", due("gamewx", 3 * 3600), true)
+    m.cache.gamewx = saved
+    m.health.Delete("gamewx")
     m.ingestUrls = ["https://geocoding-api.open-meteo.com/v1/search?name=99999&count=1&countryCode=US&format=json"]
     nomatch = normVenues(["{" + Chr(34) + "generationtime_ms" + Chr(34) + ":0.4}"], m.ingestUrls)
     check("an unknown ZIP is remembered, not retried", isTrue(nomatch["99999"].none).ToStr() + " " + nomatch.DoesExist("60605").ToStr(), "true true")
