@@ -24,7 +24,7 @@ sub Main()
         for each k in m.cache
             m.fetched[k] = m.testNowUtc
         end for
-        d = derive(cfg)
+        d = previewDerive(cfg)
         if d.notes.Count() = 0 then d.notes = [{text: "Dinner at 6:30 tonight", from: "Jordan", color: "#9EC79B"}]
         for each id in sc.screens
             g = buildScreen(id, d)
@@ -37,10 +37,10 @@ sub Main()
     m.testNowWall = base.wall
     feed("alerts", ["alerts.json"])
     store("sports", ingest("sports", ["", "", "", "", ReadAsciiFile("pkg:/feeds/espn_live.json")]))
-    d = derive(cfg)
+    d = previewDerive(cfg)
     print "SCENE|live|gameday|"; FormatJson(dumpNode(buildScreen("gameday", d)))
     feed("sports", ["espn_georgia.json", "espn_auburn.json", "espn_falcons.json", "espn_hawks.json", "espn_braves.json"])
-    d = derive(cfg)
+    d = previewDerive(cfg)
     ' overlays: menu, settings, diagnostics, remote hint
     menu = {page: "main", index: 1, settings: defaultSettings(cfg), paused: false, items: chooseScreens(d, "app"),
             all: ["briefing", "ambient", "tonight", "week", "weekend", "recap", "gameday", "radar", "lake", "sky", "school", "board", "season"]}
@@ -71,3 +71,15 @@ sub Main()
     print "SCENE|startup|loading|"; FormatJson(dumpNode(loading))
     print "LIVE SMOKE OK"
 end sub
+
+' derive(), minus the team logos when rendering docs images (preview.sh --docs)
+function previewDerive(cfg as object) as object
+    d = derive(cfg)
+    if ReadAsciiFile("pkg:/nologos").Trim() <> "1" then return d
+    for each list in [d.games, d.finals]
+        for each x in list
+            x.logo = ""
+        end for
+    end for
+    return d
+end function

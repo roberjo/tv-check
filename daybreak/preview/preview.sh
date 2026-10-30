@@ -16,6 +16,10 @@ C=$DIR/channel/components
 DRIVER=$DIR/preview/preview.brs
 cp "$DIR/wallpapers/catalog.json" "$FIXTURES/wallpaper_catalog.json"
 [ $# -gt 0 ] && shift  # drop out-dir; the rest goes to render.py
+# docs images leave team logos out (trademarks): the screens then fall back as
+# on a TV without them (preview.brs reads this marker)
+echo 0 > "$FIXTURES/nologos"  # always there: the emulator errors on a missing file
+case " $* " in *" --docs "*) echo 1 > "$FIXTURES/nologos" ;; esac
 if [ "$1" = "--wallpapers" ]; then
   # every catalog photo behind every screen it could appear on; $2 = JSON report
   DRIVER=$DIR/preview/wallpapers.brs
@@ -26,4 +30,4 @@ sh "$DIR/tests/brs.sh" "$FIXTURES" "$L/time.brs" "$L/ics.brs" "$L/rules.brs" \
   "$C/DataTask.brs" "$C/ui.brs" "$C/screens.brs" "$C/overlays.brs" \
   "$DIR/tests/assert.brs" "$DIR/tests/harness.brs" "$DIR/preview/dump.brs" "$DRIVER" > "$DUMP"
 "$DIR/../.venv/bin/python" "$DIR/preview/render.py" "$DUMP" "$OUT" "$@"
-rm -f "$DUMP"
+rm -f "$DUMP" "$FIXTURES/nologos"

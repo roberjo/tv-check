@@ -24,3 +24,4 @@ daybreak/channel/fonts/
 node_modules/
 # BrighterScript staging output when bsc runs from the repo root (holds a copy of config.brs)
 /out/
+daybreak/tests/fixtures/nologos
