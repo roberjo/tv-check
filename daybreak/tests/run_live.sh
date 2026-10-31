@@ -7,4 +7,4 @@ FIXTURES=$DIR/tests/fixtures
 L=$DIR/channel/source/lib
 C=$DIR/channel/components
 sh "$DIR/tests/brs.sh" "$FIXTURES" "$L/time.brs" "$L/ics.brs" "$L/rules.brs" \
-  "$C/DataTask.brs" "$C/ui.brs" "$C/screens.brs" "$DIR/tests/test_live.brs"
+  "$C"/data/*.brs "$C/ui.brs" "$C"/screens/*.brs "$DIR/tests/test_live.brs"

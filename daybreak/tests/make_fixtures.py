@@ -188,6 +188,30 @@ def espn_live():
     return {"team": {"logo": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png"}, "events": [ev]}
 
 
+def news_rss():
+    """Google News RSS with one item per news rule (see test_robust.brs)."""
+    from xml.sax.saxutils import escape, quoteattr
+    items = [
+        ("LaGrange council approves new downtown park", "LaGrange Daily News"),              # kept
+        ("Jane Example obituary (1941 - 2026) - LaGrange, GA", "Legacy.com"),                 # obituary
+        ("Troup County deputies arrest man after shooting on Hogansville Road", "WTVM"),      # kept, violent
+        ("LaGrange High homecoming court photos", "Facebook"),                                # social media
+        ("Troup vs. LaGrange - Varsity Football @ Callaway", "NFHS Network"),                 # stream listing
+        ("!+[\U0001d412\U0001d413ream]HERE'S*! Troup County vs Howard \U0001d40b\U0001d408\U0001d415\U0001d404 "
+         "HS Football \uff2f\uff2e \uff34\uff56", "Scoreboard Live"),                            # styled-Unicode scam
+        ("Watch LaGrange vs Callaway live stream free tonight", "Prep Sports Today"),         # scam wording
+        ("Community calendar this week", "LaGrange Daily News"),                              # section label (4 words)
+        ("LaGrange council approves new downtown park", "WTVM"),                              # duplicate
+        ("Atlanta traffic delays on I-85 after crash", "WSB-TV"),                             # not local
+        ("Callaway & Hogansville schools add after-school tutoring", "LaGrange Daily News"),  # kept (entity)
+    ]
+    body = "".join(f"<item><title>{escape(t + ' - ' + src)}</title><link>https://news.example/{i}</link>"
+                   f"<source url={quoteattr('https://news.example/')}>{escape(src)}</source></item>"
+                   for i, (t, src) in enumerate(items))
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>Google News</title>'
+            + body + "</channel></rss>\n")
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     files = {"weather.json": weather(), "alerts.json": {"features": []},
@@ -207,11 +231,12 @@ def main():
         (OUT / name).write_text(json.dumps(doc, separators=(",", ":")) + "\n")
     (OUT / "lc.ics").write_text(lc_ics())
     (OUT / "radar_caps.xml").write_text(radar_caps())
+    (OUT / "news.xml").write_text(news_rss(), encoding="utf-8")
     (OUT / "radar.json").unlink(missing_ok=True)
     now = dt.datetime(2026, 10, 18, 10, 0, tzinfo=EDT)
     (OUT / "now.json").write_text(json.dumps({"utc": int(now.timestamp()),
                                               "wall": int(now.replace(tzinfo=dt.timezone.utc).timestamp())}) + "\n")
-    print("wrote", len(files) + 3, "files to", OUT)
+    print("wrote", len(files) + 4, "files to", OUT)
 
 
 if __name__ == "__main__":

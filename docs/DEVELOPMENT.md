@@ -15,8 +15,10 @@ Node 20 or newer is required. The test runners and the build use `node_modules/.
 | Command | What it covers | Network |
 |---|---|---|
 | `daybreak/tests/run.sh` | Library: curbside rules (2026 verified, 2027 provisional), dates, moon and showers, iCal with RRULE and EXDATE | No |
-| `daybreak/tests/run_data.sh` | `derive()` and every screen against the synthetic feeds in `tests/fixtures/feeds/`, with the clock pinned to Sunday 2026-10-18 10:00 AM, plus `test_robust`: every parser against malformed, partial and wrongly typed responses | No |
+| `daybreak/tests/run_data.sh` | `derive()` and every screen against the synthetic feeds in `tests/fixtures/feeds/`, with the clock pinned to Sunday 2026-10-18 10:00 AM, plus `test_robust`: every parser against malformed, partial and wrongly typed responses, and every news rule against `news.xml` | No |
 | `daybreak/tests/run_live.sh` | Smoke run against today's real feeds. Fetch them first with `fetch_fixtures.sh` | Yes |
+| `python3 daybreak/tests/feed_canary.py` | Every live source, fetched with the TV's own URLs (`sourceUrls()`) and parsed by the TV's `ingest()`. News uses a Python port of `filterNews()`. Then `run_live.sh`. `--break <source>` shows the failure path | Yes |
+| `python3 scripts/tv_smoke.py` | **On the TV, when nobody is watching:** installs the build (asking first), steps through every screen and diagnostics with screenshots into `captures/screens/smoke-<time>/`, checks the dev console for errors, presses Home, and logs to `ACTIVITY_LOG.md` | TV |
 | `.venv/bin/python daybreak/build_channel.py --check` | BrighterScript type and scope check | No |
 | `daybreak/preview/preview.sh <dir> --audit` | Renders every screen from the TV code, and flags text under 24 px or below WCAG contrast. Run `build_channel.py --assets` (or a full build) first | No (the radar base map is fetched once) |
 
@@ -29,10 +31,11 @@ Each runner exits non-zero on a failed check, a BrightScript runtime error, or a
 **Off-device limits:** `@rokucommunity/brs` doesn't measure text (`boundingRect()` is 0), so `uiWidth` and `uiHeight` fall back to estimates there. It also has no registry, memory monitor or `roUrlTransfer`, so code that uses them must check for `invalid`.
 
 ## Design changes
-1. Change the builders in `channel/components/screens.brs`, using the grid (`gx`, `gw`) and the type scale in `ui.brs`.
+1. Change the builders in `channel/components/screens/` (one file per screen group; `playlist.brs` picks the screens), using the grid (`gx`, `gw`) and the type scale in `ui.brs`.
 2. Run `daybreak/preview/preview.sh daybreak/out/preview --audit` and look at the PNGs. The audit must report 0 issues.
-3. If a screen in the README changed, refresh the screenshots with `--docs docs/images`.
-4. If the change touches a photo screen (Ambient, Briefing, Season, Tonight, Week, Weekend, Recap, Lake, School, Board), re-audit the wallpapers: `.venv/bin/python daybreak/wallpapers/build.py --audit-only`. It rebuilds each screen behind each photo (about a minute) and rewrites which screens each photo may appear on in `catalog.json`; commit the result.
+3. Run the visual regression check: `daybreak/preview/preview.sh daybreak/out/stable --stable && .venv/bin/python daybreak/preview/visual_diff.py daybreak/out/stable`. It compares quarter-size renders (no team logos, no radar base map) with `daybreak/preview/reference/`. A screen fails when more than 0.02% of its pixels changed, and `daybreak/out/stable/diff/` shows reference | new | changes. If the change is intended, rerun with `--update` and commit the references. CI runs the same check and uploads the diffs as `visual-diffs`.
+4. If a screen in the README changed, refresh the screenshots with `--docs docs/images`.
+5. If the change touches a photo screen (Ambient, Briefing, Season, Tonight, Week, Weekend, Recap, Lake, School, Board), re-audit the wallpapers: `.venv/bin/python daybreak/wallpapers/build.py --audit-only`. It rebuilds each screen behind each photo (about a minute) and rewrites which screens each photo may appear on in `catalog.json`; commit the result.
 
 ## Wallpapers
 - **Add a photo:** add it to `daybreak/wallpapers/sources.json` (the Commons file name, the place, tags, and a crop `focus` from 0 at the top to 1 at the bottom), then run `.venv/bin/python daybreak/wallpapers/build.py --audit`. The script:
@@ -71,6 +74,7 @@ The screenshot comes from the dev installer and changes nothing on screen, but i
 | `ci.yml` → `test` | Every push to `main`, every PR, and called by releases | Version check, fixtures in sync, the three test suites, BrighterScript, pyflakes, the design audit (renders uploaded as `screen-previews`) |
 | `ci.yml` → `dependency audit` | Same | `npm audit --audit-level=moderate` and `pip-audit -r requirements-dev.txt` |
 | `ci.yml` → `secret scan` | Same | gitleaks over the full git history |
+| `feed-canary.yml` | Daily at 11:23 UTC, and on demand (with an optional `break` input) | `feed_canary.py`. On a failure it opens or updates one issue labeled `area: data`, and it closes that issue when every source passes again |
 | `codeql.yml` | PRs, `main`, Mondays | CodeQL `security-and-quality` for Python and GitHub Actions |
 | `release.yml` | A `v*.*.*` tag | All of CI, then the release (below) |
 | Dependabot | Weekly, plus security alerts | Grouped updates for Actions, npm and pip; automatic security PRs |
@@ -89,4 +93,4 @@ Versions live in `daybreak/channel/manifest` (major and minor) and `CHANGELOG.md
 5. Close the milestone, and move its issues to **Done** on the [project board](https://github.com/users/roberjo/projects/2).
 
 ## Privacy checklist before pushing
-The repo is public. Never commit `.env`, `config/family.json`, `ACTIVITY_LOG.md`, `captures/`, `source/config.brs` or live fixtures; `.gitignore` covers all of them. Use the fictional family in `config/family.example.json` and the synthetic calendar for anything committed, including screenshots.
+`sh scripts/install_hooks.sh` installs a pre-commit hook that runs `scripts/pii_scan.py` on staged changes (see CONTRIBUTING.md); `python3 scripts/pii_scan.py --all` scans every tracked file. The repo is public. Never commit `.env`, `config/family.json`, `ACTIVITY_LOG.md`, `captures/`, `source/config.brs` or live fixtures; `.gitignore` covers all of them. Use the fictional family in `config/family.example.json` and the synthetic calendar for anything committed, including screenshots.

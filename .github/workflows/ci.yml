@@ -34,6 +34,10 @@ jobs:
           pip install -r requirements-dev.txt
       - name: Versions agree (manifest, CHANGELOG)
         run: python3 scripts/bump_version.py --check
+      - name: Privacy scan (public patterns; the private files aren't in CI)
+        run: |
+          python3 scripts/pii_scan.py --self-test
+          python3 scripts/pii_scan.py --all
       - name: Fixtures are up to date
         run: |
           python3 daybreak/tests/make_fixtures.py
@@ -42,10 +46,10 @@ jobs:
         run: sh daybreak/tests/run.sh
       - name: Data and screen tests
         run: sh daybreak/tests/run_data.sh
-      - name: BrighterScript
+      - name: BrighterScript and per-component scope check
         run: python3 daybreak/build_channel.py --check
       - name: pyflakes
-        run: pyflakes scripts daybreak/build_channel.py daybreak/tests daybreak/art daybreak/preview daybreak/wallpapers
+        run: pyflakes scripts daybreak/build_channel.py daybreak/check_scope.py daybreak/tests daybreak/art daybreak/preview daybreak/wallpapers
       - name: Design audit (every screen from the TV code; 24 px minimum, WCAG contrast)
         run: |
           python3 daybreak/build_channel.py --assets
@@ -57,6 +61,18 @@ jobs:
         with:
           name: screen-previews
           path: ${{ runner.temp }}/preview/*.png
+          retention-days: 14
+      - name: Visual regression (renders vs daybreak/preview/reference)
+        run: |
+          sh daybreak/preview/preview.sh "$RUNNER_TEMP/stable" --stable
+          python3 daybreak/preview/visual_diff.py "$RUNNER_TEMP/stable"
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual-diffs
+          path: ${{ runner.temp }}/stable/diff/*.png
+          if-no-files-found: ignore
           retention-days: 14
 
   audit:

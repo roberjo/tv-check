@@ -4,6 +4,23 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-10-31
+
+### Fixed
+- **An update refetches everything at once** (#88): the saved data now carries a schema version. After an update, data saved by the older version still shows at launch, but every source is fetched on the first refresh, so new kinds of data (like game weather in 1.12) appear within a minute instead of after each source's own interval. Diagnostics show "saved data from an older version, refetching" until that's done.
+
+### Added
+- **Feed canary** (#87): a daily GitHub Action fetches every live source with the TV's own URLs and parses it with the TV's own parsers. On a failure it opens or updates one issue, and it closes the issue when the source recovers.
+- **On-TV smoke test** (#89): `scripts/tv_smoke.py` installs the build when nobody is watching, steps through every screen and diagnostics with screenshots, checks the console log for errors, returns to Home, and logs the run.
+- **Visual regression** (#91): CI compares every screen's render with saved reference images, and uploads a diff image when a layout changes.
+- **News rules tested off-device** (#90): every news filter rule has a test against an RSS fixture.
+- **Per-component scope check** (#86): the build and CI fail when a function is called from a component that doesn't load it, which is the 1.13.0 `isText` mistake.
+- **Privacy scan** (#85): `scripts/pii_scan.py`, an opt-in pre-commit hook (`scripts/install_hooks.sh`), and a CI step with public patterns.
+
+### Changed
+- `DataTask.brs` and `screens.brs` are split into `components/data/` and `components/screens/`, with no behavior change (#93).
+- The refresh limits live in one place, `sourceLimits()` in `rules.brs` (#92).
+
 ## [1.14.1] - 2026-10-30
 
 ### Fixed
@@ -281,7 +298,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.14.1...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/roberjo/tv-check/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/roberjo/tv-check/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/roberjo/tv-check/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/roberjo/tv-check/compare/v1.12.0...v1.13.0

@@ -1,8 +1,9 @@
 ' Every source's parser against malformed, partial and wrongly typed
 ' responses: none may crash (refresh() would keep the last good data, but a
 ' parser should say "unreadable" by returning invalid, not by throwing).
-' News (RSS) isn't covered: the emulator lacks roXMLList's GetNamedElements
-' and GetText, which parseNews relies on and the TV has.
+' News: every rule in filterNews() against tests/fixtures/feeds/news.xml. Only
+' rssItems() (the XML reading) is left to the TV: the emulator lacks
+' roXMLList's GetNamedElements and GetText.
 ' Run via daybreak/tests/run_data.sh.
 sub Main()
     cfg = fixtureConfig()
@@ -68,5 +69,51 @@ sub Main()
         print "  derive crash: "; e.message
     end try
     check("derive survives", survived, true)
+    ' news: one fixture item per rule
+    items = testRssItems(ReadAsciiFile("pkg:/feeds/news.xml"))
+    check("news fixture items", items.Count(), 11)
+    kept = filterNews(items)
+    heads = []
+    for each n in kept
+        v = ""
+        if n.violent then v = " (violent)"
+        heads.Push(n.headline + " | " + n.source + v)
+    end for
+    check("news keeps local stories, marks violent crime", heads.Join(Chr(10)), [
+        "LaGrange council approves new downtown park | LaGrange Daily News",
+        "Troup County deputies arrest man after shooting on Hogansville Road | WTVM (violent)",
+        "Callaway & Hogansville schools add after-school tutoring | LaGrange Daily News"].Join(Chr(10)))
+    ' each dropped rule, on its own (so a rule that stops working is named)
+    drops = {obituary: 1, "social media": 3, "stream listing": 4, "styled-Unicode scam": 5, "scam wording": 6,
+             "section label": 7, "not local": 9}
+    for each why in drops
+        check("news drops: " + why, filterNews([items[drops[why]]]).Count(), 0)
+    end for
+    check("news drops: duplicate", filterNews([items[0], items[8]]).Count(), 1)
+    ' wrongly typed items never crash the filter
+    try
+        odd = filterNews([{}, {title: 5, source: invalid}, {title: "LaGrange"}, 7])
+        oddOk = odd.Count() = 1
+    catch e
+        oddOk = false
+        print "  news crash: "; e.message
+    end try
+    check("news filter survives odd items", oddOk, true)
+    check("no RSS, no news (keeps the last good)", parseNewsOffDevice(["", "<html>503</html>"]), invalid)
     testSummary("robust")
 end sub
+
+' parseNews() with the test RSS reader in place of rssItems().
+function parseNewsOffDevice(bodies as object) as dynamic
+    items = []
+    parsed = 0
+    for each body in bodies
+        got = testRssItems(body)
+        if got <> invalid
+            parsed = parsed + 1
+            items.Append(got)
+        end if
+    end for
+    if parsed = 0 then return invalid
+    return filterNews(items)
+end function

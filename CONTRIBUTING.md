@@ -25,7 +25,7 @@ CI runs all of these, plus the dependency audit, the secret scan and CodeQL. `ma
 - **Tests:** add checks for new behavior in `daybreak/tests/`. Feeds come from `make_fixtures.py`: change the generator, rerun it, and commit the output.
 - **Screens:** use the grid and type scale in `ui.brs`, keep text at 24 px or larger, and pass the design audit.
 - **Code style:** match the surrounding code (BrightScript style, comment density). Scripts in `scripts/` use the Python standard library only.
-- **Privacy:** never commit real household data. Use the fictional family and the synthetic calendar for tests, screenshots and docs.
+- **Privacy:** never commit real household data. Use the fictional family and the synthetic calendar for tests, screenshots and docs. Install the pre-commit privacy scan once with `sh scripts/install_hooks.sh`. It reads your values from the gitignored `config/family.json`, `.env` and `captures/`, and blocks a commit that adds a family name, birthday, school, calendar URL, token or TV identifier. It prints only the kind of finding, never the value. CI runs the same scan with the public patterns only (`--all`). Known public coincidences go in `.pii-allow`, listed by file and kind.
 - **Your TV:** tests and previews run off-device. If you install on a TV, do it when nobody is watching (`scripts/deploy.py` checks).
 
 ## Releases (maintainers)

@@ -14,8 +14,9 @@ Daybreak is one sideloaded Roku package with two entry points: `Main` (the app) 
                saveCache: cachefs:, at most every 10 min
 ```
 
-## Data task (`components/DataTask.brs`)
-- **Sources:** `sourceUrls()` lists each source's URLs, and `sourceLimits()` gives each one a refresh interval (`ttl`) and a maximum age (`maxAge`).
+## Data task (`components/DataTask.xml`, `components/data/`)
+- **Files:** `fetch.brs` (loop, fetching, health, cache), `sources.brs` (URLs and parsers), `derive.brs`, `tips.brs`, `games.brs` (sports, venues, game weather) and `wallpapers.brs`. `daybreak/check_scope.py` checks that every call resolves within the scripts `DataTask.xml` loads.
+- **Sources:** `sourceUrls()` lists each source's URLs, and `sourceLimits()` (in `rules.brs`, shared with the diagnostics screen) gives each one a refresh interval (`ttl`) and a maximum age (`maxAge`).
 
 | Source | ttl | maxAge | Compact form |
 |---|---|---|---|
@@ -49,9 +50,9 @@ During a game (an event `in` progress, or one that should have started in the la
 - **Freshness:** `fresh(name)` returns cached data younger than `maxAge`, or `invalid`. `asOfTimes()` reports sources older than twice their `ttl`, and screens show "as of 9:40 AM" for them. Expired alerts show as **Unavailable**, not "None in effect".
 - **Publishing:** `derive` runs every minute. Data is published only when `dataSignature()` (everything except the clock fields) changes. The moon is computed hourly so it doesn't change the signature every minute.
 - **Health:** each source records its last attempt and last success, HTTP status, latency, bytes, consecutive failures and last error. This goes to the `health` field every minute.
-- **Warm start:** after a refresh that stored new data (at most every 10 minutes), the compact cache and fetch times are written to `cachefs:/daybreak-cache.json`. On launch they're loaded and published before any network request. Off-device runs use `tmp:`.
+- **Warm start:** after a refresh that stored new data (at most every 10 minutes), the compact cache and fetch times are written to `cachefs:/daybreak-cache.json`. On launch they're loaded and published before any network request. Off-device runs use `tmp:`. The file carries a schema version (`cacheSchema()`). A cache from an older version is still shown, but every source is due on the first refresh, and diagnostics say so until the refetch is done. Bump it whenever a source's compact form changes.
 
-## Scene (`components/DaybreakScene.brs`, `screens.brs`, `ui.brs`)
+## Scene (`components/DaybreakScene.brs`, `components/screens/`, `ui.brs`)
 - **Building:** a screen is built when it rotates in, or when new data arrives while it's showing. `show()` stamps the current time into the data first, so relative times ("Falcons in 2 h 10 m") are right without republishing. While paused, a 5-minute timer rebuilds the screen.
 - **Crossfade:** the new screen fades in over the old one, then everything but the current screen is removed.
 - **Radar:** `radarLayer()` builds one group of frame posters per set of frame times and moves it into each new radar screen, so nothing is downloaded or decoded twice. Frames load at 960×540 and are scaled to fill the screen.
@@ -133,4 +134,4 @@ The radar frames stay decoded while other screens show, so radar can come back w
 To measure again, run the read-only debug-console commands `chanperf`, `r2d2_bitmaps` and `sgnodes all` while Daybreak is showing, and only when nobody is watching. `loaded_textures` reports nothing on Roku OS 16 ("only works when a Scene Graph screen is displayed", even with Daybreak in front).
 
 ## Off-device testing
-`@rokucommunity/brs` runs the library, `DataTask.brs` and the screen builders with the clock pinned and synthetic feeds. Tests ingest fixtures through the same `ingest()` the TV uses. See [`DEVELOPMENT.md`](DEVELOPMENT.md).
+`@rokucommunity/brs` runs the library, the data task (`components/data/`) and the screen builders with the clock pinned and synthetic feeds. Tests ingest fixtures through the same `ingest()` the TV uses. See [`DEVELOPMENT.md`](DEVELOPMENT.md).

@@ -9,6 +9,6 @@ L=$DIR/channel/source/lib
 C=$DIR/channel/components
 for t in test_data test_screens test_robust; do
   sh "$DIR/tests/brs.sh" "$FIXTURES" "$L/time.brs" "$L/ics.brs" "$L/rules.brs" \
-    "$C/DataTask.brs" "$C/ui.brs" "$C/screens.brs" "$C/overlays.brs" \
+    "$C"/data/*.brs "$C/ui.brs" "$C"/screens/*.brs "$C/overlays.brs" \
     "$DIR/tests/assert.brs" "$DIR/tests/harness.brs" "$DIR/tests/$t.brs"
 done

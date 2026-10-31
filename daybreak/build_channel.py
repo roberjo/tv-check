@@ -11,7 +11,7 @@ install is distinguishable; the tracked manifest keeps major/minor only.
 
 Usage:
   .venv/bin/python daybreak/build_channel.py            # full build + zip
-  .venv/bin/python daybreak/build_channel.py --check    # example config + BrighterScript only (CI)
+  .venv/bin/python daybreak/build_channel.py --check    # example config + BrighterScript + scope check only (CI)
   .venv/bin/python daybreak/build_channel.py --assets   # example config + fonts + images, for previews (CI)
   .venv/bin/python daybreak/build_channel.py --demo     # public demo package: example family, no .env (release CI)
 """
@@ -27,6 +27,7 @@ from PIL import Image, ImageDraw
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "art"))
 sys.path.insert(0, str(ROOT / "scripts"))
 import draw as D  # noqa: E402
@@ -322,7 +323,12 @@ def bsc_check():
     diag = [l for l in (check.stdout + check.stderr).splitlines() if " - error " in l or " - warning " in l or "Found " in l]
     print("\n".join(diag) or "bsc: no diagnostics")
     print("bsc exit:", check.returncode)
-    return check.returncode
+    # BrighterScript doesn't catch a call that only resolves in another
+    # component's scope; the TV does, at runtime.
+    import check_scope
+    problems = check_scope.check(CH)
+    print("\n".join(problems + [f"scope check: {len(problems)} unresolved call(s)"]))
+    return check.returncode or (1 if problems else 0)
 
 
 if __name__ == "__main__":
