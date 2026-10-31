@@ -4,6 +4,8 @@ All notable changes to Daybreak. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-10-31
+
 ### Fixed
 - **An update refetches everything at once** (#88): the saved data now carries a schema version. After an update, data saved by the older version still shows at launch, but every source is fetched on the first refresh, so new kinds of data (like game weather in 1.12) appear within a minute instead of after each source's own interval. Diagnostics show "saved data from an older version, refetching" until that's done.
 
@@ -296,7 +298,8 @@ Foundations: CI, deterministic tests, quick fixes and a safe deploy script.
 
 The first standalone release: 12 native screens, every feed fetched on the TV, rule-based heads-up insights, the family board through calendar events, and app and screensaver modes.
 
-[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.14.1...HEAD
+[Unreleased]: https://github.com/roberjo/tv-check/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/roberjo/tv-check/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/roberjo/tv-check/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/roberjo/tv-check/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/roberjo/tv-check/compare/v1.12.0...v1.13.0
