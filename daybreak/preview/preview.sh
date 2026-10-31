@@ -3,7 +3,7 @@
 # BrightScript builds each screen off-device (synthetic feeds, pinned clock),
 # dumps the node tree, and render.py draws it with the package's fonts and
 # images. Needs a full build first (fonts and images are generated).
-# Usage: preview.sh [out-dir] [--audit] [--docs <dir>]
+# Usage: preview.sh [out-dir] [--audit] [--docs <dir>] [--stable]   (--stable: see visual_diff.py)
 #        preview.sh <out-dir> --wallpapers <report.json>   (see daybreak/wallpapers/build.py)
 set -e
 DIR=$(cd "$(dirname "$0")/.." && pwd)
@@ -19,7 +19,7 @@ cp "$DIR/wallpapers/catalog.json" "$FIXTURES/wallpaper_catalog.json"
 # docs images leave team logos out (trademarks): the screens then fall back as
 # on a TV without them (preview.brs reads this marker)
 echo 0 > "$FIXTURES/nologos"  # always there: the emulator errors on a missing file
-case " $* " in *" --docs "*) echo 1 > "$FIXTURES/nologos" ;; esac
+case " $* " in *" --docs "*|*" --stable "*) echo 1 > "$FIXTURES/nologos" ;; esac
 if [ "$1" = "--wallpapers" ]; then
   # every catalog photo behind every screen it could appear on; $2 = JSON report
   DRIVER=$DIR/preview/wallpapers.brs

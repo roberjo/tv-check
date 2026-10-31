@@ -62,6 +62,18 @@ jobs:
           name: screen-previews
           path: ${{ runner.temp }}/preview/*.png
           retention-days: 14
+      - name: Visual regression (renders vs daybreak/preview/reference)
+        run: |
+          sh daybreak/preview/preview.sh "$RUNNER_TEMP/stable" --stable
+          python3 daybreak/preview/visual_diff.py "$RUNNER_TEMP/stable"
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual-diffs
+          path: ${{ runner.temp }}/stable/diff/*.png
+          if-no-files-found: ignore
+          retention-days: 14
 
   audit:
     name: dependency audit
