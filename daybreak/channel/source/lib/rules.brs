@@ -293,3 +293,18 @@ function dstTip(c as object, today as integer, sunset as integer) as string
     return t
 end function
 
+' --- data sources ---------------------------------------------------------------
+
+' Refresh interval (ttl) and the age after which data is dropped (maxAge), in seconds.
+' Shared by DataTask (when to fetch, when to drop) and the diagnostics screen
+' (the dot colors), so a new source needs one edit here.
+function sourceLimits() as object
+    return {
+        weather: {ttl: 600, maxAge: 3 * 3600}, alerts: {ttl: 120, maxAge: 1800}, lake: {ttl: 1800, maxAge: 12 * 3600},
+        sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
+        calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
+        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600},
+        wallpapers: {ttl: 86400, maxAge: 30 * 86400},
+        venues: {ttl: 600, maxAge: 365 * 86400}, gamewx: {ttl: 3 * 3600, maxAge: 12 * 3600}
+    }
+end function

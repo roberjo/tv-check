@@ -458,7 +458,7 @@ end sub
 ' Device-side values for the diagnostics screen (buildDiagnostics draws them).
 function gatherDiagnostics() as object
     di = m.deviceInfo
-    info = {nowUtc: tNowUtc(), health: m.dataTask.health, limits: sourceLimitsForDiag(), speed: m.speed}
+    info = {nowUtc: tNowUtc(), health: m.dataTask.health, limits: sourceLimits(), speed: m.speed}
     info.version = CreateObject("roAppInfo").GetVersion()
     mem = {lowMode: m.lowMemory, nodes: countNodes(m.top)}
     if m.memMonitor <> invalid
@@ -494,17 +494,6 @@ function displayText(video as string, ui as object) as string
 end function
 
 ' Same numbers as DataTask's sourceLimits(), for coloring the diagnostics rows.
-function sourceLimitsForDiag() as object
-    return {
-        weather: {ttl: 600, maxAge: 3 * 3600}, alerts: {ttl: 120, maxAge: 1800}, lake: {ttl: 1800, maxAge: 12 * 3600},
-        sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
-        calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
-        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600},
-        wallpapers: {ttl: 86400, maxAge: 30 * 86400},
-        venues: {ttl: 600, maxAge: 365 * 86400}, gamewx: {ttl: 3 * 3600, maxAge: 12 * 3600}
-    }
-end function
-
 function countNodes(n as object) as integer
     c = 1
     for i = 0 to n.getChildCount() - 1

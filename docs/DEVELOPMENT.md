@@ -89,4 +89,4 @@ Versions live in `daybreak/channel/manifest` (major and minor) and `CHANGELOG.md
 5. Close the milestone, and move its issues to **Done** on the [project board](https://github.com/users/roberjo/projects/2).
 
 ## Privacy checklist before pushing
-The repo is public. Never commit `.env`, `config/family.json`, `ACTIVITY_LOG.md`, `captures/`, `source/config.brs` or live fixtures; `.gitignore` covers all of them. Use the fictional family in `config/family.example.json` and the synthetic calendar for anything committed, including screenshots.
+`sh scripts/install_hooks.sh` installs a pre-commit hook that runs `scripts/pii_scan.py` on staged changes (see CONTRIBUTING.md); `python3 scripts/pii_scan.py --all` scans every tracked file. The repo is public. Never commit `.env`, `config/family.json`, `ACTIVITY_LOG.md`, `captures/`, `source/config.brs` or live fixtures; `.gitignore` covers all of them. Use the fictional family in `config/family.example.json` and the synthetic calendar for anything committed, including screenshots.

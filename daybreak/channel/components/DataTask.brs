@@ -61,7 +61,7 @@ sub publish(cfg as object)
         m.lastSig = sig
         m.top.data = d
     end if
-    m.top.health = {sources: m.health, savedAt: m.lastSave, warm: m.warm, cacheBytes: m.cacheBytes, wallpapers: m.wallpaperFiles,
+    m.top.health = {sources: m.health, savedAt: m.lastSave, warm: m.warm, oldCache: m.refetch <> invalid and m.refetch.Count() > 0, cacheBytes: m.cacheBytes, wallpapers: m.wallpaperFiles,
                      bytesTotal: m.bytesTotal}
 end sub
 
@@ -75,18 +75,6 @@ function dataSignature(d as object) as string
 end function
 
 ' --- sources ------------------------------------------------------------------
-
-' Refresh interval (ttl) and the age after which data is dropped (maxAge), in seconds.
-function sourceLimits() as object
-    return {
-        weather: {ttl: 600, maxAge: 3 * 3600}, alerts: {ttl: 120, maxAge: 1800}, lake: {ttl: 1800, maxAge: 12 * 3600},
-        sports: {ttl: 900, maxAge: 6 * 3600}, lc: {ttl: 1800, maxAge: 24 * 3600}, news: {ttl: 1800, maxAge: 12 * 3600},
-        calendar: {ttl: 600, maxAge: 24 * 3600}, radar: {ttl: 600, maxAge: 1800},
-        air: {ttl: 1800, maxAge: 6 * 3600}, tropics: {ttl: 1800, maxAge: 6 * 3600},
-        wallpapers: {ttl: 86400, maxAge: 30 * 86400},
-        venues: {ttl: 600, maxAge: 365 * 86400}, gamewx: {ttl: 3 * 3600, maxAge: 12 * 3600}
-    }
-end function
 
 function sourceUrls(cfg as object) as object
     lat = cfg.lat.ToStr()
@@ -146,6 +134,7 @@ function sourceUrls(cfg as object) as object
 end function
 
 function due(name as string, ttl as integer) as boolean
+    if m.refetch <> invalid and m.refetch.DoesExist(name) then return true
     if name = "sports" and liveGame() then ttl = 120 ' scores every 2 minutes during a game
     ' a venue that just appeared needn't wait out the 3 hours (at most every 10 minutes)
     if name = "gamewx" and gameWxMissing()
@@ -161,6 +150,7 @@ sub refresh(cfg as object)
     urls = sourceUrls(cfg)
     reqs = []
     for each name in urls
+        if urls[name].Count() = 0 and m.refetch <> invalid then m.refetch.Delete(name) ' nothing to fetch
         if urls[name].Count() > 0 and due(name, limits[name].ttl)
             for each u in urls[name]
                 reqs.Push({source: name, url: u})
@@ -206,6 +196,7 @@ sub refresh(cfg as object)
             changed = true
         end if
         noteHealth(name, value <> invalid, h)
+        if m.refetch <> invalid then m.refetch.Delete(name)
     end for
     if changed and tNowUtc() - m.lastSave >= 600 then saveCache()
 end sub
@@ -371,13 +362,21 @@ end function
 
 ' --- warm start -------------------------------------------------------------------
 
+' Bump when any source's compact form (what ingest() keeps) changes, so the
+' first refresh after an update refetches everything instead of waiting out
+' each source's ttl on data in the old shape.
+'   3: 1.15, the first stamped cache (1.12 added venue ZIPs to sports)
+function cacheSchema() as integer
+    return 3
+end function
+
 function cachePath() as string
     if m.offDevice = true then return "tmp:/daybreak-cache.json" ' off-device runners have no cachefs:
     return "cachefs:/daybreak-cache.json"
 end function
 
 sub saveCache()
-    text = FormatJson({v: 2, cache: m.cache, fetched: m.fetched})
+    text = FormatJson({v: 2, schema: cacheSchema(), cache: m.cache, fetched: m.fetched})
     if WriteAsciiFile(cachePath(), text)
         m.cacheBytes = Len(text)
         m.lastSave = tNowUtc()
@@ -391,6 +390,14 @@ function loadCache() as boolean
     if j = invalid or j.v <> 2 or j.cache = invalid or j.fetched = invalid then return false
     m.cache = j.cache
     m.fetched = j.fetched
+    ' Saved by an older version: keep showing it, but make every source due on
+    ' the first refresh. A failed fetch keeps the old data until its maxAge.
+    if numOf(j.schema, 0) <> cacheSchema()
+        m.refetch = {}
+        for each name in sourceLimits()
+            m.refetch[name] = true
+        end for
+    end if
     return true
 end function
 

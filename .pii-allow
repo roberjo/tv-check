@@ -1,0 +1,9 @@
+# Known, public coincidences for scripts/pii_scan.py: "<path glob> <kind>".
+# Kinds only, never values. A new entry needs a reason.
+LICENSE household name                         # the copyright holder, public by choice
+LICENSE member name 1                          # the copyright holder, public by choice
+daybreak/wallpapers/*.json member name 2       # a photographer or place in the Commons credits
+daybreak/wallpapers/CREDITS.md member name 2   # same credit, rendered
+scripts/pii_scan.py private calendar URL       # synthetic self-test fixture
+scripts/pii_scan.py TV serial                  # synthetic self-test fixture
+scripts/pii_scan.py MAC address                # synthetic self-test fixture

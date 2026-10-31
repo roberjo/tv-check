@@ -230,6 +230,8 @@ function buildDiagnostics(info as object) as object
         warm = "Saved " + agoText(info.nowUtc - info.health.savedAt) + " · " + kbText(info.health.cacheBytes)
         if isTrue(info.health.warm) then warm = warm + " · started warm"
     end if
+    if info.health <> invalid and isTrue(info.health.oldCache) then warm = warm + " · saved data from an older version, refetching"
+
     uiText(g, gx(1) + 40, top + 700, "Warm-start cache: " + warm, 24, 400, "Manrope", "#A9B1C4", gw(8) - 80)
     ' memory, device, network, speed
     rx = gx(9)

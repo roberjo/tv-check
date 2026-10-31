@@ -199,6 +199,32 @@ sub Main()
     m.fetched = {}
     check("cache loads", loadCache(), true)
     check("same data after a warm start", dataSignature(derive(cfg)) = dataSignature(before), true)
+    check("a current cache refetches nothing early", m.refetch = invalid and due("lake", 86400) = false, true)
+    ' a cache saved by an older version (1.14 had no schema stamp): data kept, everything due
+    saved = ParseJson(ReadAsciiFile(cachePath()))
+    saved.Delete("schema")
+    WriteAsciiFile(cachePath(), FormatJson(saved))
+    m.cache = {}
+    m.fetched = {}
+    check("an older cache still loads", loadCache(), true)
+    check("old data still shows", dataSignature(derive(cfg)) = dataSignature(before), true)
+    notDue = []
+    for each name in sourceLimits()
+        if not due(name, sourceLimits()[name].ttl) then notDue.Push(name)
+    end for
+    check("an older cache makes every source due", notDue.Count(), 0)
+    g = buildDiagnostics({nowUtc: m.testNowUtc, health: {sources: m.health, savedAt: m.testNowUtc - 60, cacheBytes: 1000,
+                          oldCache: m.refetch.Count() > 0}, limits: sourceLimits()})
+    oldNoted = false
+    for each t in labelTexts(g)
+        if Instr(1, t, "older version") > 0 then oldNoted = true
+    end for
+    check("diagnostics note the older cache", oldNoted, true)
+    for each name in sourceLimits()
+        m.refetch.Delete(name) ' as refresh() does after each attempt
+    end for
+    check("after the refetch, normal ttls again", due("lake", 86400), false)
+    m.refetch = invalid
     m.health = {}
     seedHealth()
     g = buildDiagnostics({nowUtc: m.testNowUtc, health: {sources: m.health}, limits: sourceLimits()})
