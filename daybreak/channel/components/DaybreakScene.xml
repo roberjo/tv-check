@@ -8,7 +8,15 @@
   <script type="text/brightscript" uri="pkg:/source/lib/rules.brs" />
   <script type="text/brightscript" uri="pkg:/source/config.brs" />
   <script type="text/brightscript" uri="pkg:/components/ui.brs" />
-  <script type="text/brightscript" uri="pkg:/components/screens.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/playlist.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/shared.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/status.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/daily.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/week.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/outdoors.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/sports.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/family.brs" />
+  <script type="text/brightscript" uri="pkg:/components/screens/radar.brs" />
   <script type="text/brightscript" uri="pkg:/components/overlays.brs" />
   <script type="text/brightscript" uri="pkg:/components/DaybreakScene.brs" />
   <children>

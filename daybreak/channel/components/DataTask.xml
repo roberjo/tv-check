@@ -10,5 +10,10 @@
   <script type="text/brightscript" uri="pkg:/source/lib/time.brs" />
   <script type="text/brightscript" uri="pkg:/source/lib/ics.brs" />
   <script type="text/brightscript" uri="pkg:/source/lib/rules.brs" />
-  <script type="text/brightscript" uri="pkg:/components/DataTask.brs" />
+  <script type="text/brightscript" uri="pkg:/components/data/fetch.brs" />
+  <script type="text/brightscript" uri="pkg:/components/data/sources.brs" />
+  <script type="text/brightscript" uri="pkg:/components/data/derive.brs" />
+  <script type="text/brightscript" uri="pkg:/components/data/tips.brs" />
+  <script type="text/brightscript" uri="pkg:/components/data/games.brs" />
+  <script type="text/brightscript" uri="pkg:/components/data/wallpapers.brs" />
 </component>

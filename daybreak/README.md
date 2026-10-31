@@ -7,9 +7,15 @@ daybreak/channel/
   source/main.brs            Main (app) + RunScreenSaver (screensaver)
   source/config.brs          generated: household, members, calendar URL (gitignored: private)
   source/lib/                time.brs, ics.brs (iCal + RRULE + EXDATE), rules.brs (curbside, moon, showers)
-  components/DataTask.*      fetches due sources in parallel, keeps compact data, derives, publishes on change, saves a warm-start cache
+  components/DataTask.xml    the data task; loads source/lib and components/data/:
+    data/fetch.brs           the loop: fetches due sources in parallel, health, publishes on change, warm-start cache
+    data/sources.brs         each source's URL and parser (compact form)
+    data/derive.brs          derive(): what the screens show
+    data/tips.brs            heads-up tips, rain timing
+    data/games.brs           sports, game venues, weather at outdoor games
+    data/wallpapers.brs      wallpaper catalog, daily picks, background downloads
   components/ui.brs          9-patch cards, fonts, labels, icons
-  components/screens.brs     12 screens + playlist rules
+  components/screens/        playlist rules (playlist.brs), shared pieces, then one file per screen group
   components/DaybreakScene.* crossfades, exact clock, radar animation, Left/Right/Play
 ```
 

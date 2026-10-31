@@ -31,7 +31,7 @@ Each runner exits non-zero on a failed check, a BrightScript runtime error, or a
 **Off-device limits:** `@rokucommunity/brs` doesn't measure text (`boundingRect()` is 0), so `uiWidth` and `uiHeight` fall back to estimates there. It also has no registry, memory monitor or `roUrlTransfer`, so code that uses them must check for `invalid`.
 
 ## Design changes
-1. Change the builders in `channel/components/screens.brs`, using the grid (`gx`, `gw`) and the type scale in `ui.brs`.
+1. Change the builders in `channel/components/screens/` (one file per screen group; `playlist.brs` picks the screens), using the grid (`gx`, `gw`) and the type scale in `ui.brs`.
 2. Run `daybreak/preview/preview.sh daybreak/out/preview --audit` and look at the PNGs. The audit must report 0 issues.
 3. Run the visual regression check: `daybreak/preview/preview.sh daybreak/out/stable --stable && .venv/bin/python daybreak/preview/visual_diff.py daybreak/out/stable`. It compares quarter-size renders (no team logos, no radar base map) with `daybreak/preview/reference/`. A screen fails when more than 0.02% of its pixels changed, and `daybreak/out/stable/diff/` shows reference | new | changes. If the change is intended, rerun with `--update` and commit the references. CI runs the same check and uploads the diffs as `visual-diffs`.
 4. If a screen in the README changed, refresh the screenshots with `--docs docs/images`.

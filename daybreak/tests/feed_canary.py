@@ -42,7 +42,7 @@ TEAM_KEYS = ["georgia", "auburn", "falcons", "hawks", "braves"]  # placeDefaults
 
 def brs(test, quiet=False):
     lib, comp = DAYBREAK / "channel" / "source" / "lib", DAYBREAK / "channel" / "components"
-    files = [lib / "time.brs", lib / "ics.brs", lib / "rules.brs", comp / "DataTask.brs", HERE / test]
+    files = [lib / "time.brs", lib / "ics.brs", lib / "rules.brs", *sorted((comp / "data").glob("*.brs")), HERE / test]
     r = subprocess.run(["sh", str(HERE / "brs.sh"), str(FIX)] + [str(f) for f in files], capture_output=True, text=True)
     if r.returncode != 0 and not quiet:
         print(r.stdout[-2000:], r.stderr[-2000:])
