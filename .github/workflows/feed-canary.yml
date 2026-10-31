@@ -1,0 +1,82 @@
+name: Feed canary
+
+# Every live source Daybreak reads, fetched and parsed the way the TV does
+# (daybreak/tests/feed_canary.py). On failure, opens or updates one issue
+# labeled "area: data"; when every source passes again, closes it. Uses the
+# fictional family only, never the family calendar.
+on:
+  schedule:
+    - cron: "23 11 * * *" # 7:23 AM Eastern (EDT), before the morning Briefing matters
+  workflow_dispatch:
+    inputs:
+      break:
+        description: "Point one source at a bad URL (e.g. lake) to test the failure path"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: feed-canary
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Install the BrightScript emulator (locked version)
+        run: npm ci --ignore-scripts --no-fund --no-audit
+      - name: Fetch and parse every feed
+        id: canary
+        env:
+          BREAK: ${{ inputs.break }}
+        run: |
+          set +e
+          if [ -n "$BREAK" ]; then
+            python3 daybreak/tests/feed_canary.py --report "$RUNNER_TEMP/canary.md" --break "$BREAK"
+          else
+            python3 daybreak/tests/feed_canary.py --report "$RUNNER_TEMP/canary.md"
+          fi
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+      - name: Open, update or close the canary issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS: ${{ steps.canary.outputs.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="Feed canary: a live feed is failing"
+          NUM=$(gh issue list --state open --label "area: data" --search "in:title \"$TITLE\"" --json number,title \
+                --jq "map(select(.title == \"$TITLE\")) | .[0].number // empty")
+          REPORT="$RUNNER_TEMP/canary.md"
+          [ -f "$REPORT" ] || echo "The canary stopped before writing its report." > "$REPORT"
+          BODY="$RUNNER_TEMP/body.md"
+          {
+            echo "The [feed canary]($RUN_URL) found a failing source on $(date -u +%Y-%m-%d)."
+            echo
+            cat "$REPORT"
+            echo
+            echo "Daybreak keeps showing the last good data until each source's maxAge, so a short outage needs no action. Check whether the API changed shape before editing a parser."
+          } > "$BODY"
+          if [ "$STATUS" != "0" ]; then
+            if [ -n "$NUM" ]; then
+              gh issue comment "$NUM" --body-file "$BODY"
+            else
+              gh issue create --title "$TITLE" --label "area: data" --body-file "$BODY"
+            fi
+            exit 1
+          elif [ -n "$NUM" ]; then
+            gh issue close "$NUM" --comment "Every source passed again in [this run]($RUN_URL)."
+          fi

@@ -15,8 +15,10 @@ Node 20 or newer is required. The test runners and the build use `node_modules/.
 | Command | What it covers | Network |
 |---|---|---|
 | `daybreak/tests/run.sh` | Library: curbside rules (2026 verified, 2027 provisional), dates, moon and showers, iCal with RRULE and EXDATE | No |
-| `daybreak/tests/run_data.sh` | `derive()` and every screen against the synthetic feeds in `tests/fixtures/feeds/`, with the clock pinned to Sunday 2026-10-18 10:00 AM, plus `test_robust`: every parser against malformed, partial and wrongly typed responses | No |
+| `daybreak/tests/run_data.sh` | `derive()` and every screen against the synthetic feeds in `tests/fixtures/feeds/`, with the clock pinned to Sunday 2026-10-18 10:00 AM, plus `test_robust`: every parser against malformed, partial and wrongly typed responses, and every news rule against `news.xml` | No |
 | `daybreak/tests/run_live.sh` | Smoke run against today's real feeds. Fetch them first with `fetch_fixtures.sh` | Yes |
+| `python3 daybreak/tests/feed_canary.py` | Every live source, fetched with the TV's own URLs (`sourceUrls()`) and parsed by the TV's `ingest()`. News uses a Python port of `filterNews()`. Then `run_live.sh`. `--break <source>` shows the failure path | Yes |
+| `python3 scripts/tv_smoke.py` | **On the TV, when nobody is watching:** installs the build (asking first), steps through every screen and diagnostics with screenshots into `captures/screens/smoke-<time>/`, checks the dev console for errors, presses Home, and logs to `ACTIVITY_LOG.md` | TV |
 | `.venv/bin/python daybreak/build_channel.py --check` | BrighterScript type and scope check | No |
 | `daybreak/preview/preview.sh <dir> --audit` | Renders every screen from the TV code, and flags text under 24 px or below WCAG contrast. Run `build_channel.py --assets` (or a full build) first | No (the radar base map is fetched once) |
 
@@ -71,6 +73,7 @@ The screenshot comes from the dev installer and changes nothing on screen, but i
 | `ci.yml` → `test` | Every push to `main`, every PR, and called by releases | Version check, fixtures in sync, the three test suites, BrighterScript, pyflakes, the design audit (renders uploaded as `screen-previews`) |
 | `ci.yml` → `dependency audit` | Same | `npm audit --audit-level=moderate` and `pip-audit -r requirements-dev.txt` |
 | `ci.yml` → `secret scan` | Same | gitleaks over the full git history |
+| `feed-canary.yml` | Daily at 11:23 UTC, and on demand (with an optional `break` input) | `feed_canary.py`. On a failure it opens or updates one issue labeled `area: data`, and it closes that issue when every source passes again |
 | `codeql.yml` | PRs, `main`, Mondays | CodeQL `security-and-quality` for Python and GitHub Actions |
 | `release.yml` | A `v*.*.*` tag | All of CI, then the release (below) |
 | Dependabot | Weekly, plus security alerts | Grouped updates for Actions, npm and pip; automatic security PRs |
