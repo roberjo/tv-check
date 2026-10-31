@@ -87,6 +87,8 @@ sub replan(forceRebuild as boolean)
     currentId = invalid
     if m.items.Count() > 0 and m.index < m.items.Count() then currentId = m.items[m.index]
     m.items = chooseScreens(m.data, m.top.mode, m.settings.hidden)
+    ' (scripts/tv_smoke.py reads these two lines from the dev console)
+    print "Daybreak: playlist " + m.items.Join(",")
     now = tNowWall()
     m.plannedHour = now - now mod 3600
     found = -1
@@ -120,6 +122,7 @@ sub show(i as integer, restartTimer as boolean)
         end if
         return
     end try
+    print "Daybreak: screen " + id + " (" + (i + 1).ToStr() + "/" + m.items.Count().ToStr() + ")"
     m.serial = m.serial + 1
     grp.id = "screen" + m.serial.ToStr()
     grp.opacity = 0
