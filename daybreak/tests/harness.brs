@@ -102,3 +102,27 @@ sub collectTexts(node as object, out as object)
         collectTexts(node.getChild(i), out)
     end for
 end sub
+
+' Test stand-in for rssItems(): the emulator's roXMLElement has no GetText or
+' GetBody (only Parse, GetName, GetNamedElementsCi, GetAttributes), so the
+' item text is read with regexes. Same output shape as rssItems().
+function testRssItems(body as string) as dynamic
+    if Instr(1, body, "<rss") = 0 then return invalid
+    titleRe = CreateObject("roRegex", "<title>([^<]*)</title>", "")
+    sourceRe = CreateObject("roRegex", "<source[^>]*>([^<]*)</source>", "")
+    out = []
+    parts = body.Split("<item>")
+    for i = 1 to parts.Count() - 1
+        t = titleRe.Match(parts[i])
+        s = sourceRe.Match(parts[i])
+        it = {title: "", source: ""}
+        if t.Count() > 1 then it.title = xmlUnescape(t[1])
+        if s.Count() > 1 then it.source = xmlUnescape(s[1])
+        out.Push(it)
+    end for
+    return out
+end function
+
+function xmlUnescape(s as string) as string
+    return s.Replace("&lt;", "<").Replace("&gt;", ">").Replace("&quot;", Chr(34)).Replace("&#39;", "'").Replace("&apos;", "'").Replace("&amp;", "&")
+end function

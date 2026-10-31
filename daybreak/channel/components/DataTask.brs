@@ -474,6 +474,35 @@ function newsSpam(title as string) as boolean
 end function
 
 function parseNews(bodies as object) as dynamic
+    items = []
+    parsed = 0
+    for each body in bodies
+        got = rssItems(body)
+        if got <> invalid
+            parsed = parsed + 1
+            items.Append(got)
+        end if
+    end for
+    if parsed = 0 then return invalid
+    return filterNews(items)
+end function
+
+' Title and source of each RSS item, or invalid if the body isn't XML. Only
+' this part needs roXMLList (GetNamedElements, GetText), which the off-device
+' emulator lacks; the tests feed filterNews() from their own RSS reader.
+function rssItems(body as string) as dynamic
+    x = CreateObject("roXMLElement")
+    if body = "" or not x.Parse(body) then return invalid
+    out = []
+    for each item in x.GetNamedElements("channel").GetNamedElements("item")
+        out.Push({title: item.GetNamedElements("title").GetText(), source: item.GetNamedElements("source").GetText()})
+    end for
+    return out
+end function
+
+' Every news rule: local only, no obituaries, social media, stream listings,
+' scams, section labels or repeats; violent crime is marked for gentle news.
+function filterNews(items as object) as object
     skip = CreateObject("roRegex", "obituar|funeral|legacy\.com|in memory|passed away|\bobit", "i")
     social = CreateObject("roRegex", "instagram|facebook|tiktok|youtube|twitter|nfhs|reddit", "i")
     noise = CreateObject("roRegex", "\bvarsity\b.*@|@.*\bvarsity\b|live (&|and) on demand", "i")
@@ -483,28 +512,21 @@ function parseNews(bodies as object) as dynamic
     tail = CreateObject("roRegex", "\s+-\s+[^-]+$", "")
     seen = {}
     out = []
-    parsed = 0
-    for each body in bodies
-        x = CreateObject("roXMLElement")
-        if body <> "" and x.Parse(body)
-            parsed = parsed + 1
-            for each item in x.GetNamedElements("channel").GetNamedElements("item")
-                title = item.GetNamedElements("title").GetText()
-                source = item.GetNamedElements("source").GetText()
-                headline = tail.Replace(title, "").Trim()
-                key = LCase(Left(headline, 60))
-                ok = not seen.DoesExist(key) and not skip.IsMatch(title + " " + source) and not social.IsMatch(source)
-                ok = ok and not noise.IsMatch(title) and localRe.IsMatch(title + " " + source) and not newsSpam(title)
-                ' very short headlines from the town's own paper are section labels, not news
-                if ok and ownSource <> invalid and Instr(1, source, ownSource) > 0 and headline.Split(" ").Count() <= 4 then ok = false
-                if ok
-                    seen[key] = true
-                    out.Push({headline: headline, source: source, violent: gentle.IsMatch(title)})
-                end if
-            end for
+    for each raw in items
+        it = aaOf(raw)
+        title = strOrEmpty(it.title)
+        source = strOrEmpty(it.source)
+        headline = tail.Replace(title, "").Trim()
+        key = LCase(Left(headline, 60))
+        ok = not seen.DoesExist(key) and not skip.IsMatch(title + " " + source) and not social.IsMatch(source)
+        ok = ok and not noise.IsMatch(title) and localRe.IsMatch(title + " " + source) and not newsSpam(title)
+        ' very short headlines from the town's own paper are section labels, not news
+        if ok and ownSource <> invalid and Instr(1, source, ownSource) > 0 and headline.Split(" ").Count() <= 4 then ok = false
+        if ok
+            seen[key] = true
+            out.Push({headline: headline, source: source, violent: gentle.IsMatch(title)})
         end if
     end for
-    if parsed = 0 then return invalid
     return out
 end function
 
