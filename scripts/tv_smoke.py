@@ -198,8 +198,13 @@ def main():
                 remote.press("Right", pause=3)
         remote.press("Back")
     finally:
+        # Home only if Daybreak is still in front: if someone switched apps
+        # mid-run, Home would throw them out of what they're watching.
         try:
-            remote.press("Home")
+            if remote.still_ours():
+                remote.press("Home")
+            else:
+                problems.append("left the TV as it was: another app was in front at the end")
         except OSError as e:
             problems.append(f"Home keypress failed: {e}")
         time.sleep(2)
