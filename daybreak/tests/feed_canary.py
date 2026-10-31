@@ -153,7 +153,7 @@ def main():
                       "&timezone=America%2FNew_York&forecast_days=8")
             status, body = fetch(wx_url)
             (LIVE / "gamewx_0.txt").write_bytes(body if status == 200 else b"")
-            manifest["gamewx"] = {"files": ["gamewx_0.txt"], "urls": [wx_url]}
+            manifest["gamewx"] = {"files": ["gamewx_0.txt"], "urls": []}  # test_canary.brs keys it by the TV's own gameWxUrl()
             if status != 200:
                 results["gamewx"] = (False, f"HTTP {status} from api.open-meteo.com")
         except (ValueError, KeyError, IndexError, TypeError) as e:

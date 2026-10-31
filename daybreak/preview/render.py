@@ -46,7 +46,9 @@ def rgba(v, opacity=1.0):
 def font(uri, size):
     key = (uri, size)
     if key not in _fonts:
-        _fonts[key] = ImageFont.truetype(str(CH / uri.replace("pkg:/", "")), size)
+        # BASIC layout everywhere: Pillow's Linux wheels shape text with libraqm and
+        # macOS installs often lack it, which moves glyph edges (visual_diff.py)
+        _fonts[key] = ImageFont.truetype(str(CH / uri.replace("pkg:/", "")), size, layout_engine=ImageFont.Layout.BASIC)
     return _fonts[key]
 
 

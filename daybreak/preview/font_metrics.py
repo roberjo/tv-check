@@ -17,7 +17,7 @@ CHARS = [chr(c) for c in range(32, 127)] + list("°·–—…“”’éñ✱")
 
 out = {}
 for path in sorted(FONTS.glob("*.ttf")):
-    f = ImageFont.truetype(str(path), 1000)
+    f = ImageFont.truetype(str(path), 1000, layout_engine=ImageFont.Layout.BASIC)  # same on every platform (render.py)
     table = {str(ord(ch)): round(f.getlength(ch)) for ch in CHARS}
     table["avg"] = round(sum(table.values()) / len(table))
     out[path.name] = table
